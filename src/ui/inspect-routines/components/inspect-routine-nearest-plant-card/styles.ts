@@ -1,0 +1,66 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, marginVertical: 20, paddingHorizontal: 16 },
+  card: {
+    height: '100%',
+    width: '100%',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 0.02,
+    borderRadius: 16,
+    elevation: 4,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  leftSideContainer: {
+    flex: 1,
+    width: '70%',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingLeft: 12,
+    paddingVertical: 10,
+  },
+  infoContainer: {
+    gap: 10,
+    flex: 1,
+    justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoItemContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+  },
+  distanceLogoContainer: {
+    width: 50,
+    height: 50,
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoAreaContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  infoArea: {
+    width: '70%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailButton: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomEndRadius: 16,
+    borderTopEndRadius: 16,
+  },
+});
