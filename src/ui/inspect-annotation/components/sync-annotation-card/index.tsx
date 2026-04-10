@@ -1,12 +1,12 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme';
 import { ThemedText } from '@/shared/themes/themed-text';
+import { ConfirmationModal } from '@/ui/shared/components/confirmation-modal';
 import { formatDateToShortLabel } from '@/utils/date/dates';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { TouchableOpacity, View, ViewStyle } from 'react-native';
 import { styles } from './styles';
-import { ConfirmationModal } from '@/ui/shared/components/confirmation-modal';
 
 export interface SyncAnnotationCardProps {
   date: string;
@@ -53,7 +53,12 @@ export const SyncAnnotationCard: React.FC<SyncAnnotationCardProps> = ({
       ]}
     >
       <View style={styles.leftSection}>
-        <View style={[styles.iconContainer, { backgroundColor: isApproved ? Colors[theme].iconBackground : (isDark ? '#312E81' : '#EEF2FF') }]}>
+        <View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: isApproved ? Colors[theme].iconBackground : isDark ? '#312E81' : '#EEF2FF' },
+          ]}
+        >
           <Ionicons
             name={isApproved ? 'checkmark-circle' : 'leaf'}
             size={24}
@@ -73,9 +78,9 @@ export const SyncAnnotationCard: React.FC<SyncAnnotationCardProps> = ({
         <TouchableOpacity
           style={[
             styles.approveButton,
-            { 
+            {
               backgroundColor: isApproved ? Colors[theme].iconBackground : Colors[theme].confirmationButtonBackground,
-              shadowOpacity: isApproved ? 0 : 0.2
+              shadowOpacity: isApproved ? 0 : 0.2,
             },
           ]}
           onPress={handleApprovePress}

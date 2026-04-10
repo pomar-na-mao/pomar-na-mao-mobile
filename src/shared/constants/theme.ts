@@ -1,112 +1,113 @@
 import { Platform } from 'react-native';
 
-const tintColorLight = '#4F46E5'; // Índigo vibrante
-const tintColorDark = '#818CF8'; // Índigo suave/pastel
+/**
+ * Stitch Design System - Terra Precision (Pomar na Mão)
+ * React Native Theme Adjustment
+ */
+
+const tintColorLight = '#2B4C2C'; // Verde Floresta Principal
+const tintColorDark = '#97D69B'; // Verde Claro para contraste no Dark Mode
 
 export const Colors = {
   light: {
-    text: '#111827', // Quase preto, confortável para leitura
-    disabledText: '#9CA3AF',
-    background: '#F9FAFB', // Off-white moderno e limpo
-    navHeaderBackgroud: '#FFFFFF', // Header limpo
+    text: '#1C1D1C',
+    disabledText: '#747974',
+    background: '#F8F9F8',
+    navHeaderBackgroud: '#FFFFFF',
     tint: tintColorLight,
-    secondary: '#F59E0B', // Âmbar vibrante para detalhes
-    icon: '#6B7280',
-    tabIconDefault: '#9CA3AF',
+    secondary: '#8B4513', // Marrom Terroso
+    icon: '#444744',
+    tabIconDefault: '#747974',
     tabIconSelected: tintColorLight,
-    line: '#E5E7EB', // Bordas sutis
-    overlay: 'rgba(17, 24, 39, 0.4)', // Overlay escurecido elegante
-    inputBackground: '#F3F4F6',
-    inputBorder: '#E5E7EB',
-    inputError: '#EF4444',
-    inputPlaceholder: '#9CA3AF',
-    errorText: '#DC2626',
-    link: '#2563EB', // Azul clássico para links
-    confirmationButtonBackground: '#10B981', // Verde esmeralda moderno
-    cancelButtonBackground: '#F3F4F6', // Fundo sutil para cancelar
-    destructiveButtonBackground: '#EF4444',
-    neutralButtonBackground: '#F3F4F6',
-    neutralButtonText: '#374151',
+    line: '#DFE3DF',
+    overlay: 'rgba(28, 29, 28, 0.4)',
+    inputBackground: '#EBEEEB',
+    inputBorder: '#C4C8C4',
+    inputError: '#B91C1C',
+    inputPlaceholder: '#747974',
+    errorText: '#B91C1C',
+    link: '#0369A1',
+    confirmationButtonBackground: '#166534',
+    cancelButtonBackground: '#E5E8E5',
+    destructiveButtonBackground: '#B91C1C',
+    neutralButtonBackground: '#F1F3F1',
+    neutralButtonText: '#1C1D1C',
     card: '#FFFFFF',
-    cardBorder: '#E5E7EB',
-    danger: '#EF4444',
-    grey: '#E5E7EB',
+    cardBorder: '#E5E8E5',
+    danger: '#B91C1C',
+    grey: '#DFE3DF',
     surface: '#FFFFFF',
-    activeTrackColor: '#A5B4FC',
-    deactiveTrackColor: '#E5E7EB',
+    activeTrackColor: '#D1E2D2',
+    deactiveTrackColor: '#DFE3DF',
     activeThumbColor: tintColorLight,
-    deactiveThumbColor: '#FAFAFA',
-    blue: '#3B82F6',
-    logoBackground: '#EEF2FF', // Fundo índigo super claro
-    mapRegionStrokeColor: '#4F46E5',
-    mapRegionFillColor: 'rgba(79, 70, 229, 0.2)',
-    warning: '#F59E0B',
-    iconBackground: '#F3F4F6',
-    plantCircle: 'rgba(76, 175, 80, 1)',
+    deactiveThumbColor: '#F8F9F8',
+    blue: '#0369A1',
+    logoBackground: '#D1E2D2',
+    mapRegionStrokeColor: '#2B4C2C',
+    mapRegionFillColor: 'rgba(43, 76, 44, 0.2)',
+    warning: '#D97706',
+    iconBackground: '#E5E8E5',
+    plantCircle: 'rgba(43, 76, 44, 1)',
   },
   dark: {
-    text: '#F8FAFC', // Off-white para não "estourar" na tela escura
-    disabledText: '#64748B',
-    background: '#0F172A', // Slate escuro (Azul acinzentado super premium)
-    navHeaderBackgroud: '#0F172A',
+    text: '#F0F1F0',
+    disabledText: '#949994',
+    background: '#1C1D1C',
+    navHeaderBackgroud: '#2E312E',
     tint: tintColorDark,
-    secondary: '#FBBF24', // Âmbar pastel para contraste
-    icon: '#94A3B8',
-    tabIconDefault: '#64748B',
+    secondary: '#A0522D', // Bronze Terroso
+    icon: '#C4C8C4',
+    tabIconDefault: '#949994',
     tabIconSelected: tintColorDark,
-    line: '#1E293B',
+    line: '#444744',
     overlay: 'rgba(0, 0, 0, 0.6)',
-    inputBackground: '#1E293B', // Superfícies elevadas
-    inputBorder: '#334155',
+    inputBackground: '#2E312E',
+    inputBorder: '#444744',
     inputError: '#F87171',
-    inputPlaceholder: '#64748B',
+    inputPlaceholder: '#949994',
     errorText: '#FCA5A5',
     link: '#60A5FA',
-    confirmationButtonBackground: '#059669',
-    cancelButtonBackground: '#1E293B',
+    confirmationButtonBackground: '#15803D',
+    cancelButtonBackground: '#2E312E',
     destructiveButtonBackground: '#EF4444',
-    neutralButtonBackground: '#1E293B',
-    neutralButtonText: '#CBD5E1',
-    card: '#1E293B',
-    cardBorder: '#334155',
+    neutralButtonBackground: '#2E312E',
+    neutralButtonText: '#F0F1F0',
+    card: '#2E312E',
+    cardBorder: '#444744',
     danger: '#EF4444',
-    grey: '#334155',
-    surface: '#1E293B',
-    activeTrackColor: '#3730A3',
-    deactiveTrackColor: '#334155',
+    grey: '#444744',
+    surface: '#2E312E',
+    activeTrackColor: '#3D5A3E',
+    deactiveTrackColor: '#444744',
     activeThumbColor: tintColorDark,
-    deactiveThumbColor: '#94A3B8',
+    deactiveThumbColor: '#C4C8C4',
     blue: '#60A5FA',
-    logoBackground: '#312E81',
-    mapRegionStrokeColor: '#818CF8',
-    mapRegionFillColor: 'rgba(129, 140, 248, 0.25)',
+    logoBackground: '#1A2408',
+    mapRegionStrokeColor: '#97D69B',
+    mapRegionFillColor: 'rgba(151, 214, 155, 0.25)',
     warning: '#FBBF24',
-    iconBackground: '#1E293B',
-    plantCircle: 'rgba(128, 221, 131, 1)',
+    iconBackground: '#2E312E',
+    plantCircle: 'rgba(151, 214, 155, 1)',
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
+    sans: 'Manrope', // Ajustado para a fonte do sistema
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
-    sans: 'normal',
+    sans: 'Manrope',
     serif: 'serif',
     rounded: 'normal',
     mono: 'monospace',
   },
   web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    sans: "'Manrope', system-ui, -apple-system, sans-serif",
     serif: "Times New Roman, 'Georgia', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+    rounded: "'SF Pro Rounded', sans-serif",
+    mono: 'SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   },
 });

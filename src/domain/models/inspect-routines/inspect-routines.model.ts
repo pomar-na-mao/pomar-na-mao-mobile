@@ -8,7 +8,6 @@ export interface SupabaseRoutine {
   created_at: string;
   description: string;
   updated_at: string;
-  is_review_started?: string;
   users: { full_name: string; email: string };
 }
 

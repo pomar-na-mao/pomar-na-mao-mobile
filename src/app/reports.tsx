@@ -26,9 +26,7 @@ export default function Reports() {
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={styles.content}
-          refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={refresh} />
-          }
+          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refresh} />}
         >
           {data && (
             <>
