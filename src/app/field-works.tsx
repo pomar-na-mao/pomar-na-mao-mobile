@@ -7,6 +7,7 @@ import { Href, useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WeatherCard } from '@/ui/shared/components/weather-card';
 
 const cards: {
   id: string;
@@ -61,38 +62,7 @@ export default function FieldWorks() {
         <View style={styles.topEmptySpace}></View>
 
         <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-          <ThemedView style={[styles.weatherCard, { backgroundColor: Colors[theme].tint }]}>
-            <View style={styles.blurCircle} />
-            <View style={styles.weatherTopHeader}>
-              <MaterialIcons name="location-on" size={16} color="#FFFFFF" style={{ opacity: 0.8 }} />
-              <ThemedText style={styles.weatherLocation}>FAZENDA SANTA HELENA • BLOCO B</ThemedText>
-            </View>
-
-            <View style={styles.weatherMain}>
-              <View>
-                <ThemedText style={styles.temperature}>24°C</ThemedText>
-                <ThemedText style={styles.weatherStatic}>Céu limpo • Umidade 45%</ThemedText>
-              </View>
-            </View>
-
-            <View style={styles.weatherGrid}>
-              <View style={styles.weatherItem}>
-                <MaterialIcons name="wb-sunny" size={28} color={Colors[theme].secondary ?? '#FC8F34'} />
-                <ThemedText style={styles.weatherLabel}>UV INDEX</ThemedText>
-                <ThemedText style={styles.weatherValue}>Alto</ThemedText>
-              </View>
-              <View style={styles.weatherItem}>
-                <MaterialIcons name="air" size={28} color="#aad0a6" />
-                <ThemedText style={styles.weatherLabel}>VENTO</ThemedText>
-                <ThemedText style={styles.weatherValue}>12 km/h</ThemedText>
-              </View>
-              <View style={styles.weatherItem}>
-                <MaterialIcons name="water-drop" size={28} color="#e7bdb1" />
-                <ThemedText style={styles.weatherLabel}>PRECIP.</ThemedText>
-                <ThemedText style={styles.weatherValue}>0%</ThemedText>
-              </View>
-            </View>
-          </ThemedView>
+          <WeatherCard />
           {cards.map((card) => (
             <TouchableOpacity
               key={card.id}
@@ -138,82 +108,6 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 24,
     gap: 16,
-  },
-  weatherCard: {
-    padding: 32,
-    paddingTop: 40, // Increased top padding
-    borderRadius: 24,
-    marginBottom: 8,
-    position: 'relative',
-    overflow: 'hidden', // Contains the blurCircle
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  blurCircle: {
-    position: 'absolute',
-    top: -60,
-    right: -60,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(252, 143, 52, 0.15)',
-  },
-  weatherTopHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-  },
-  weatherLocation: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    opacity: 0.8,
-  },
-  weatherMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    gap: 16,
-  },
-  temperature: {
-    fontSize: 44,
-    lineHeight: 52, // Explicit line height to avoid top clipping
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  weatherStatic: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#c6edc1',
-  },
-  weatherGrid: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    gap: 32,
-  },
-  weatherItem: {
-    alignItems: 'center',
-  },
-  weatherLabel: {
-    fontSize: 10,
-    marginTop: 4,
-    marginBottom: 2,
-    color: '#FFFFFF',
-    opacity: 0.7,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  weatherValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
   card: {
     width: '100%',
