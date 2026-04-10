@@ -26,7 +26,7 @@ export default function FieldWorks() {
   );
 
   return (
-    <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
       <ThemedView style={{ flex: 1 }}>
         <View style={styles.container}>
           <View style={styles.header}>
