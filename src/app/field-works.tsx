@@ -2,12 +2,12 @@ import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { ThemedView } from '@/shared/themes/themed-view';
+import { WeatherCard } from '@/ui/shared/components/weather-card';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Href, useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WeatherCard } from '@/ui/shared/components/weather-card';
 
 const cards: {
   id: string;
@@ -19,28 +19,28 @@ const cards: {
   {
     id: 'inspect-routine',
     title: 'Insp. planta',
-    subtitle: 'Avalie a saúde das árvores e pragas.',
+    subtitle: 'Inicie uma inspeção de rotina dentro de uma zona!',
     route: '/inspect-routine',
     icon: 'assignment',
   },
   {
     id: 'inspect-annotation',
     title: 'Insp. anotação',
-    subtitle: 'Registre observações e diário de campo.',
+    subtitle: 'Registre ocorrências identificadas em campo!',
     route: '/inspect-annotation',
     icon: 'event-note',
   },
   {
     id: 'pulverization',
     title: 'Pulverização',
-    subtitle: 'Inicie o controle químico ou orgânico.',
+    subtitle: 'Registre sua rota durante uma pulverização para registrar!',
     route: null,
     icon: 'water-drop',
   },
   {
     id: 'harvest',
     title: 'Colheita',
-    subtitle: 'Registre a produção e qualidade.',
+    subtitle: 'Registre sua rota durante a colheita para registrar!',
     route: null,
     icon: 'shopping-basket',
   },
