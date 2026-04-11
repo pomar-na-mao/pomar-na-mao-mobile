@@ -1,67 +1,87 @@
-import type { HorizontalTab } from '@/domain/models/shared/horizontal-tab.model';
-import { fieldWorks } from '@/shared/constants/values';
+import { Colors } from '@/shared/constants/theme';
+import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { ThemedView } from '@/shared/themes/themed-view';
-import { InspectAnnotation } from '@/ui/inspect-annotation/components/inspect-annotation';
-import { InspectAnnotationProvider } from '@/ui/inspect-annotation/view-models/useInspectAnnotation';
-import { InspectRoutineList } from '@/ui/inspect-routines/components/inspect-routine-list';
-import { InspectRoutineProvider } from '@/ui/inspect-routines/view-models/useInspectRoutine';
-import HorizontalTabBar from '@/ui/shared/components/horizontal-tabbar';
-import InDevelopmentTask from '@/ui/shared/components/in-development-task';
-import React, { useCallback, useState } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { Href, useRouter } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WeatherCard } from '@/ui/shared/components/weather-card';
+
+const cards: {
+  id: string;
+  title: string;
+  subtitle: string;
+  route: Href | null;
+  icon: keyof typeof MaterialIcons.glyphMap;
+}[] = [
+  {
+    id: 'inspect-routine',
+    title: 'Insp. planta',
+    subtitle: 'Avalie a saúde das árvores e pragas.',
+    route: '/inspect-routine',
+    icon: 'assignment',
+  },
+  {
+    id: 'inspect-annotation',
+    title: 'Insp. anotação',
+    subtitle: 'Registre observações e diário de campo.',
+    route: '/inspect-annotation',
+    icon: 'event-note',
+  },
+  {
+    id: 'pulverization',
+    title: 'Pulverização',
+    subtitle: 'Inicie o controle químico ou orgânico.',
+    route: null,
+    icon: 'water-drop',
+  },
+  {
+    id: 'harvest',
+    title: 'Colheita',
+    subtitle: 'Registre a produção e qualidade.',
+    route: null,
+    icon: 'shopping-basket',
+  },
+];
 
 export default function FieldWorks() {
-  const [activeTab, setActiveTab] = useState(fieldWorks[0]);
+  const router = useRouter();
+  const theme = useColorScheme() ?? 'light';
 
-  const onTabChangeHandler = (tab: HorizontalTab) => {
-    setActiveTab(tab);
+  const handlePress = (route: Href | null) => {
+    if (route) {
+      router.push(route);
+    }
   };
 
-  const getTabStyle = useCallback(
-    (tabKey: string): ViewStyle =>
-      activeTab.key === tabKey ? { flex: 1, display: 'flex' } : { flex: 0, display: 'none' },
-    [activeTab.key],
-  );
-
   return (
-    <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
       <ThemedView style={{ flex: 1 }}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <ThemedText type="defaultSemiBold">Trabalhos em Campo</ThemedText>
-            <ThemedText type="subtitle">Clique no item para visualizar</ThemedText>
-          </View>
-        </View>
+        <View style={styles.topEmptySpace}></View>
 
-        <HorizontalTabBar tabs={fieldWorks} onTabChange={onTabChangeHandler} />
-
-        <ThemedView style={styles.contentContainer}>
-          <View style={getTabStyle('inspect-routine')}>
-            <InspectRoutineProvider>
-              <InspectRoutineList />
-            </InspectRoutineProvider>
-          </View>
-
-          <View style={getTabStyle('inspect-annotation')}>
-            <InspectAnnotationProvider>
-              <InspectAnnotation />
-            </InspectAnnotationProvider>
-          </View>
-
-          <View style={getTabStyle('pulverization')}>
-            <InDevelopmentTask />
-          </View>
-
-          <View style={getTabStyle('inspect-route')}>
-            <InDevelopmentTask />
-          </View>
-
-          <View style={getTabStyle('harvest')}>
-            <InDevelopmentTask />
-          </View>
-        </ThemedView>
+        <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+          <WeatherCard />
+          {cards.map((card) => (
+            <TouchableOpacity
+              key={card.id}
+              style={[styles.card, { backgroundColor: Colors[theme].card, borderColor: Colors[theme].cardBorder }]}
+              onPress={() => handlePress(card.route)}
+              activeOpacity={card.route ? 0.7 : 1}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: Colors[theme].background }]}>
+                <MaterialIcons name={card.icon} size={32} color={Colors[theme].tint} />
+              </View>
+              <View style={styles.cardTextContainer}>
+                <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+                  {card.title}
+                </ThemedText>
+                <ThemedText style={styles.cardSubtitle}>{card.subtitle}</ThemedText>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </ThemedView>
     </SafeAreaView>
   );
@@ -80,24 +100,44 @@ const styles = StyleSheet.create({
     marginTop: 18,
     width: '100%',
   },
+  topEmptySpace: {
+    height: 12,
+  },
   contentContainer: {
-    flex: 1,
     paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 16,
+  },
+  card: {
     width: '100%',
-  },
-  placeholderContent: {
-    flex: 1,
+    minHeight: 120,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    position: 'relative',
   },
-  tabItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+  iconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 20,
   },
-  disabledTabItem: {
-    opacity: 0.4,
+  cardTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+    opacity: 0.7,
   },
 });

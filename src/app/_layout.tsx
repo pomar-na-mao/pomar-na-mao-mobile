@@ -2,7 +2,6 @@ import { initializeDatabases } from '@/data/services/sqlite/initialize-sqlite-da
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme';
 
-import { AuthProvider } from '@/ui/auth/view-models/useAuth';
 import { AlertBox } from '@/ui/shared/components/alert-box';
 import { LoadingOverlay } from '@/ui/shared/components/LoadingOverlay';
 import { SplashScreenProvider } from '@/ui/shared/hooks/useSplashScreen';
@@ -19,31 +18,21 @@ type ExpoRouterPath = RelativePathString | ExternalPathString;
 
 const queryClient = new QueryClient();
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
-
 function MainLayout() {
   const theme = useColorScheme() ?? 'light';
+
   return (
     <>
       <Stack screenOptions={{ animation: 'fade' }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)/forgot-password" options={{ headerShown: false }} />
-        <Stack.Screen name="field-works" options={ReturnNavigationOptions('/(auth)/login' as ExpoRouterPath, theme)} />
+        <Stack.Screen name="field-works" options={{ headerShown: false }} />
+        <Stack.Screen name="inspect-routine" options={{ title: 'Rotina de Inspeção' }} />
+        <Stack.Screen name="inspect-annotation" options={{ title: 'Rotina de Anotação' }} />
+
         <Stack.Screen
           name="(inspect-routine)/inspect-routine-in-action-detection/[id]"
-          options={ReturnNavigationOptions('/field-works' as ExpoRouterPath, theme)}
+          options={ReturnNavigationOptions('/inspect-routine' as ExpoRouterPath, theme)}
         />
-        <Stack.Screen
-          name="(inspect-routine)/inspect-routine-plants-sync-details/[id]"
-          options={ReturnNavigationOptions('/syncs' as ExpoRouterPath, theme)}
-        />
-        <Stack.Screen name="reports" options={ReturnNavigationOptions('../(tabs)/' as ExpoRouterPath, theme)} />
-        <Stack.Screen name="syncs" options={ReturnNavigationOptions('../(tabs)/' as ExpoRouterPath, theme)} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
     </>
@@ -59,11 +48,9 @@ export default function RootLayout() {
         <SplashScreenProvider>
           <QueryClientProvider client={queryClient}>
             <GestureHandlerRootView>
-              <AuthProvider>
-                <MainLayout />
-                <LoadingOverlay />
-                <AlertBox />
-              </AuthProvider>
+              <MainLayout />
+              <LoadingOverlay />
+              <AlertBox />
             </GestureHandlerRootView>
           </QueryClientProvider>
         </SplashScreenProvider>

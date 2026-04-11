@@ -1,5 +1,4 @@
-import { LoadingOverlay } from '@/ui/shared/components/LoadingOverlay';
-import { View } from 'react-native';
+import { Redirect } from 'expo-router';
 
 if (__DEV__) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -7,9 +6,5 @@ if (__DEV__) {
 }
 
 export default function Index() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <LoadingOverlay />
-    </View>
-  );
+  return <Redirect href="/field-works" />;
 }
