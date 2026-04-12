@@ -3,16 +3,17 @@ import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
-import { AddPlantProvider, useAddPlant } from '../../view-models/useAddPlant';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useAddPlant } from '../../view-models/useAddPlant';
 
-const AddPlantContent = () => {
+export const AddPlant = () => {
   const { initialRegion, userLocation, permissionDenied, submitPlant, sendPlants, deletePendingPlants, pendingCount } =
     useAddPlant();
+
   const { isLoading } = useLoadingStore();
 
   const [isModalVisible, setModalVisible] = useState(false);
@@ -194,12 +195,6 @@ const AddPlantContent = () => {
     </View>
   );
 };
-
-export const AddPlant = () => (
-  <AddPlantProvider>
-    <AddPlantContent />
-  </AddPlantProvider>
-);
 
 const styles = StyleSheet.create({
   container: {
