@@ -13,6 +13,7 @@ import React, { createContext, useContext } from 'react';
 interface InspectAnnotationContextProps {
   submitAnnotation: (data: PlantAnnotationData) => Promise<void>;
   sendAnnotations: () => Promise<void>;
+  deleteAnnotations: () => Promise<void>;
   pendingCount: number;
 }
 
@@ -126,8 +127,28 @@ export const InspectAnnotationProvider = ({ children }: { children: React.ReactN
     }
   }
 
+  async function deleteAnnotations(): Promise<void> {
+    setIsLoading(true);
+    try {
+      const annotations = await searchAll();
+      if (annotations && annotations.length > 0) {
+        for (const a of annotations) {
+          await remove(a.id);
+        }
+        setMessage('Anotações descartadas com sucesso.');
+        setIsVisible(true);
+      }
+      await refreshPendingCount();
+    } catch {
+      setMessage('Erro ao descartar anotações.');
+      setIsVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
-    <InspectAnnotationContext.Provider value={{ submitAnnotation, sendAnnotations, pendingCount }}>
+    <InspectAnnotationContext.Provider value={{ submitAnnotation, sendAnnotations, deleteAnnotations, pendingCount }}>
       {children}
     </InspectAnnotationContext.Provider>
   );

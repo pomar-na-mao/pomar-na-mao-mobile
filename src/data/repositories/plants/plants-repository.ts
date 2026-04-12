@@ -1,8 +1,6 @@
-import { inspectRoutinesService } from '@/data/services/inspect-routines/inspect-routines-service';
 import { plantsService } from '@/data/services/plants/plants-service';
 import type { InspectRoutineFilter } from '@/domain/models/inspect-routines/inspect-routines-search.schema';
-
-import type { SupabaseRoutine } from '@/domain/models/inspect-routines/inspect-routines.model';
+import type { PlantData } from '@/domain/models/shared/plant-data.model';
 
 class PlantsRepository {
   async findAll(filters: InspectRoutineFilter | null) {
@@ -18,13 +16,13 @@ class PlantsRepository {
   }
 
   async delete(id: string) {
-    const { data, error } = await inspectRoutinesService.delete(id);
+    const { data, error } = await plantsService.delete(id);
 
     return { data, error };
   }
 
-  async insert(routine: SupabaseRoutine) {
-    const { data, error } = await inspectRoutinesService.insert(routine);
+  async insert(plant: PlantData) {
+    const { data, error } = await plantsService.insert(plant);
 
     return { data, error };
   }

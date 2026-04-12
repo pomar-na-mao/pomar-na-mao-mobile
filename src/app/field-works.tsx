@@ -4,31 +4,41 @@ import { ThemedText } from '@/shared/themes/themed-text';
 import { ThemedView } from '@/shared/themes/themed-view';
 import { WeatherCard } from '@/ui/shared/components/weather-card';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Href, useRouter } from 'expo-router';
+import { useRouter, type RelativePathString } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { ExpoRouterPath } from './_layout';
 
-const cards: {
+interface CardItem {
   id: string;
   title: string;
   subtitle: string;
-  route: Href | null;
+  route: ExpoRouterPath | null;
   icon: keyof typeof MaterialIcons.glyphMap;
-}[] = [
+}
+
+const cards: CardItem[] = [
   {
     id: 'inspect-routine',
     title: 'Insp. planta',
     subtitle: 'Inicie uma inspeção de rotina dentro de uma zona!',
-    route: '/inspect-routine',
+    route: '/inspect-routine' as ExpoRouterPath,
     icon: 'assignment',
   },
   {
     id: 'inspect-annotation',
     title: 'Insp. anotação',
     subtitle: 'Registre ocorrências identificadas em campo!',
-    route: '/inspect-annotation',
+    route: '/inspect-annotation' as ExpoRouterPath,
     icon: 'event-note',
+  },
+  {
+    id: 'add-plant',
+    title: 'Adicionar planta',
+    subtitle: 'Adicione uma nova planta na base!',
+    route: '/add-plant' as ExpoRouterPath,
+    icon: 'local-florist',
   },
   {
     id: 'pulverization',
@@ -50,9 +60,9 @@ export default function FieldWorks() {
   const router = useRouter();
   const theme = useColorScheme() ?? 'light';
 
-  const handlePress = (route: Href | null) => {
+  const handlePress = (route: string | null) => {
     if (route) {
-      router.push(route);
+      router.push(route as RelativePathString);
     }
   };
 

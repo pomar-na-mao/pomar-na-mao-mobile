@@ -3,12 +3,15 @@ import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { useInspectAnnotation } from '@/ui/inspect-annotation/view-models/useInspectAnnotation';
+import { useLoadingStore } from '@/shared/hooks/use-loading';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
+import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import { InspectAnnotationInsert } from '../inspect-annotation-insert';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 export const InspectAnnotation = () => {
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
@@ -18,7 +21,8 @@ export const InspectAnnotation = () => {
 
   const mapRef = useRef<MapView>(null);
   const theme = useColorScheme() ?? 'light';
-  const { sendAnnotations, pendingCount } = useInspectAnnotation();
+  const { sendAnnotations, deleteAnnotations, pendingCount } = useInspectAnnotation();
+  const { isLoading } = useLoadingStore();
 
   useEffect(() => {
     let mounted = true;
@@ -122,33 +126,73 @@ export const InspectAnnotation = () => {
           showsUserLocation={false}
           showsMyLocationButton={false}
         >
-          <Marker
+          <UserLocationMarker
             coordinate={{
               latitude: userLocation.coords.latitude,
               longitude: userLocation.coords.longitude,
             }}
-            title="Você está aqui"
           />
         </MapView>
       </View>
 
       <View style={styles.buttonContainer}>
+        {pendingCount > 0 && (
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+            <TouchableOpacity
+              style={[
+                styles.annotateButton,
+                {
+                  flex: 1,
+                  backgroundColor: Colors[theme].background,
+                  borderWidth: 1,
+                  borderColor: Colors[theme].tint,
+                  marginBottom: 0,
+                },
+              ]}
+              onPress={sendAnnotations}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={Colors[theme].tint} size="small" />
+              ) : (
+                <ThemedText style={[styles.annotateButtonText, { color: Colors[theme].tint }]}>
+                  Enviar pendentes ({pendingCount})
+                </ThemedText>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.annotateButton,
+                {
+                  width: 50,
+                  backgroundColor: Colors[theme].background,
+                  borderWidth: 1,
+                  borderColor: '#ef4444',
+                  marginBottom: 0,
+                  paddingVertical: 0,
+                },
+              ]}
+              onPress={deleteAnnotations}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#ef4444" size="small" />
+              ) : (
+                <FontAwesome name="trash-o" size={24} color="#ef4444" />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         <TouchableOpacity
           style={[styles.annotateButton, { backgroundColor: Colors[theme].tint }]}
           onPress={() => setShowAnnotationModal(true)}
           activeOpacity={0.8}
         >
           <ThemedText style={styles.annotateButtonText}>Anotar</ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.annotateButton, { backgroundColor: Colors[theme].secondary }]}
-          onPress={sendAnnotations}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={styles.annotateButtonText}>
-            Enviar {pendingCount > 0 ? `(${pendingCount})` : ''}
-          </ThemedText>
         </TouchableOpacity>
       </View>
     </View>
