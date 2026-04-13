@@ -2,45 +2,55 @@ import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { ThemedView } from '@/shared/themes/themed-view';
+import { WeatherCard } from '@/ui/shared/components/weather-card';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Href, useRouter } from 'expo-router';
+import { useRouter, type RelativePathString } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WeatherCard } from '@/ui/shared/components/weather-card';
+import type { ExpoRouterPath } from './_layout';
 
-const cards: {
+interface CardItem {
   id: string;
   title: string;
   subtitle: string;
-  route: Href | null;
+  route: ExpoRouterPath | null;
   icon: keyof typeof MaterialIcons.glyphMap;
-}[] = [
+}
+
+const cards: CardItem[] = [
   {
     id: 'inspect-routine',
     title: 'Insp. planta',
-    subtitle: 'Avalie a saúde das árvores e pragas.',
-    route: '/inspect-routine',
+    subtitle: 'Inicie uma inspeção de rotina dentro de uma zona!',
+    route: '/inspect-routine' as ExpoRouterPath,
     icon: 'assignment',
   },
   {
     id: 'inspect-annotation',
     title: 'Insp. anotação',
-    subtitle: 'Registre observações e diário de campo.',
-    route: '/inspect-annotation',
+    subtitle: 'Registre ocorrências identificadas em campo!',
+    route: '/inspect-annotation' as ExpoRouterPath,
     icon: 'event-note',
+  },
+  {
+    id: 'add-plant',
+    title: 'Adicionar planta',
+    subtitle: 'Adicione uma nova planta na base!',
+    route: '/add-plant' as ExpoRouterPath,
+    icon: 'local-florist',
   },
   {
     id: 'pulverization',
     title: 'Pulverização',
-    subtitle: 'Inicie o controle químico ou orgânico.',
+    subtitle: 'Registre sua rota durante uma pulverização para registrar!',
     route: null,
     icon: 'water-drop',
   },
   {
     id: 'harvest',
     title: 'Colheita',
-    subtitle: 'Registre a produção e qualidade.',
+    subtitle: 'Registre sua rota durante a colheita para registrar!',
     route: null,
     icon: 'shopping-basket',
   },
@@ -50,9 +60,9 @@ export default function FieldWorks() {
   const router = useRouter();
   const theme = useColorScheme() ?? 'light';
 
-  const handlePress = (route: Href | null) => {
+  const handlePress = (route: string | null) => {
     if (route) {
-      router.push(route);
+      router.push(route as RelativePathString);
     }
   };
 

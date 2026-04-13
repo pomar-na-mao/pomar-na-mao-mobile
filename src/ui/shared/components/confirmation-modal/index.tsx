@@ -42,7 +42,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 <ThemedText style={[styles.buttonText, { color: Colors[theme].neutralButtonText }]}>Não</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.confirmButton, { backgroundColor: Colors[theme].destructiveButtonBackground }]}
+                style={[styles.confirmButton, { backgroundColor: Colors[theme].tint }]}
                 onPress={onConfirm}
               >
                 <ThemedText style={[styles.buttonText, { color: '#FFFFFF' }]}>Sim</ThemedText>

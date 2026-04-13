@@ -3,6 +3,7 @@ import { type SQLiteDatabase } from 'expo-sqlite';
 export async function dropDatabases(database: SQLiteDatabase) {
   await database.execAsync(`DROP TABLE IF EXISTS inspect_routines;`);
   await database.execAsync(`DROP TABLE IF EXISTS inspect_annotations;`);
+  await database.execAsync(`DROP TABLE IF EXISTS new_plants;`);
 }
 
 export async function initializeDatabases(database: SQLiteDatabase) {
@@ -27,6 +28,19 @@ export async function initializeDatabases(database: SQLiteDatabase) {
       information TEXT NOT NULL,
       occurrences TEXT NOT NULL,
       created_at TEXT NOT NULL
+      );
+    `,
+  );
+
+  await database.execAsync(
+    `
+     CREATE TABLE IF NOT EXISTS new_plants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      latitude REAL,
+      longitude REAL,
+      gps_timestamp INTEGER,
+      created_at TEXT NOT NULL,
+      region TEXT NOT NULL
       );
     `,
   );

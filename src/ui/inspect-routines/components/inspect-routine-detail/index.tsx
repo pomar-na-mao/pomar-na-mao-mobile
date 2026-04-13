@@ -1,7 +1,7 @@
 import { detectNearestPlant } from '@/utils/geolocation/geolocation-math';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { useInspectRoutinesStore } from '@/data/store/inspect-routines/use-inspect-routines-store';
@@ -138,25 +138,6 @@ export const InspectRoutineDetail = () => {
     );
   }
 
-  const goToPoint = (latitude: number, longitude: number) => {
-    setTimeout(() => {
-      const _location = {
-        coords: {
-          latitude,
-          longitude,
-          altitude: 0,
-          accuracy: 1,
-          altitudeAccuracy: 1,
-          heading: 0,
-          speed: 0,
-        },
-        timestamp: Date.now(),
-      } as Location.LocationObject;
-
-      setLocation(_location);
-    }, 3000);
-  };
-
   return (
     <View style={{ flex: 1, justifyContent: 'space-between' }}>
       <View style={styles.map}>
@@ -180,7 +161,7 @@ export const InspectRoutineDetail = () => {
         )}
       </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 2 }}>
+      {/* <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 2 }}>
         <TouchableOpacity
           style={{ padding: 8, backgroundColor: 'lightgray', borderRadius: 4 }}
           onPress={() => goToPoint(-21.23511, -47.790248)}
@@ -199,7 +180,7 @@ export const InspectRoutineDetail = () => {
         >
           <Text>Go to P3</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
       {location ? <InspectRoutineNearestPlantCard location={location} /> : <CardSkeleton />}
     </View>
   );
