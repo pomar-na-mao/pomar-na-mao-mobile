@@ -16,7 +16,7 @@
 
 ## 📱 Overview
 
-**Pomar na Mão** (Portuguese for "Fruit in Hand") is a comprehensive mobile application designed for farmers and agricultural professionals to efficiently manage their orchards and farms. The app enables field inspectors to perform plant inspections using GPS-based geolocation, track the health status of plants, and synchronize data both online and offline.
+**Pomar na Mão** is a comprehensive mobile application designed for farmers and agricultural professionals to efficiently manage their orchards and farms. The app enables field inspectors to perform plant inspections using GPS-based geolocation, track the health status of plants, and synchronize data both online and offline.
 
 ### Key Features
 
