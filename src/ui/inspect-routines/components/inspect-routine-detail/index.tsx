@@ -1,7 +1,7 @@
-import { detectNearestPlant } from '@/utils/geolocation/geolocation-math';
+import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolocation/geolocation-math';
 import * as Location from 'expo-location';
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { useInspectRoutinesStore } from '@/data/store/inspect-routines/use-inspect-routines-store';
@@ -15,28 +15,59 @@ import { RoutineMapDetailLoader } from '../routine-map-detail-loader';
 import { RoutinePlantsCircles } from '../routine-plants-circles';
 import { styles } from './styles';
 
-// For testing: set a mock location
-/* 
-const goToPoint = (latitude: number, longitude: number) => {
-    setTimeout(() => {
-      const _location = {
-        coords: {
-          latitude,
-          longitude,
-          altitude: 0,
-          accuracy: 1,
-          altitudeAccuracy: 1,
-          heading: 0,
-          speed: 0,
-        },
-        timestamp: Date.now(),
-      } as Location.LocationObject;
+const CAMERA_ANIMATION_DURATION_MS = 500;
+const CAMERA_ANIMATION_INTERVAL_MS = 350;
+const INITIAL_REGION_DELTA = 0.001;
+const LOCATION_DISTANCE_INTERVAL_METERS = 1;
+const LOCATION_TIME_INTERVAL_MS = 500;
+const MARKER_ANIMATION_DURATION_MS = 450;
+const MIN_LOCATION_CHANGE_METERS = 0.35;
+const NEAREST_PLANT_SWITCH_MARGIN_METERS = 0.75;
+const MOCK_LOCATION_UPDATE_INTERVAL_MS = 500;
+const MOCK_ROUTE_STEPS_BETWEEN_POINTS = 8;
 
-      setLocation(_location);
+const createMockLocation = (latitude: number, longitude: number): Location.LocationObject => ({
+  coords: {
+    latitude,
+    longitude,
+    altitude: 0,
+    accuracy: 1,
+    altitudeAccuracy: 1,
+    heading: 0,
+    speed: 0,
+  },
+  timestamp: Date.now(),
+});
 
-    }, 3000);
-  };
-*/
+const buildMockRoute = (
+  start: { latitude: number; longitude: number },
+  plants: PlantData[],
+): { latitude: number; longitude: number }[] => {
+  const routeTargets = [
+    start,
+    ...plants.slice(0, 6).map((plant) => ({
+      latitude: plant.latitude,
+      longitude: plant.longitude,
+    })),
+  ];
+
+  return routeTargets.flatMap((target, targetIndex) => {
+    const previousTarget = routeTargets[targetIndex - 1];
+
+    if (!previousTarget) {
+      return [target];
+    }
+
+    return Array.from({ length: MOCK_ROUTE_STEPS_BETWEEN_POINTS }, (_, stepIndex) => {
+      const progress = (stepIndex + 1) / MOCK_ROUTE_STEPS_BETWEEN_POINTS;
+
+      return {
+        latitude: previousTarget.latitude + (target.latitude - previousTarget.latitude) * progress,
+        longitude: previousTarget.longitude + (target.longitude - previousTarget.longitude) * progress,
+      };
+    });
+  });
+};
 
 export const InspectRoutineDetail = () => {
   const [initialLocation, setInitialLocation] = useState<Position | null>(null);
@@ -46,75 +77,241 @@ export const InspectRoutineDetail = () => {
     useInspectRoutinesStore();
 
   const mapRef = useRef<MapView>(null);
+  const userMarkerRef = useRef<React.ElementRef<typeof Marker>>(null);
+  const lastCameraAnimationAtRef = useRef(0);
+  const lastLocationRef = useRef<Location.LocationObject | null>(null);
+  const isMockingLocationRef = useRef(false);
+  const mockWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const theme = useColorScheme() ?? 'light';
 
-  useEffect(() => {
-    if (selectedInspection) {
-      const plantsData = JSON.parse(selectedInspection.plant_data as string) as PlantData[];
+  const plantsData = useMemo<PlantData[]>(() => {
+    const routinePlants = selectedInspection?.plant_data;
 
-      if (location && plantsData && isDetecting) {
-        const nearestPlant = detectNearestPlant(location, plantsData);
-        setNearestPlant(nearestPlant);
-      }
+    if (!routinePlants) {
+      return [];
     }
-  }, [location?.coords.latitude, location?.coords.longitude, initialLocation, selectedInspection, isDetecting]);
+
+    if (Array.isArray(routinePlants)) {
+      return routinePlants;
+    }
+
+    try {
+      const parsedPlantsData = JSON.parse(routinePlants) as PlantData[];
+      return Array.isArray(parsedPlantsData) ? parsedPlantsData : [];
+    } catch {
+      return [];
+    }
+  }, [selectedInspection?.plant_data]);
+
+  const animateMapToCoordinate = useCallback((coordinate: { latitude: number; longitude: number }) => {
+    userMarkerRef.current?.animateMarkerToCoordinate(coordinate, MARKER_ANIMATION_DURATION_MS);
+
+    const now = Date.now();
+
+    if (now - lastCameraAnimationAtRef.current < CAMERA_ANIMATION_INTERVAL_MS) {
+      return;
+    }
+
+    lastCameraAnimationAtRef.current = now;
+    mapRef.current?.animateCamera({ center: coordinate }, { duration: CAMERA_ANIMATION_DURATION_MS });
+  }, []);
+
+  const applyLocationUpdate = useCallback(
+    (newLocation: Location.LocationObject) => {
+      const coordinate = {
+        latitude: newLocation.coords.latitude,
+        longitude: newLocation.coords.longitude,
+      };
+
+      if (lastLocationRef.current) {
+        const previousCoordinate = {
+          latitude: lastLocationRef.current.coords.latitude,
+          longitude: lastLocationRef.current.coords.longitude,
+        };
+        const movedDistance = twoPointsDistance(previousCoordinate, coordinate);
+
+        if (movedDistance < MIN_LOCATION_CHANGE_METERS) {
+          return;
+        }
+      }
+
+      lastLocationRef.current = newLocation;
+      setLocation(newLocation);
+      animateMapToCoordinate(coordinate);
+    },
+    [animateMapToCoordinate, setLocation],
+  );
+
+  const updateCurrentLocation = useCallback(async () => {
+    const currentLocation = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Highest,
+      distanceInterval: LOCATION_DISTANCE_INTERVAL_METERS,
+    });
+
+    const { latitude, longitude } = currentLocation.coords;
+
+    lastLocationRef.current = currentLocation;
+    setInitialLocation({
+      latitude,
+      longitude,
+      latitudeDelta: INITIAL_REGION_DELTA,
+      longitudeDelta: INITIAL_REGION_DELTA,
+    });
+    setLocation(currentLocation);
+  }, [setLocation]);
+
+  const stopMockWalk = useCallback(() => {
+    if (mockWalkIntervalRef.current) {
+      clearInterval(mockWalkIntervalRef.current);
+      mockWalkIntervalRef.current = null;
+    }
+
+    isMockingLocationRef.current = false;
+  }, []);
+
+  const moveToMockCoordinate = useCallback(
+    (latitude: number, longitude: number) => {
+      if (!__DEV__) {
+        return;
+      }
+
+      isMockingLocationRef.current = true;
+      applyLocationUpdate(createMockLocation(latitude, longitude));
+    },
+    [applyLocationUpdate],
+  );
+
+  const startMockWalk = useCallback(() => {
+    if (!__DEV__ || !location || plantsData.length === 0) {
+      return;
+    }
+
+    stopMockWalk();
+    isMockingLocationRef.current = true;
+
+    const route = buildMockRoute(
+      {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      },
+      plantsData,
+    );
+    let routeIndex = 0;
+
+    mockWalkIntervalRef.current = setInterval(() => {
+      const nextCoordinate = route[routeIndex];
+
+      if (!nextCoordinate) {
+        stopMockWalk();
+        return;
+      }
+
+      applyLocationUpdate(createMockLocation(nextCoordinate.latitude, nextCoordinate.longitude));
+      routeIndex += 1;
+    }, MOCK_LOCATION_UPDATE_INTERVAL_MS);
+  }, [applyLocationUpdate, location, plantsData, stopMockWalk]);
+
+  useEffect(() => {
+    if (!location || !isDetecting || plantsData.length === 0) {
+      return;
+    }
+
+    const nearestPlantDetection = detectNearestPlantWithDistance(location, plantsData);
+
+    if (!nearestPlantDetection) {
+      setNearestPlant(null);
+      return;
+    }
+
+    if (!nearestPlant) {
+      setNearestPlant(nearestPlantDetection.plant);
+      return;
+    }
+
+    if (nearestPlant.id === nearestPlantDetection.plant.id) {
+      if (nearestPlant !== nearestPlantDetection.plant) {
+        setNearestPlant(nearestPlantDetection.plant);
+      }
+
+      return;
+    }
+
+    const currentNearestPlant = plantsData.find((plant) => plant.id === nearestPlant.id);
+
+    if (!currentNearestPlant) {
+      setNearestPlant(nearestPlantDetection.plant);
+      return;
+    }
+
+    const userPoint = {
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+    };
+    const currentNearestDistance = twoPointsDistance(userPoint, {
+      latitude: currentNearestPlant.latitude,
+      longitude: currentNearestPlant.longitude,
+    });
+
+    if (currentNearestDistance - nearestPlantDetection.distance >= NEAREST_PLANT_SWITCH_MARGIN_METERS) {
+      setNearestPlant(nearestPlantDetection.plant);
+    }
+  }, [isDetecting, location?.coords.latitude, location?.coords.longitude, nearestPlant, plantsData, setNearestPlant]);
 
   useEffect(() => {
     let mounted = true;
-    let subscription!: Location.LocationSubscription;
+    let subscription: Location.LocationSubscription | null = null;
 
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
 
-      if (status && mounted) {
-        if (status !== 'granted') {
-          setPermissionDenied(true);
-          return;
-        }
+      if (!mounted) {
+        return;
+      }
 
-        await updateCurrentLocation();
+      if (status !== 'granted') {
+        setPermissionDenied(true);
+        return;
+      }
 
-        subscription = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.Highest,
-            distanceInterval: 3,
-          },
-          (newLocation) => {
-            setLocation(newLocation);
+      await updateCurrentLocation();
 
-            mapRef.current?.getCamera().then((camera) => {
-              camera.center = {
-                latitude: newLocation.coords.latitude,
-                longitude: newLocation.coords.longitude,
-              };
+      if (!mounted) {
+        return;
+      }
 
-              mapRef.current?.animateCamera(camera, { duration: 800 });
-            });
-          },
-        );
+      subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Highest,
+          distanceInterval: LOCATION_DISTANCE_INTERVAL_METERS,
+          timeInterval: LOCATION_TIME_INTERVAL_MS,
+        },
+        (newLocation) => {
+          if (__DEV__ && isMockingLocationRef.current) {
+            return;
+          }
+
+          applyLocationUpdate(newLocation);
+        },
+      );
+
+      if (!mounted) {
+        subscription.remove();
       }
     })();
 
     return () => {
       mounted = false;
 
-      if (subscription) subscription.remove();
+      if (subscription) {
+        subscription.remove();
+      }
 
+      stopMockWalk();
       setNearestPlant(null);
+      setLocation(null);
     };
-  }, []);
-
-  const updateCurrentLocation = async () => {
-    const currentLocation = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Highest,
-      distanceInterval: 0.5,
-    });
-
-    const { latitude, longitude } = currentLocation.coords;
-
-    setInitialLocation({ latitude, longitude, latitudeDelta: 0.001, longitudeDelta: 0.001 });
-  };
+  }, [applyLocationUpdate, setLocation, setNearestPlant, stopMockWalk, updateCurrentLocation]);
 
   if (permissionDenied) {
     return (
@@ -151,36 +348,41 @@ export const InspectRoutineDetail = () => {
           >
             {location ? (
               <Marker
+                ref={userMarkerRef}
                 coordinate={{ latitude: location.coords.latitude, longitude: location.coords.longitude }}
+                tracksViewChanges={false}
               ></Marker>
             ) : null}
-            <RoutinePlantsCircles nearestPlant={nearestPlant} selectedRoutine={selectedInspection} />
+            <RoutinePlantsCircles nearestPlantId={nearestPlant?.id ?? null} plantsData={plantsData} />
           </MapView>
         ) : (
           <RoutineMapDetailLoader />
         )}
+
+        {__DEV__ ? (
+          <View style={localStyles.mockControls}>
+            <TouchableOpacity activeOpacity={0.8} style={localStyles.mockButtonPrimary} onPress={startMockWalk}>
+              <Text style={localStyles.mockButtonPrimaryText}>Simular rota</Text>
+            </TouchableOpacity>
+
+            {plantsData.slice(0, 3).map((plant, index) => (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                key={plant.id}
+                style={localStyles.mockButton}
+                onPress={() => moveToMockCoordinate(plant.latitude, plant.longitude)}
+              >
+                <Text style={localStyles.mockButtonText}>P{index + 1}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity activeOpacity={0.8} style={localStyles.mockButton} onPress={stopMockWalk}>
+              <Text style={localStyles.mockButtonText}>Parar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </View>
 
-      {/* <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 2 }}>
-        <TouchableOpacity
-          style={{ padding: 8, backgroundColor: 'lightgray', borderRadius: 4 }}
-          onPress={() => goToPoint(-21.23511, -47.790248)}
-        >
-          <Text>Go to P1</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{ padding: 8, backgroundColor: 'lightgray', borderRadius: 4 }}
-          onPress={() => goToPoint(-21.234956, -47.790245)}
-        >
-          <Text>Go to P2</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{ padding: 8, backgroundColor: 'lightgray', borderRadius: 4 }}
-          onPress={() => goToPoint(-21.234767, -47.790236)}
-        >
-          <Text>Go to P3</Text>
-        </TouchableOpacity>
-      </View> */}
       {location ? <InspectRoutineNearestPlantCard location={location} /> : <CardSkeleton />}
     </View>
   );
@@ -193,5 +395,47 @@ const localStyles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     gap: 8,
+  },
+  mockControls: {
+    position: 'absolute',
+    right: 28,
+    bottom: 12,
+    left: 28,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+    zIndex: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(28, 29, 28, 0.1)',
+    borderRadius: 8,
+    backgroundColor: 'rgba(248, 249, 248, 0.92)',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  mockButton: {
+    minWidth: 40,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#E5E8E5',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  mockButtonPrimary: {
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#2B4C2C',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  mockButtonText: {
+    color: '#1C1D1C',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  mockButtonPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
