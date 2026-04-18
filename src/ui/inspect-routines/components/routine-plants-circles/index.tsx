@@ -1,50 +1,58 @@
-import type { SqliteRoutine } from '@/domain/models/inspect-routines/inspect-routines.model';
 import type { PlantData, PlantsMarker } from '@/domain/models/shared/plant-data.model';
 import { Colors } from '@/shared/constants/theme';
 
 import { buildPlantsMarkers } from '@/utils/transformation/build-plants-map-markers';
-import { useEffect, useState } from 'react';
-import { useColorScheme, View } from 'react-native';
+import { memo, useMemo } from 'react';
+import { useColorScheme } from 'react-native';
 import { Circle } from 'react-native-maps';
 
 interface RoutinePlantsCirclesProps {
-  nearestPlant: PlantData | null;
-  selectedRoutine: SqliteRoutine | null;
+  nearestPlantId: string | null;
+  plantsData: PlantData[];
 }
 
-export const RoutinePlantsCircles: React.FC<RoutinePlantsCirclesProps> = ({ nearestPlant, selectedRoutine }) => {
-  const [plantsMarkers, setPlantsMakers] = useState<PlantsMarker[]>([]);
+interface RoutinePlantCircleProps {
+  isNearestPlant: boolean;
+  marker: PlantsMarker;
+  theme: keyof typeof Colors;
+}
 
-  useEffect(() => {
-    const plantsData = JSON.parse(selectedRoutine?.plant_data as string) as PlantData[];
-    const plantsMarkers = buildPlantsMarkers(plantsData);
-    setPlantsMakers(plantsMarkers);
-  }, [selectedRoutine]);
+const RoutinePlantCircle = memo(({ isNearestPlant, marker, theme }: RoutinePlantCircleProps) => {
+  const circleColor = isNearestPlant ? Colors[theme].secondary : Colors[theme].plantCircle;
+
+  return (
+    <Circle
+      center={{
+        latitude: marker.latitude,
+        longitude: marker.longitude,
+      }}
+      radius={2}
+      strokeWidth={1}
+      strokeColor={circleColor}
+      fillColor={circleColor}
+    />
+  );
+});
+
+RoutinePlantCircle.displayName = 'RoutinePlantCircle';
+
+export const RoutinePlantsCircles: React.FC<RoutinePlantsCirclesProps> = memo(({ nearestPlantId, plantsData }) => {
+  const plantsMarkers = useMemo(() => buildPlantsMarkers(plantsData), [plantsData]);
 
   const theme = useColorScheme() ?? 'light';
 
   return (
-    <View>
-      {plantsMarkers && nearestPlant ? (
-        <>
-          {plantsMarkers.map((marker) => {
-            const isNearestPlant = marker.id === nearestPlant.id;
-            return (
-              <Circle
-                key={`${marker.id}-${nearestPlant.id}`}
-                center={{
-                  latitude: marker.latitude,
-                  longitude: marker.longitude,
-                }}
-                radius={2}
-                strokeWidth={1}
-                strokeColor={isNearestPlant ? Colors[theme].secondary : Colors[theme].plantCircle}
-                fillColor={isNearestPlant ? Colors[theme].secondary : Colors[theme].plantCircle}
-              />
-            );
-          })}
-        </>
-      ) : null}
-    </View>
+    <>
+      {plantsMarkers.map((marker) => (
+        <RoutinePlantCircle
+          key={marker.id}
+          marker={marker}
+          theme={theme}
+          isNearestPlant={marker.id === nearestPlantId}
+        />
+      ))}
+    </>
   );
-};
+});
+
+RoutinePlantsCircles.displayName = 'RoutinePlantsCircles';

@@ -39,7 +39,7 @@ export const useInspectRoutinesStore = create<InspectRoutinesStore>((set) => ({
   setSearchPlantsData: (searchPlantsData) => set(() => ({ searchPlantsData })),
 
   nearestPlant: null,
-  setNearestPlant: (nearestPlant) => set(() => ({ nearestPlant })),
+  setNearestPlant: (nearestPlant) => set((state) => (state.nearestPlant === nearestPlant ? state : { nearestPlant })),
 
   selectedInspection: null,
   setSelectedInspection: (selectedInspection) => set(() => ({ selectedInspection })),
