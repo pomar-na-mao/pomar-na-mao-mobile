@@ -45,7 +45,7 @@ export const RoutinePlantsCircles: React.FC<RoutinePlantsCirclesProps> = memo(({
     <>
       {plantsMarkers.map((marker) => (
         <RoutinePlantCircle
-          key={marker.id}
+          key={`${marker.id}-${marker.id === nearestPlantId ? 'nearest' : 'default'}`}
           marker={marker}
           theme={theme}
           isNearestPlant={marker.id === nearestPlantId}

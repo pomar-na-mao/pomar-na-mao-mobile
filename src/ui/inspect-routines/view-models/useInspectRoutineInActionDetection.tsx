@@ -68,12 +68,12 @@ export const InspectRoutineInActionDetectionProvider = ({ children }: { children
 
     const selectedInspectionPlantData = JSON.parse(selectedInspection?.plant_data as string) as PlantData[];
 
-    const inspectionPlantsWithoutCurrent = selectedInspectionPlantData.filter((plant) => plant.id !== nearestPlant?.id);
-
-    //Mark updated plant with wasUpdated true
+    // Mark updated plant with wasUpdated true, keeping the original array order.
     const wasUpdatedSearchPlantsData = { ...updatedPlantData, wasUpdated: true };
 
-    const newInspectionPlants = [...inspectionPlantsWithoutCurrent, wasUpdatedSearchPlantsData];
+    const newInspectionPlants = selectedInspectionPlantData.map((plant) =>
+      plant.id === nearestPlant?.id ? wasUpdatedSearchPlantsData : plant,
+    );
 
     const inspectionRoutineId = selectedInspection?.id as number;
 
@@ -89,7 +89,7 @@ export const InspectRoutineInActionDetectionProvider = ({ children }: { children
 
     setSelectedInspection(updatedSelectedInspection);
 
-    setNearestPlant(updatedPlantData);
+    setNearestPlant(wasUpdatedSearchPlantsData);
 
     setTimeout(() => {
       setIsLoading(false);
@@ -113,12 +113,12 @@ export const InspectRoutineInActionDetectionProvider = ({ children }: { children
 
     const selectedInspectionPlantData = JSON.parse(selectedInspection?.plant_data as string) as PlantData[];
 
-    const inspectionPlantsWithoutCurrent = selectedInspectionPlantData.filter((plant) => plant.id !== nearestPlant?.id);
-
-    //Mark updated plant with wasUpdated true
+    // Mark updated plant with wasUpdated true, keeping the original array order.
     const wasUpdatedSearchPlantsData = { ...updatedPlantData, wasUpdated: true };
 
-    const newInspectionPlants = [...inspectionPlantsWithoutCurrent, wasUpdatedSearchPlantsData];
+    const newInspectionPlants = selectedInspectionPlantData.map((plant) =>
+      plant.id === nearestPlant?.id ? wasUpdatedSearchPlantsData : plant,
+    );
 
     const inspectionRoutineId = selectedInspection?.id as number;
 
@@ -134,7 +134,7 @@ export const InspectRoutineInActionDetectionProvider = ({ children }: { children
 
     setSelectedInspection(updatedSelectedInspection);
 
-    setNearestPlant(updatedPlantData);
+    setNearestPlant(wasUpdatedSearchPlantsData);
 
     setTimeout(() => {
       setIsLoading(false);
