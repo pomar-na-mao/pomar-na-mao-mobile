@@ -1,26 +1,21 @@
-import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolocation/geolocation-math';
-import * as Location from 'expo-location';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-
-import { useInspectRoutinesStore } from '@/data/store/inspect-routines/use-inspect-routines-store';
-import type { PlantData, Position } from '@/domain/models/shared/plant-data.model';
+import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
+import type { Region } from '@/domain/models/shared/geolocation.model';
+import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
+import { OccurrencesRequiredFilters } from '@/ui/field-works/components/occurrences-required-filters';
+import { OccurrencesRouteActions } from '@/ui/field-works/components/occurrences-route-add-action';
+import { OccurrencesRoutePlantsCircles } from '@/ui/field-works/components/occurrences-route-plants-circles';
+import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
+import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolocation/geolocation-math';
+import * as Location from 'expo-location';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
-import { InspectRoutineNearestPlantCard } from '../../components/inspect-routine-nearest-plant-card';
-import { CardSkeleton } from '../card-skeleton';
-import { RoutineMapDetailLoader } from '../routine-map-detail-loader';
-import { RoutinePlantsCircles } from '../routine-plants-circles';
-import { styles } from './styles';
 
 const CAMERA_ANIMATION_DURATION_MS = 500;
 const CAMERA_ANIMATION_INTERVAL_MS = 350;
-const INITIAL_REGION_DELTA = 0.001;
-const LOCATION_DISTANCE_INTERVAL_METERS = 1;
-const LOCATION_TIME_INTERVAL_MS = 500;
-const MARKER_ANIMATION_DURATION_MS = 450;
 const MIN_LOCATION_CHANGE_METERS = 0.35;
 const NEAREST_PLANT_SWITCH_MARGIN_METERS = 0.75;
 const MOCK_LOCATION_UPDATE_INTERVAL_MS = 500;
@@ -41,15 +36,9 @@ const createMockLocation = (latitude: number, longitude: number): Location.Locat
 
 const buildMockRoute = (
   start: { latitude: number; longitude: number },
-  plants: PlantData[],
+  targets: { latitude: number; longitude: number }[],
 ): { latitude: number; longitude: number }[] => {
-  const routeTargets = [
-    start,
-    ...plants.slice(0, 6).map((plant) => ({
-      latitude: plant.latitude,
-      longitude: plant.longitude,
-    })),
-  ];
+  const routeTargets = [start, ...targets.slice(0, 6)];
 
   return routeTargets.flatMap((target, targetIndex) => {
     const previousTarget = routeTargets[targetIndex - 1];
@@ -69,44 +58,22 @@ const buildMockRoute = (
   });
 };
 
-export const InspectRoutineDetail = () => {
-  const [initialLocation, setInitialLocation] = useState<Position | null>(null);
+export const OccurrencesRouteMap = () => {
+  const [showFiltersMenu, setShowFiltersMenu] = useState(false);
+  const [initialRegion, setInitialRegion] = useState<Region | null>(null);
+  const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
-  const { setNearestPlant, nearestPlant, selectedInspection, isDetecting, location, setLocation } =
-    useInspectRoutinesStore();
+  const { searchPlantsData, nearestPlant, setLocation, setNearestPlant } = useOccurrencesRouteStore((state) => state);
 
   const mapRef = useRef<MapView>(null);
-  const userMarkerRef = useRef<React.ElementRef<typeof Marker>>(null);
   const lastCameraAnimationAtRef = useRef(0);
   const lastLocationRef = useRef<Location.LocationObject | null>(null);
   const isMockingLocationRef = useRef(false);
   const mockWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const theme = useColorScheme() ?? 'light';
 
-  const plantsData = useMemo<PlantData[]>(() => {
-    const routinePlants = selectedInspection?.plant_data;
-
-    if (!routinePlants) {
-      return [];
-    }
-
-    if (Array.isArray(routinePlants)) {
-      return routinePlants;
-    }
-
-    try {
-      const parsedPlantsData = JSON.parse(routinePlants) as PlantData[];
-      return Array.isArray(parsedPlantsData) ? parsedPlantsData : [];
-    } catch {
-      return [];
-    }
-  }, [selectedInspection?.plant_data]);
-
   const animateMapToCoordinate = useCallback((coordinate: { latitude: number; longitude: number }) => {
-    userMarkerRef.current?.animateMarkerToCoordinate(coordinate, MARKER_ANIMATION_DURATION_MS);
-
     const now = Date.now();
 
     if (now - lastCameraAnimationAtRef.current < CAMERA_ANIMATION_INTERVAL_MS) {
@@ -137,29 +104,12 @@ export const InspectRoutineDetail = () => {
       }
 
       lastLocationRef.current = newLocation;
+      setUserLocation(newLocation);
       setLocation(newLocation);
       animateMapToCoordinate(coordinate);
     },
     [animateMapToCoordinate, setLocation],
   );
-
-  const updateCurrentLocation = useCallback(async () => {
-    const currentLocation = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Highest,
-      distanceInterval: LOCATION_DISTANCE_INTERVAL_METERS,
-    });
-
-    const { latitude, longitude } = currentLocation.coords;
-
-    lastLocationRef.current = currentLocation;
-    setInitialLocation({
-      latitude,
-      longitude,
-      latitudeDelta: INITIAL_REGION_DELTA,
-      longitudeDelta: INITIAL_REGION_DELTA,
-    });
-    setLocation(currentLocation);
-  }, [setLocation]);
 
   const stopMockWalk = useCallback(() => {
     if (mockWalkIntervalRef.current) {
@@ -176,14 +126,15 @@ export const InspectRoutineDetail = () => {
         return;
       }
 
+      stopMockWalk();
       isMockingLocationRef.current = true;
       applyLocationUpdate(createMockLocation(latitude, longitude));
     },
-    [applyLocationUpdate],
+    [applyLocationUpdate, stopMockWalk],
   );
 
   const startMockWalk = useCallback(() => {
-    if (!__DEV__ || !location || plantsData.length === 0) {
+    if (!__DEV__ || !userLocation || searchPlantsData.length === 0) {
       return;
     }
 
@@ -192,11 +143,12 @@ export const InspectRoutineDetail = () => {
 
     const route = buildMockRoute(
       {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
       },
-      plantsData,
+      searchPlantsData.map((plant) => ({ latitude: plant.latitude, longitude: plant.longitude })),
     );
+
     let routeIndex = 0;
 
     mockWalkIntervalRef.current = setInterval(() => {
@@ -210,14 +162,15 @@ export const InspectRoutineDetail = () => {
       applyLocationUpdate(createMockLocation(nextCoordinate.latitude, nextCoordinate.longitude));
       routeIndex += 1;
     }, MOCK_LOCATION_UPDATE_INTERVAL_MS);
-  }, [applyLocationUpdate, location, plantsData, stopMockWalk]);
+  }, [applyLocationUpdate, searchPlantsData, stopMockWalk, userLocation]);
 
   useEffect(() => {
-    if (!location || !isDetecting || plantsData.length === 0) {
+    if (!userLocation || searchPlantsData.length === 0) {
+      setNearestPlant(null);
       return;
     }
 
-    const nearestPlantDetection = detectNearestPlantWithDistance(location, plantsData);
+    const nearestPlantDetection = detectNearestPlantWithDistance(userLocation, searchPlantsData);
 
     if (!nearestPlantDetection) {
       setNearestPlant(null);
@@ -237,7 +190,7 @@ export const InspectRoutineDetail = () => {
       return;
     }
 
-    const currentNearestPlant = plantsData.find((plant) => plant.id === nearestPlant.id);
+    const currentNearestPlant = searchPlantsData.find((plant) => plant.id === nearestPlant.id);
 
     if (!currentNearestPlant) {
       setNearestPlant(nearestPlantDetection.plant);
@@ -245,8 +198,8 @@ export const InspectRoutineDetail = () => {
     }
 
     const userPoint = {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
+      latitude: userLocation.coords.latitude,
+      longitude: userLocation.coords.longitude,
     };
     const currentNearestDistance = twoPointsDistance(userPoint, {
       latitude: currentNearestPlant.latitude,
@@ -256,7 +209,7 @@ export const InspectRoutineDetail = () => {
     if (currentNearestDistance - nearestPlantDetection.distance >= NEAREST_PLANT_SWITCH_MARGIN_METERS) {
       setNearestPlant(nearestPlantDetection.plant);
     }
-  }, [isDetecting, location?.coords.latitude, location?.coords.longitude, nearestPlant, plantsData, setNearestPlant]);
+  }, [nearestPlant, searchPlantsData, setNearestPlant, userLocation?.coords.latitude, userLocation?.coords.longitude]);
 
   useEffect(() => {
     let mounted = true;
@@ -265,28 +218,39 @@ export const InspectRoutineDetail = () => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       if (status !== 'granted') {
         setPermissionDenied(true);
         return;
       }
 
-      await updateCurrentLocation();
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
+
+      const { latitude, longitude } = currentLocation.coords;
+
+      lastLocationRef.current = currentLocation;
+      setUserLocation(currentLocation);
+      setLocation(currentLocation);
+      setInitialRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.002,
+        longitudeDelta: 0.002,
+      });
 
       subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Highest,
-          distanceInterval: LOCATION_DISTANCE_INTERVAL_METERS,
-          timeInterval: LOCATION_TIME_INTERVAL_MS,
+          distanceInterval: 3,
         },
         (newLocation) => {
+          if (!mounted) return;
+
           if (__DEV__ && isMockingLocationRef.current) {
             return;
           }
@@ -294,28 +258,18 @@ export const InspectRoutineDetail = () => {
           applyLocationUpdate(newLocation);
         },
       );
-
-      if (!mounted) {
-        subscription.remove();
-      }
     })();
 
     return () => {
       mounted = false;
-
-      if (subscription) {
-        subscription.remove();
-      }
-
+      subscription?.remove();
       stopMockWalk();
-      setNearestPlant(null);
-      setLocation(null);
     };
-  }, [applyLocationUpdate, setLocation, setNearestPlant, stopMockWalk, updateCurrentLocation]);
+  }, [applyLocationUpdate, setLocation, stopMockWalk]);
 
   if (permissionDenied) {
     return (
-      <View style={localStyles.centered}>
+      <View style={styles.centered}>
         <ThemedText type="defaultSemiBold">Permissão de localização negada</ThemedText>
         <ThemedText type="subtitle">
           Habilite a localização nas configurações do dispositivo para usar esta funcionalidade.
@@ -324,10 +278,10 @@ export const InspectRoutineDetail = () => {
     );
   }
 
-  if (!initialLocation || !location) {
+  if (!initialRegion || !userLocation) {
     return (
-      <View style={localStyles.centered}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={Colors[theme].tint} />
         <ThemedText style={{ marginTop: 12 }} type="subtitle">
           Obtendo localização...
         </ThemedText>
@@ -336,59 +290,80 @@ export const InspectRoutineDetail = () => {
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'space-between' }}>
-      <View style={styles.map}>
-        {initialLocation && location ? (
-          <MapView
-            provider={PROVIDER_GOOGLE}
-            ref={mapRef}
-            style={{ marginHorizontal: 16, ...StyleSheet.absoluteFillObject }}
-            customMapStyle={theme === 'dark' ? darkMapStyle : []}
-            initialRegion={initialLocation}
-          >
-            {location ? (
-              <Marker
-                ref={userMarkerRef}
-                coordinate={{ latitude: location.coords.latitude, longitude: location.coords.longitude }}
-                tracksViewChanges={false}
-              ></Marker>
-            ) : null}
-            <RoutinePlantsCircles nearestPlantId={nearestPlant?.id ?? null} plantsData={plantsData} />
-          </MapView>
-        ) : (
-          <RoutineMapDetailLoader />
-        )}
+    <View style={styles.container}>
+      <Modal
+        visible={showFiltersMenu}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowFiltersMenu(false)}
+      >
+        {showFiltersMenu ? <OccurrencesRequiredFilters closeMenu={() => setShowFiltersMenu(false)} /> : null}
+      </Modal>
+
+      <View style={styles.mapContainer}>
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_GOOGLE}
+          style={StyleSheet.absoluteFillObject}
+          customMapStyle={theme === 'dark' ? darkMapStyle : []}
+          initialRegion={initialRegion}
+          showsUserLocation={false}
+          showsMyLocationButton={false}
+        >
+          <UserLocationMarker
+            coordinate={{
+              latitude: userLocation.coords.latitude,
+              longitude: userLocation.coords.longitude,
+            }}
+          />
+          {searchPlantsData?.length ? (
+            <OccurrencesRoutePlantsCircles plantsData={searchPlantsData} nearestPlantId={nearestPlant?.id ?? null} />
+          ) : null}
+        </MapView>
 
         {__DEV__ ? (
-          <View style={localStyles.mockControls}>
-            <TouchableOpacity activeOpacity={0.8} style={localStyles.mockButtonPrimary} onPress={startMockWalk}>
-              <Text style={localStyles.mockButtonPrimaryText}>Simular</Text>
+          <View style={styles.mockControls}>
+            <TouchableOpacity activeOpacity={0.8} style={styles.mockButtonPrimary} onPress={startMockWalk}>
+              <Text style={styles.mockButtonPrimaryText}>Simular</Text>
             </TouchableOpacity>
 
-            {plantsData.slice(0, 3).map((plant, index) => (
+            {searchPlantsData.slice(0, 3).map((plant, index) => (
               <TouchableOpacity
                 activeOpacity={0.8}
                 key={plant.id}
-                style={localStyles.mockButton}
+                style={styles.mockButton}
                 onPress={() => moveToMockCoordinate(plant.latitude, plant.longitude)}
               >
-                <Text style={localStyles.mockButtonText}>P{index + 1}</Text>
+                <Text style={styles.mockButtonText}>P{index + 1}</Text>
               </TouchableOpacity>
             ))}
 
-            <TouchableOpacity activeOpacity={0.8} style={localStyles.mockButton} onPress={stopMockWalk}>
-              <Text style={localStyles.mockButtonText}>Parar</Text>
+            <TouchableOpacity activeOpacity={0.8} style={styles.mockButton} onPress={stopMockWalk}>
+              <Text style={styles.mockButtonText}>Parar</Text>
             </TouchableOpacity>
           </View>
         ) : null}
       </View>
 
-      {location ? <InspectRoutineNearestPlantCard location={location} /> : <CardSkeleton />}
+      <View style={styles.actionsContainer}>
+        <OccurrencesRouteActions onOpenFilters={() => setShowFiltersMenu(true)} />
+      </View>
     </View>
   );
 };
 
-const localStyles = StyleSheet.create({
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  mapContainer: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  actionsContainer: {
+    height: 96,
+    alignSelf: 'stretch',
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -398,9 +373,9 @@ const localStyles = StyleSheet.create({
   },
   mockControls: {
     position: 'absolute',
-    right: 28,
+    right: 14,
     bottom: 12,
-    left: 28,
+    left: 14,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
@@ -430,12 +405,10 @@ const localStyles = StyleSheet.create({
   },
   mockButtonText: {
     color: '#1C1D1C',
-    fontSize: 12,
     fontWeight: '600',
   },
   mockButtonPrimaryText: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
