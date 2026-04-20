@@ -11,9 +11,9 @@ import { OccurrencesRoutePlantsCircles } from '@/ui/field-works/components/occur
 import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolocation/geolocation-math';
 import * as Location from 'expo-location';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
 
 const CAMERA_ANIMATION_DURATION_MS = 500;
@@ -22,6 +22,9 @@ const MIN_LOCATION_CHANGE_METERS = 0.35;
 const NEAREST_PLANT_SWITCH_MARGIN_METERS = 0.75;
 const MOCK_LOCATION_UPDATE_INTERVAL_MS = 500;
 const MOCK_ROUTE_STEPS_BETWEEN_POINTS = 8;
+const ROUTE_EDGE_PADDING = { top: 80, right: 80, bottom: 120, left: 80 };
+const ROUTE_STROKE_WIDTH = 5;
+const ROUTE_OUTLINE_WIDTH = 9;
 
 const createMockLocation = (latitude: number, longitude: number): Location.LocationObject => ({
   coords: {
@@ -73,9 +76,27 @@ export const OccurrencesRouteMap = () => {
   const mapRef = useRef<MapView>(null);
   const lastCameraAnimationAtRef = useRef(0);
   const lastLocationRef = useRef<Location.LocationObject | null>(null);
+  const lastFittedNearestPlantIdRef = useRef<string | null>(null);
   const isMockingLocationRef = useRef(false);
   const mockWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const theme = useColorScheme() ?? 'light';
+
+  const routeLineCoordinates = useMemo(() => {
+    if (!userLocation || !nearestPlant) {
+      return null;
+    }
+
+    return [
+      {
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
+      },
+      {
+        latitude: nearestPlant.latitude,
+        longitude: nearestPlant.longitude,
+      },
+    ];
+  }, [nearestPlant, userLocation?.coords.latitude, userLocation?.coords.longitude]);
 
   const openNearestPlantDetails = useCallback(() => {
     if (!nearestPlant) {
@@ -226,6 +247,18 @@ export const OccurrencesRouteMap = () => {
   }, [nearestPlant, searchPlantsData, setNearestPlant, userLocation?.coords.latitude, userLocation?.coords.longitude]);
 
   useEffect(() => {
+    if (!routeLineCoordinates || !nearestPlant || lastFittedNearestPlantIdRef.current === nearestPlant.id) {
+      return;
+    }
+
+    lastFittedNearestPlantIdRef.current = nearestPlant.id;
+    mapRef.current?.fitToCoordinates(routeLineCoordinates, {
+      edgePadding: ROUTE_EDGE_PADDING,
+      animated: true,
+    });
+  }, [nearestPlant, routeLineCoordinates]);
+
+  useEffect(() => {
     let mounted = true;
     let subscription: Location.LocationSubscription | null = null;
 
@@ -336,6 +369,28 @@ export const OccurrencesRouteMap = () => {
               longitude: userLocation.coords.longitude,
             }}
           />
+          {routeLineCoordinates ? (
+            <>
+              <Polyline
+                coordinates={routeLineCoordinates}
+                strokeColor={theme === 'dark' ? 'rgba(28, 29, 28, 0.82)' : 'rgba(255, 255, 255, 0.9)'}
+                strokeWidth={ROUTE_OUTLINE_WIDTH}
+                lineCap="round"
+                lineJoin="round"
+                geodesic
+                zIndex={96}
+              />
+              <Polyline
+                coordinates={routeLineCoordinates}
+                strokeColor={Colors[theme].secondary}
+                strokeWidth={ROUTE_STROKE_WIDTH}
+                lineCap="round"
+                lineJoin="round"
+                geodesic
+                zIndex={97}
+              />
+            </>
+          ) : null}
           {searchPlantsData?.length ? (
             <OccurrencesRoutePlantsCircles plantsData={searchPlantsData} nearestPlantId={nearestPlant?.id ?? null} />
           ) : null}
