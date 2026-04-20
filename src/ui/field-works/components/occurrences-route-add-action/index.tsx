@@ -10,9 +10,10 @@ import { StyleSheet, TouchableOpacity } from 'react-native';
 
 interface OccurrencesRouteActionsProps {
   onOpenFilters: () => void;
+  onOpenDetails: () => void;
 }
 
-export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = ({ onOpenFilters }) => {
+export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = ({ onOpenFilters, onOpenDetails }) => {
   const { setIsLoading } = useLoadingStore();
   const theme = useColorScheme() ?? 'light';
   const { setMessage, setIsVisible } = useAlertBoxStore();
@@ -42,6 +43,7 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
           },
         ]}
         activeOpacity={0.8}
+        onPress={onOpenDetails}
       >
         <ThemedText type="defaultSemiBold" style={{ color: Colors[theme].text }}>
           Detalhe

@@ -1,9 +1,11 @@
 import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
 import type { Region } from '@/domain/models/shared/geolocation.model';
 import { Colors } from '@/shared/constants/theme';
+import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { OccurrencesRequiredFilters } from '@/ui/field-works/components/occurrences-required-filters';
+import { NearestPlantInRouteModalData } from '@/ui/field-works/components/nearest-plant-in-route-modal-data';
 import { OccurrencesRouteActions } from '@/ui/field-works/components/occurrences-route-add-action';
 import { OccurrencesRoutePlantsCircles } from '@/ui/field-works/components/occurrences-route-plants-circles';
 import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
@@ -60,11 +62,13 @@ const buildMockRoute = (
 
 export const OccurrencesRouteMap = () => {
   const [showFiltersMenu, setShowFiltersMenu] = useState(false);
+  const [showPlantDetails, setShowPlantDetails] = useState(false);
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
   const { searchPlantsData, nearestPlant, setLocation, setNearestPlant } = useOccurrencesRouteStore((state) => state);
+  const { setMessage, setIsVisible } = useAlertBoxStore();
 
   const mapRef = useRef<MapView>(null);
   const lastCameraAnimationAtRef = useRef(0);
@@ -72,6 +76,16 @@ export const OccurrencesRouteMap = () => {
   const isMockingLocationRef = useRef(false);
   const mockWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const theme = useColorScheme() ?? 'light';
+
+  const openNearestPlantDetails = useCallback(() => {
+    if (!nearestPlant) {
+      setMessage('Nenhuma planta próxima encontrada para exibir detalhes.');
+      setIsVisible(true);
+      return;
+    }
+
+    setShowPlantDetails(true);
+  }, [nearestPlant, setIsVisible, setMessage]);
 
   const animateMapToCoordinate = useCallback((coordinate: { latitude: number; longitude: number }) => {
     const now = Date.now();
@@ -300,6 +314,12 @@ export const OccurrencesRouteMap = () => {
         {showFiltersMenu ? <OccurrencesRequiredFilters closeMenu={() => setShowFiltersMenu(false)} /> : null}
       </Modal>
 
+      <NearestPlantInRouteModalData
+        isDetailModalVisible={showPlantDetails}
+        plant={nearestPlant}
+        setIsDetailModalVisible={setShowPlantDetails}
+      />
+
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
@@ -346,7 +366,10 @@ export const OccurrencesRouteMap = () => {
       </View>
 
       <View style={styles.actionsContainer}>
-        <OccurrencesRouteActions onOpenFilters={() => setShowFiltersMenu(true)} />
+        <OccurrencesRouteActions
+          onOpenDetails={openNearestPlantDetails}
+          onOpenFilters={() => setShowFiltersMenu(true)}
+        />
       </View>
     </View>
   );

@@ -1,0 +1,63 @@
+import type { PlantData } from '@/domain/models/shared/plant-data.model';
+import { useSQLiteContext } from 'expo-sqlite';
+
+export interface SqliteOccurrencesRoutePlant {
+  id: string;
+  plant_data: string;
+  updated_at: string;
+}
+
+export function useOccurrencesRouteSqliteService() {
+  const database = useSQLiteContext();
+
+  async function upsertPlant(plant: PlantData) {
+    const statement = await database.prepareAsync(
+      'INSERT OR REPLACE INTO occurrences_route_plants (id, plant_data, updated_at) ' +
+        'VALUES ($id, $plantData, $updatedAt)',
+    );
+
+    try {
+      await statement.executeAsync({
+        $id: plant.id,
+        $plantData: JSON.stringify(plant),
+        $updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      throw error;
+    } finally {
+      await statement.finalizeAsync();
+    }
+  }
+
+  async function findById(id: string): Promise<PlantData | null> {
+    try {
+      const query = 'SELECT * FROM occurrences_route_plants WHERE id = ?';
+      const result = await database.getFirstAsync<SqliteOccurrencesRoutePlant>(query, [id]);
+
+      if (!result) {
+        return null;
+      }
+
+      return JSON.parse(result.plant_data) as PlantData;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function searchAll(): Promise<PlantData[]> {
+    try {
+      const query = 'SELECT * FROM occurrences_route_plants';
+      const response = await database.getAllAsync<SqliteOccurrencesRoutePlant>(query);
+
+      return response.map((item) => JSON.parse(item.plant_data) as PlantData);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  return {
+    upsertPlant,
+    findById,
+    searchAll,
+  };
+}

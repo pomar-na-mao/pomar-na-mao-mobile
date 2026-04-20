@@ -4,6 +4,7 @@ export async function dropDatabases(database: SQLiteDatabase) {
   await database.execAsync(`DROP TABLE IF EXISTS inspect_routines;`);
   await database.execAsync(`DROP TABLE IF EXISTS inspect_annotations;`);
   await database.execAsync(`DROP TABLE IF EXISTS new_plants;`);
+  await database.execAsync(`DROP TABLE IF EXISTS occurrences_route_plants;`);
 }
 
 export async function initializeDatabases(database: SQLiteDatabase) {
@@ -41,6 +42,16 @@ export async function initializeDatabases(database: SQLiteDatabase) {
       gps_timestamp INTEGER,
       created_at TEXT NOT NULL,
       region TEXT NOT NULL
+      );
+    `,
+  );
+
+  await database.execAsync(
+    `
+     CREATE TABLE IF NOT EXISTS occurrences_route_plants (
+      id TEXT PRIMARY KEY NOT NULL,
+      plant_data TEXT NOT NULL,
+      updated_at TEXT NOT NULL
       );
     `,
   );

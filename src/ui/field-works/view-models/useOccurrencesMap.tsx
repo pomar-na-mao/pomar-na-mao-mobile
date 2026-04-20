@@ -1,3 +1,4 @@
+import { useOccurrencesRouteSqliteService } from '@/data/services/occurrences-route/use-occurrences-route-sqlite-service';
 import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
 import type { OccurrencesRouteFilter } from '@/domain/models/occurrences-route/occurrences-route-search.schema';
 import { plantsRepository } from '@/data/repositories/plants/plants-repository';
@@ -17,6 +18,7 @@ export const OccurrencesMapProvider = ({ children }: { children: React.ReactNode
 
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
+  const occurrencesRouteSqliteService = useOccurrencesRouteSqliteService();
 
   async function loadPlantsByFilters(filters: OccurrencesRouteFilter | null): Promise<void> {
     setIsLoading(true);
@@ -33,7 +35,12 @@ export const OccurrencesMapProvider = ({ children }: { children: React.ReactNode
     }
 
     if (data && data?.length > 0) {
-      const normalizedPlantsData = data.map((item) => ({ ...item, wasUpdated: false }));
+      const locallyUpdatedPlants = await occurrencesRouteSqliteService.searchAll();
+      const locallyUpdatedPlantsById = new Map(locallyUpdatedPlants.map((plant) => [plant.id, plant]));
+
+      const normalizedPlantsData = data.map(
+        (item) => locallyUpdatedPlantsById.get(item.id) ?? { ...item, wasUpdated: false },
+      );
       setSearchPlantsData(normalizedPlantsData);
 
       if (location) {
