@@ -109,6 +109,10 @@ export const WorkRoutineMap = () => {
   );
 
   useEffect(() => {
+    if (showFiltersMenu || showPlantDetails) {
+      return;
+    }
+
     if (!userLocation || searchPlantsData.length === 0) {
       setNearestPlant(null);
       return;
@@ -153,7 +157,15 @@ export const WorkRoutineMap = () => {
     if (currentNearestDistance - nearestPlantDetection.distance >= NEAREST_PLANT_SWITCH_MARGIN_METERS) {
       setNearestPlant(nearestPlantDetection.plant);
     }
-  }, [nearestPlant, searchPlantsData, setNearestPlant, userLocation?.coords.latitude, userLocation?.coords.longitude]);
+  }, [
+    nearestPlant,
+    searchPlantsData,
+    setNearestPlant,
+    userLocation?.coords.latitude,
+    userLocation?.coords.longitude,
+    showFiltersMenu,
+    showPlantDetails,
+  ]);
 
   useEffect(() => {
     if (!routeLineCoordinates || !nearestPlant || lastFittedNearestPlantIdRef.current === nearestPlant.id) {
