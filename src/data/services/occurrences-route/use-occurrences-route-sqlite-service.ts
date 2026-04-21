@@ -55,9 +55,46 @@ export function useOccurrencesRouteSqliteService() {
     }
   }
 
+  async function clearAll() {
+    try {
+      await database.execAsync('DELETE FROM occurrences_route_plants');
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function replaceAll(plants: PlantData[]) {
+    const statement = await database.prepareAsync(
+      'INSERT OR REPLACE INTO occurrences_route_plants (id, plant_data, updated_at) ' +
+        'VALUES ($id, $plantData, $updatedAt)',
+    );
+
+    try {
+      await database.execAsync('BEGIN TRANSACTION');
+      await database.execAsync('DELETE FROM occurrences_route_plants');
+
+      for (const plant of plants) {
+        await statement.executeAsync({
+          $id: plant.id,
+          $plantData: JSON.stringify(plant),
+          $updatedAt: plant.updated_at ?? new Date().toISOString(),
+        });
+      }
+
+      await database.execAsync('COMMIT');
+    } catch (error) {
+      await database.execAsync('ROLLBACK');
+      throw error;
+    } finally {
+      await statement.finalizeAsync();
+    }
+  }
+
   return {
     upsertPlant,
     findById,
     searchAll,
+    clearAll,
+    replaceAll,
   };
 }

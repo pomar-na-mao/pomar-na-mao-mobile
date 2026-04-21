@@ -23,39 +23,50 @@ export const OccurrencesMapProvider = ({ children }: { children: React.ReactNode
   async function loadPlantsByFilters(filters: OccurrencesRouteFilter | null): Promise<void> {
     setIsLoading(true);
 
-    const { data, error } = await plantsRepository.findAll(filters);
+    try {
+      const { data, error } = await plantsRepository.findAll(filters);
 
-    if (error) {
-      setSearchPlantsData([]);
-      setNearestPlant(null);
-      setMessage(error.message);
-      setIsVisible(true);
-      setIsLoading(false);
-      return;
-    }
-
-    if (data && data?.length > 0) {
-      const locallyUpdatedPlants = await occurrencesRouteSqliteService.searchAll();
-      const locallyUpdatedPlantsById = new Map(locallyUpdatedPlants.map((plant) => [plant.id, plant]));
-
-      const normalizedPlantsData = data.map(
-        (item) => locallyUpdatedPlantsById.get(item.id) ?? { ...item, wasUpdated: false },
-      );
-      setSearchPlantsData(normalizedPlantsData);
-
-      if (location) {
-        const detection = detectNearestPlantWithDistance(location, normalizedPlantsData);
-        setNearestPlant(detection?.plant ?? null);
-      } else {
+      if (error) {
+        setSearchPlantsData([]);
         setNearestPlant(null);
+        setMessage(error.message);
+        setIsVisible(true);
+        return;
       }
 
-      setIsLoading(false);
-    } else {
+      if (data && data.length > 0) {
+        const locallyUpdatedPlants = await occurrencesRouteSqliteService.searchAll();
+        const locallyUpdatedPlantsById = new Map(locallyUpdatedPlants.map((plant) => [plant.id, plant]));
+
+        const normalizedPlantsData = data.map(
+          (item) => locallyUpdatedPlantsById.get(item.id) ?? { ...item, wasUpdated: false },
+        );
+
+        await occurrencesRouteSqliteService.replaceAll(normalizedPlantsData);
+        setSearchPlantsData(normalizedPlantsData);
+
+        if (location) {
+          const detection = detectNearestPlantWithDistance(location, normalizedPlantsData);
+          setNearestPlant(detection?.plant ?? null);
+        } else {
+          setNearestPlant(null);
+        }
+
+        return;
+      }
+
+      await occurrencesRouteSqliteService.clearAll();
       setSearchPlantsData([]);
       setNearestPlant(null);
       setMessage('Nenhuma planta encontrada para os filtros selecionados.\nAjuste os filtros e tente novamente!');
       setIsVisible(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setSearchPlantsData([]);
+      setNearestPlant(null);
+      setMessage('Erro ao atualizar a base local da rota.\n' + message);
+      setIsVisible(true);
+    } finally {
       setIsLoading(false);
     }
   }

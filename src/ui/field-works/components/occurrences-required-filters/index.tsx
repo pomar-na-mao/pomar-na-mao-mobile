@@ -4,11 +4,13 @@ import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, useColorScheme, View } from 'react-native';
 
 import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
+import { useOccurrencesRouteSqliteService } from '@/data/services/occurrences-route/use-occurrences-route-sqlite-service';
 import {
   occurrencesRouteSearchSchema,
   type OccurrencesRouteFilter,
 } from '@/domain/models/occurrences-route/occurrences-route-search.schema';
 import { Colors } from '@/shared/constants/theme';
+import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { ThemedView } from '@/shared/themes/themed-view';
 import Button from '@/ui/shared/components/Button';
@@ -26,10 +28,13 @@ interface OccurrencesRequiredFiltersProps {
 }
 
 export const OccurrencesRequiredFilters: React.FC<OccurrencesRequiredFiltersProps> = ({ closeMenu }) => {
+  const occurrencesRouteSqliteService = useOccurrencesRouteSqliteService();
   const occurrencesRouteFilters = useOccurrencesRouteStore((state) => state.occurrencesRouteFilters);
   const setSearchPlantsData = useOccurrencesRouteStore((state) => state.setSearchPlantsData);
+  const setNearestPlant = useOccurrencesRouteStore((state) => state.setNearestPlant);
   const setOccurrencesRouteFilters = useOccurrencesRouteStore((state) => state.setOccurrencesRouteFilters);
   const { loadPlantsByFilters } = useOccurrencesMap();
+  const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
 
   const { formState, handleSubmit, setValue, watch } = useForm<OccurrencesRouteFilter>({
@@ -58,11 +63,23 @@ export const OccurrencesRequiredFilters: React.FC<OccurrencesRequiredFiltersProp
     });
   }, [regionValue, occurrenceValue]);
 
-  const clearFiltersSearchData = () => {
-    setValue('region', null);
-    setValue('occurrence', null);
-    setSearchPlantsData([]);
-    setOccurrencesRouteFilters(null);
+  const clearFiltersSearchData = async () => {
+    setIsLoading(true);
+
+    try {
+      await occurrencesRouteSqliteService.clearAll();
+      setValue('region', null);
+      setValue('occurrence', null);
+      setSearchPlantsData([]);
+      setNearestPlant(null);
+      setOccurrencesRouteFilters(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setMessage('Erro ao limpar a base local da rota.\n' + message);
+      setIsVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const searchOccurrencesData = async () => {
