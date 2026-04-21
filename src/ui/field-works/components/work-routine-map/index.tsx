@@ -315,7 +315,9 @@ export const WorkRoutineMap = () => {
             <WorkRoutinePlantsCircles plantsData={searchPlantsData} nearestPlantId={nearestPlant?.id ?? null} />
           ) : null}
         </MapView>
+      </View>
 
+      <View style={styles.actionsContainer}>
         <WorkRoutineRouteSimulation
           applyLocationUpdate={applyLocationUpdate}
           onMockingLocationChange={(isMockingLocation) => {
@@ -324,9 +326,6 @@ export const WorkRoutineMap = () => {
           plantsData={searchPlantsData}
           userLocation={userLocation}
         />
-      </View>
-
-      <View style={styles.actionsContainer}>
         <WorkRoutineActions onOpenDetails={openNearestPlantDetails} onOpenFilters={() => setShowFiltersMenu(true)} />
       </View>
     </View>

@@ -65,14 +65,17 @@ export const InspectRoutineRouteSimulation: React.FC<InspectRoutineRouteSimulati
 
   const mockWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const onMockingLocationChangeRef = useRef(onMockingLocationChange);
+  onMockingLocationChangeRef.current = onMockingLocationChange;
+
   const stopMockWalk = useCallback(() => {
     if (mockWalkIntervalRef.current) {
       clearInterval(mockWalkIntervalRef.current);
       mockWalkIntervalRef.current = null;
     }
 
-    onMockingLocationChange(false);
-  }, [onMockingLocationChange]);
+    onMockingLocationChangeRef.current(false);
+  }, []);
 
   const moveToMockCoordinate = useCallback(
     (latitude: number, longitude: number) => {

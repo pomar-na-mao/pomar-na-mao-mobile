@@ -4,7 +4,7 @@ export const styles = StyleSheet.create({
   mockControls: {
     position: 'absolute',
     right: 16,
-    bottom: 96,
+    bottom: 16,
     left: 16,
     flexDirection: 'row',
     flexWrap: 'nowrap',
