@@ -2,14 +2,14 @@ import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import { buildPlantsMarkers } from '@/utils/transformation/build-plants-map-markers';
 import { memo, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
-import { OccurrencesRoutePlantCircle } from './occurrences-route-plant-circle';
+import { WorkRoutinePlantCircle } from './work-routine-plant-circle';
 
-interface OccurrencesRoutePlantsCirclesProps {
+interface WorkRoutinePlantsCirclesProps {
   nearestPlantId?: string | null;
   plantsData: PlantData[];
 }
 
-export const OccurrencesRoutePlantsCircles: React.FC<OccurrencesRoutePlantsCirclesProps> = memo(
+export const WorkRoutinePlantsCircles: React.FC<WorkRoutinePlantsCirclesProps> = memo(
   ({ nearestPlantId, plantsData }) => {
     const plantsMarkers = useMemo(() => buildPlantsMarkers(plantsData), [plantsData]);
     const theme = useColorScheme() ?? 'light';
@@ -17,7 +17,7 @@ export const OccurrencesRoutePlantsCircles: React.FC<OccurrencesRoutePlantsCircl
     return (
       <>
         {plantsMarkers.map((marker) => (
-          <OccurrencesRoutePlantCircle
+          <WorkRoutinePlantCircle
             key={`${marker.id}-${marker.id === nearestPlantId ? 'nearest' : 'default'}`}
             marker={marker}
             theme={theme}
@@ -29,4 +29,4 @@ export const OccurrencesRoutePlantsCircles: React.FC<OccurrencesRoutePlantsCircl
   },
 );
 
-OccurrencesRoutePlantsCircles.displayName = 'OccurrencesRoutePlantsCircles';
+WorkRoutinePlantsCircles.displayName = 'WorkRoutinePlantsCircles';

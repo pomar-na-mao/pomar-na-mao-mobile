@@ -3,12 +3,12 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, useColorScheme, View } from 'react-native';
 
-import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
-import { useOccurrencesRouteSqliteService } from '@/data/services/occurrences-route/use-occurrences-route-sqlite-service';
+import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
+import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
 import {
-  occurrencesRouteSearchSchema,
-  type OccurrencesRouteFilter,
-} from '@/domain/models/occurrences-route/occurrences-route-search.schema';
+  workRoutineSearchSchema,
+  type WorkRoutineFilter,
+} from '@/domain/models/work-routine/work-routine-search.schema';
 import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
@@ -20,28 +20,28 @@ import { useRegionOptions } from '@/ui/shared/hooks/use-regions-options';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useOccurrencesMap } from '../../view-models/useOccurrencesMap';
+import { useWorkRoutineMap } from '../../view-models/useWorkRoutineMap';
 import { styles } from './styles';
 
-interface OccurrencesRequiredFiltersProps {
+interface WorkRoutineRequiredFiltersProps {
   closeMenu: () => void;
 }
 
-export const OccurrencesRequiredFilters: React.FC<OccurrencesRequiredFiltersProps> = ({ closeMenu }) => {
-  const occurrencesRouteSqliteService = useOccurrencesRouteSqliteService();
-  const occurrencesRouteFilters = useOccurrencesRouteStore((state) => state.occurrencesRouteFilters);
-  const setSearchPlantsData = useOccurrencesRouteStore((state) => state.setSearchPlantsData);
-  const setNearestPlant = useOccurrencesRouteStore((state) => state.setNearestPlant);
-  const setOccurrencesRouteFilters = useOccurrencesRouteStore((state) => state.setOccurrencesRouteFilters);
-  const { loadPlantsByFilters } = useOccurrencesMap();
+export const WorkRoutineRequiredFilters: React.FC<WorkRoutineRequiredFiltersProps> = ({ closeMenu }) => {
+  const workRoutineSqliteService = useWorkRoutineSqliteService();
+  const workRoutineFilters = useWorkRoutineStore((state) => state.workRoutineFilters);
+  const setSearchPlantsData = useWorkRoutineStore((state) => state.setSearchPlantsData);
+  const setNearestPlant = useWorkRoutineStore((state) => state.setNearestPlant);
+  const setWorkRoutineFilters = useWorkRoutineStore((state) => state.setWorkRoutineFilters);
+  const { loadPlantsByFilters } = useWorkRoutineMap();
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
 
-  const { formState, handleSubmit, setValue, watch } = useForm<OccurrencesRouteFilter>({
-    resolver: zodResolver(occurrencesRouteSearchSchema),
+  const { formState, handleSubmit, setValue, watch } = useForm<WorkRoutineFilter>({
+    resolver: zodResolver(workRoutineSearchSchema),
     defaultValues: {
-      region: occurrencesRouteFilters?.region ?? null,
-      occurrence: occurrencesRouteFilters?.occurrence ?? null,
+      region: workRoutineFilters?.region ?? null,
+      occurrence: workRoutineFilters?.occurrence ?? null,
     },
   });
 
@@ -57,7 +57,7 @@ export const OccurrencesRequiredFilters: React.FC<OccurrencesRequiredFiltersProp
   }, [isLoadingRegions, isLoadingOccurrences]);
 
   useEffect(() => {
-    setOccurrencesRouteFilters({
+    setWorkRoutineFilters({
       region: regionValue ?? null,
       occurrence: occurrenceValue ?? null,
     });
@@ -67,22 +67,22 @@ export const OccurrencesRequiredFilters: React.FC<OccurrencesRequiredFiltersProp
     setIsLoading(true);
 
     try {
-      await occurrencesRouteSqliteService.clearAll();
+      await workRoutineSqliteService.clearAll();
       setValue('region', null);
       setValue('occurrence', null);
       setSearchPlantsData([]);
       setNearestPlant(null);
-      setOccurrencesRouteFilters(null);
+      setWorkRoutineFilters(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setMessage('Erro ao limpar a base local da rota.\n' + message);
+      setMessage('Erro ao limpar a base local da rotina de trabalho.\n' + message);
       setIsVisible(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const searchOccurrencesData = async () => {
+  const searchWorkRoutineData = async () => {
     await loadPlantsByFilters({
       region: regionValue ? String(regionValue) : null,
       occurrence: occurrenceValue ? String(occurrenceValue) : null,
@@ -137,7 +137,7 @@ export const OccurrencesRequiredFilters: React.FC<OccurrencesRequiredFiltersProp
               <Button
                 variant="primary"
                 title="Buscar"
-                onPress={handleSubmit(searchOccurrencesData)}
+                onPress={handleSubmit(searchWorkRoutineData)}
                 disabled={!regionValue}
               />
             </View>

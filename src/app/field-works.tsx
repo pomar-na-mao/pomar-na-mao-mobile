@@ -34,11 +34,11 @@ const cards: CardItem[] = [
     icon: 'event-note',
   },
   {
-    id: 'occurrences-route',
-    title: 'Rota de ocorrências',
-    subtitle: 'Visualize uma rota até ocorrências selecionadas!',
-    route: '/occurrences-route' as ExpoRouterPath,
-    icon: 'route',
+    id: 'work-routine',
+    title: 'Rotina de trabalho',
+    subtitle: 'Inicie um trabalho para tratamento de ocorrências de árvores!',
+    route: '/work-routine' as ExpoRouterPath,
+    icon: 'work',
   },
   {
     id: 'add-plant',

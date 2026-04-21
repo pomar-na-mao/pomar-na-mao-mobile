@@ -1,5 +1,5 @@
-import { useOccurrencesRouteSqliteService } from '@/data/services/occurrences-route/use-occurrences-route-sqlite-service';
-import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
+import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
+import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
 import type { PlantInformation } from '@/domain/models/inspect-routines/inspect-routines-informations.schema';
 import type { HorizontalTab } from '@/domain/models/shared/horizontal-tab.model';
 import type { BooleanKeys, PlantData } from '@/domain/models/shared/plant-data.model';
@@ -17,21 +17,21 @@ import { PlantInformationForm } from './plant-information-form';
 import { PlantOccurrencesForm } from './plant-occurrences-form';
 import { styles } from './style';
 
-interface NearestPlantInRouteModalDataProps {
+interface NearestPlantInWorkRoutineModalDataProps {
   isDetailModalVisible: boolean;
   setIsDetailModalVisible: (isDetailModalVisible: boolean) => void;
   plant: PlantData | null;
 }
 
-export const NearestPlantInRouteModalData: React.FC<NearestPlantInRouteModalDataProps> = ({
+export const NearestPlantInWorkRoutineModalData: React.FC<NearestPlantInWorkRoutineModalDataProps> = ({
   isDetailModalVisible,
   setIsDetailModalVisible,
   plant,
 }) => {
   const [activeTab, setActiveTab] = useState(plantDataTabs[0]);
 
-  const occurrencesRouteSqliteService = useOccurrencesRouteSqliteService();
-  const { searchPlantsData, setSearchPlantsData, setNearestPlant } = useOccurrencesRouteStore();
+  const workRoutineSqliteService = useWorkRoutineSqliteService();
+  const { searchPlantsData, setSearchPlantsData, setNearestPlant } = useWorkRoutineStore();
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
   const theme = useColorScheme() ?? 'light';
@@ -45,7 +45,7 @@ export const NearestPlantInRouteModalData: React.FC<NearestPlantInRouteModalData
     setIsLoading(true);
 
     try {
-      await occurrencesRouteSqliteService.upsertPlant(updatedPlant);
+      await workRoutineSqliteService.upsertPlant(updatedPlant);
 
       setSearchPlantsData(searchPlantsData.map((item) => (item.id === updatedPlant.id ? updatedPlant : item)));
       setNearestPlant(updatedPlant);

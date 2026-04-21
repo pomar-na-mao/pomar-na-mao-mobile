@@ -1,13 +1,13 @@
-import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
+import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
 import type { Region } from '@/domain/models/shared/geolocation.model';
 import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
-import { OccurrencesRequiredFilters } from '@/ui/field-works/components/occurrences-required-filters';
-import { NearestPlantInRouteModalData } from '@/ui/field-works/components/nearest-plant-in-route-modal-data';
-import { OccurrencesRouteActions } from '@/ui/field-works/components/occurrences-route-add-action';
-import { OccurrencesRoutePlantsCircles } from '@/ui/field-works/components/occurrences-route-plants-circles';
+import { WorkRoutineRequiredFilters } from '@/ui/field-works/components/work-routine-required-filters';
+import { NearestPlantInWorkRoutineModalData } from '@/ui/field-works/components/nearest-plant-in-work-routine-modal-data';
+import { WorkRoutineActions } from '@/ui/field-works/components/work-routine-actions';
+import { WorkRoutinePlantsCircles } from '@/ui/field-works/components/work-routine-plants-circles';
 import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolocation/geolocation-math';
 import * as Location from 'expo-location';
@@ -63,14 +63,14 @@ const buildMockRoute = (
   });
 };
 
-export const OccurrencesRouteMap = () => {
+export const WorkRoutineMap = () => {
   const [showFiltersMenu, setShowFiltersMenu] = useState(false);
   const [showPlantDetails, setShowPlantDetails] = useState(false);
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
-  const { searchPlantsData, nearestPlant, setLocation, setNearestPlant } = useOccurrencesRouteStore((state) => state);
+  const { searchPlantsData, nearestPlant, setLocation, setNearestPlant } = useWorkRoutineStore((state) => state);
   const { setMessage, setIsVisible } = useAlertBoxStore();
 
   const mapRef = useRef<MapView>(null);
@@ -344,10 +344,10 @@ export const OccurrencesRouteMap = () => {
         transparent={true}
         onRequestClose={() => setShowFiltersMenu(false)}
       >
-        {showFiltersMenu ? <OccurrencesRequiredFilters closeMenu={() => setShowFiltersMenu(false)} /> : null}
+        {showFiltersMenu ? <WorkRoutineRequiredFilters closeMenu={() => setShowFiltersMenu(false)} /> : null}
       </Modal>
 
-      <NearestPlantInRouteModalData
+      <NearestPlantInWorkRoutineModalData
         isDetailModalVisible={showPlantDetails}
         plant={nearestPlant}
         setIsDetailModalVisible={setShowPlantDetails}
@@ -392,7 +392,7 @@ export const OccurrencesRouteMap = () => {
             </>
           ) : null}
           {searchPlantsData?.length ? (
-            <OccurrencesRoutePlantsCircles plantsData={searchPlantsData} nearestPlantId={nearestPlant?.id ?? null} />
+            <WorkRoutinePlantsCircles plantsData={searchPlantsData} nearestPlantId={nearestPlant?.id ?? null} />
           ) : null}
         </MapView>
 
@@ -421,10 +421,7 @@ export const OccurrencesRouteMap = () => {
       </View>
 
       <View style={styles.actionsContainer}>
-        <OccurrencesRouteActions
-          onOpenDetails={openNearestPlantDetails}
-          onOpenFilters={() => setShowFiltersMenu(true)}
-        />
+        <WorkRoutineActions onOpenDetails={openNearestPlantDetails} onOpenFilters={() => setShowFiltersMenu(true)} />
       </View>
     </View>
   );

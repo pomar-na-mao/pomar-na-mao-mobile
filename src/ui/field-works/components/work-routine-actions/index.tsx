@@ -1,6 +1,6 @@
 import { workRoutinesRepository } from '@/data/repositories/work-routines/work-routines-repository';
-import { useOccurrencesRouteSqliteService } from '@/data/services/occurrences-route/use-occurrences-route-sqlite-service';
-import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
+import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
+import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
 import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
@@ -13,18 +13,19 @@ import * as React from 'react';
 import { TouchableOpacity } from 'react-native';
 import { styles } from './style';
 
-interface OccurrencesRouteActionsProps {
+interface WorkRoutineActionsProps {
   onOpenFilters: () => void;
   onOpenDetails: () => void;
 }
 
-export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = ({ onOpenFilters, onOpenDetails }) => {
+export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFilters, onOpenDetails }) => {
   const { setIsLoading } = useLoadingStore();
   const theme = useColorScheme() ?? 'light';
   const { setMessage, setIsVisible } = useAlertBoxStore();
-  const occurrencesRouteSqliteService = useOccurrencesRouteSqliteService();
-  const { occurrencesRouteFilters, setSearchPlantsData, setNearestPlant, setOccurrencesRouteFilters } =
-    useOccurrencesRouteStore((state) => state);
+  const workRoutineSqliteService = useWorkRoutineSqliteService();
+  const { workRoutineFilters, setSearchPlantsData, setNearestPlant, setWorkRoutineFilters } = useWorkRoutineStore(
+    (state) => state,
+  );
 
   const handleOpenFiltersPress = async () => {
     setIsLoading(true);
@@ -40,17 +41,17 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
     }
   };
 
-  const handleResetRoutePress = async () => {
+  const handleResetWorkRoutinePress = async () => {
     setIsLoading(true);
 
     try {
-      await occurrencesRouteSqliteService.clearAll();
+      await workRoutineSqliteService.clearAll();
       setSearchPlantsData([]);
       setNearestPlant(null);
-      setOccurrencesRouteFilters(null);
+      setWorkRoutineFilters(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setMessage('Erro ao limpar os dados locais da rota.\n' + message);
+      setMessage('Erro ao limpar os dados locais da rotina de trabalho.\n' + message);
       setIsVisible(true);
     } finally {
       setIsLoading(false);
@@ -71,7 +72,7 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
     }
 
     try {
-      const locallyUpdatedPlants = await occurrencesRouteSqliteService.searchAll();
+      const locallyUpdatedPlants = await workRoutineSqliteService.searchAll();
       const plantsToSend = locallyUpdatedPlants.filter((plant) => plant.wasUpdated);
 
       if (plantsToSend.length === 0) {
@@ -85,7 +86,7 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
         updated_at: new Date().toISOString(),
         description: '',
         date: new Date().toISOString(),
-        region: occurrencesRouteFilters?.region ?? plantsToSend[0]?.region ?? '',
+        region: workRoutineFilters?.region ?? plantsToSend[0]?.region ?? '',
       };
 
       const enrichedPlantData = plantsToSend.map((plant) => ({
@@ -134,10 +135,10 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
         return;
       }
 
-      await occurrencesRouteSqliteService.clearAll();
+      await workRoutineSqliteService.clearAll();
       setSearchPlantsData([]);
       setNearestPlant(null);
-      setOccurrencesRouteFilters(null);
+      setWorkRoutineFilters(null);
 
       setMessage('Dados enviados com sucesso.');
       setIsVisible(true);
@@ -193,7 +194,7 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
           },
         ]}
         activeOpacity={0.8}
-        onPress={handleResetRoutePress}
+        onPress={handleResetWorkRoutinePress}
         accessibilityRole="button"
         accessibilityLabel="Resetar pesquisa"
       >

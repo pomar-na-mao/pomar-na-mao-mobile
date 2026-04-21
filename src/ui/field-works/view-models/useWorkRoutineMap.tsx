@@ -1,26 +1,26 @@
-import { useOccurrencesRouteSqliteService } from '@/data/services/occurrences-route/use-occurrences-route-sqlite-service';
-import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
-import type { OccurrencesRouteFilter } from '@/domain/models/occurrences-route/occurrences-route-search.schema';
+import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
+import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
+import type { WorkRoutineFilter } from '@/domain/models/work-routine/work-routine-search.schema';
 import { plantsRepository } from '@/data/repositories/plants/plants-repository';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { detectNearestPlantWithDistance } from '@/utils/geolocation/geolocation-math';
 import React, { createContext, useContext } from 'react';
 
-interface OccurrencesMapContextProps {
-  loadPlantsByFilters(filters: OccurrencesRouteFilter | null): Promise<void>;
+interface WorkRoutineMapContextProps {
+  loadPlantsByFilters(filters: WorkRoutineFilter | null): Promise<void>;
 }
 
-const OccurrencesMapContext = createContext({} as OccurrencesMapContextProps);
+const WorkRoutineMapContext = createContext({} as WorkRoutineMapContextProps);
 
-export const OccurrencesMapProvider = ({ children }: { children: React.ReactNode }) => {
-  const { setSearchPlantsData, location, setNearestPlant } = useOccurrencesRouteStore((state) => state);
+export const WorkRoutineMapProvider = ({ children }: { children: React.ReactNode }) => {
+  const { setSearchPlantsData, location, setNearestPlant } = useWorkRoutineStore((state) => state);
 
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
-  const occurrencesRouteSqliteService = useOccurrencesRouteSqliteService();
+  const workRoutineSqliteService = useWorkRoutineSqliteService();
 
-  async function loadPlantsByFilters(filters: OccurrencesRouteFilter | null): Promise<void> {
+  async function loadPlantsByFilters(filters: WorkRoutineFilter | null): Promise<void> {
     setIsLoading(true);
 
     try {
@@ -35,14 +35,14 @@ export const OccurrencesMapProvider = ({ children }: { children: React.ReactNode
       }
 
       if (data && data.length > 0) {
-        const locallyUpdatedPlants = await occurrencesRouteSqliteService.searchAll();
+        const locallyUpdatedPlants = await workRoutineSqliteService.searchAll();
         const locallyUpdatedPlantsById = new Map(locallyUpdatedPlants.map((plant) => [plant.id, plant]));
 
         const normalizedPlantsData = data.map(
           (item) => locallyUpdatedPlantsById.get(item.id) ?? { ...item, wasUpdated: false },
         );
 
-        await occurrencesRouteSqliteService.replaceAll(normalizedPlantsData);
+        await workRoutineSqliteService.replaceAll(normalizedPlantsData);
         setSearchPlantsData(normalizedPlantsData);
 
         if (location) {
@@ -55,7 +55,7 @@ export const OccurrencesMapProvider = ({ children }: { children: React.ReactNode
         return;
       }
 
-      await occurrencesRouteSqliteService.clearAll();
+      await workRoutineSqliteService.clearAll();
       setSearchPlantsData([]);
       setNearestPlant(null);
       setMessage('Nenhuma planta encontrada para os filtros selecionados.\nAjuste os filtros e tente novamente!');
@@ -64,14 +64,14 @@ export const OccurrencesMapProvider = ({ children }: { children: React.ReactNode
       const message = error instanceof Error ? error.message : String(error);
       setSearchPlantsData([]);
       setNearestPlant(null);
-      setMessage('Erro ao atualizar a base local da rota.\n' + message);
+      setMessage('Erro ao atualizar a base local da rotina de trabalho.\n' + message);
       setIsVisible(true);
     } finally {
       setIsLoading(false);
     }
   }
 
-  return <OccurrencesMapContext.Provider value={{ loadPlantsByFilters }}>{children}</OccurrencesMapContext.Provider>;
+  return <WorkRoutineMapContext.Provider value={{ loadPlantsByFilters }}>{children}</WorkRoutineMapContext.Provider>;
 };
 
-export const useOccurrencesMap = () => useContext(OccurrencesMapContext);
+export const useWorkRoutineMap = () => useContext(WorkRoutineMapContext);
