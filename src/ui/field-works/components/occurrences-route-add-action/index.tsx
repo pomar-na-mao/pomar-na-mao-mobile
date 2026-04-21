@@ -1,5 +1,7 @@
+import { workRoutinesRepository } from '@/data/repositories/work-routines/work-routines-repository';
 import { useOccurrencesRouteSqliteService } from '@/data/services/occurrences-route/use-occurrences-route-sqlite-service';
 import { useOccurrencesRouteStore } from '@/data/store/occurrences-route/use-occurrences-route-store';
+import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
@@ -8,7 +10,8 @@ import { ThemedView } from '@/shared/themes/themed-view';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Network from 'expo-network';
 import * as React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { TouchableOpacity } from 'react-native';
+import { styles } from './style';
 
 interface OccurrencesRouteActionsProps {
   onOpenFilters: () => void;
@@ -20,9 +23,8 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
   const theme = useColorScheme() ?? 'light';
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const occurrencesRouteSqliteService = useOccurrencesRouteSqliteService();
-  const { setSearchPlantsData, setNearestPlant, setOccurrencesRouteFilters } = useOccurrencesRouteStore(
-    (state) => state,
-  );
+  const { occurrencesRouteFilters, setSearchPlantsData, setNearestPlant, setOccurrencesRouteFilters } =
+    useOccurrencesRouteStore((state) => state);
 
   const handleOpenFiltersPress = async () => {
     setIsLoading(true);
@@ -78,7 +80,64 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
         return;
       }
 
-      console.log(plantsToSend);
+      const newWorkRoutine = {
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        description: '',
+        date: new Date().toISOString(),
+        region: occurrencesRouteFilters?.region ?? plantsToSend[0]?.region ?? '',
+      };
+
+      const enrichedPlantData = plantsToSend.map((plant) => ({
+        plant_id: plant.id,
+        latitude: plant.latitude,
+        longitude: plant.longitude,
+        gps_timestamp: plant.gps_timestamp,
+        mass: plant.mass,
+        variety: plant.variety,
+        harvest: plant.harvest,
+        description: plant.description,
+        planting_date: plant.planting_date,
+        life_of_the_tree: plant.life_of_the_tree,
+        stick: plant.stick,
+        broken_branch: plant.broken_branch,
+        vine_growing: plant.vine_growing,
+        burnt_branch: plant.burnt_branch,
+        struck_by_lightning: plant.struck_by_lightning,
+        drill: plant.drill,
+        anthill: plant.anthill,
+        in_experiment: plant.in_experiment,
+        weeds_in_the_basin: plant.weeds_in_the_basin,
+        fertilization_or_manuring: plant.fertilization_or_manuring,
+        mites: plant.mites,
+        thrips: plant.thrips,
+        empty_collection_box_near: plant.empty_collection_box_near,
+        is_dead: plant.is_dead,
+        region: plant.region,
+        is_new: plant.is_new,
+        non_existent: plant.non_existent,
+        frost: plant.frost,
+        flowers: plant.flowers,
+        buds: plant.buds,
+        dehydrated: plant.dehydrated,
+        is_approved: false,
+      }));
+
+      const { error: rpcError } = await workRoutinesRepository.createANewWorkRoutineWithPlants(
+        newWorkRoutine,
+        enrichedPlantData as Partial<PlantData>[],
+      );
+
+      if (rpcError) {
+        setMessage('Erro ao enviar dados. Tente novamente.\n' + rpcError.message);
+        setIsVisible(true);
+        return;
+      }
+
+      await occurrencesRouteSqliteService.clearAll();
+      setSearchPlantsData([]);
+      setNearestPlant(null);
+      setOccurrencesRouteFilters(null);
 
       setMessage('Dados enviados com sucesso.');
       setIsVisible(true);
@@ -159,27 +218,3 @@ export const OccurrencesRouteActions: React.FC<OccurrencesRouteActionsProps> = (
     </ThemedView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    gap: 10,
-  },
-  button: {
-    flex: 1,
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    marginBottom: 12,
-  },
-});
