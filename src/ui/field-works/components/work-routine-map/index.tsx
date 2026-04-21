@@ -4,64 +4,27 @@ import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
-import { WorkRoutineRequiredFilters } from '@/ui/field-works/components/work-routine-required-filters';
 import { NearestPlantInWorkRoutineModalData } from '@/ui/field-works/components/nearest-plant-in-work-routine-modal-data';
 import { WorkRoutineActions } from '@/ui/field-works/components/work-routine-actions';
 import { WorkRoutinePlantsCircles } from '@/ui/field-works/components/work-routine-plants-circles';
+import { WorkRoutineRequiredFilters } from '@/ui/field-works/components/work-routine-required-filters';
+import { WorkRoutineRouteSimulation } from '@/ui/field-works/components/work-routine-route-simulation';
 import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolocation/geolocation-math';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, StyleSheet, View } from 'react-native';
 import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
+import { styles } from './style';
 
 const CAMERA_ANIMATION_DURATION_MS = 500;
 const CAMERA_ANIMATION_INTERVAL_MS = 350;
 const MIN_LOCATION_CHANGE_METERS = 0.35;
 const NEAREST_PLANT_SWITCH_MARGIN_METERS = 0.75;
-const MOCK_LOCATION_UPDATE_INTERVAL_MS = 500;
-const MOCK_ROUTE_STEPS_BETWEEN_POINTS = 8;
 const ROUTE_EDGE_PADDING = { top: 80, right: 80, bottom: 120, left: 80 };
 const ROUTE_STROKE_WIDTH = 5;
 const ROUTE_OUTLINE_WIDTH = 9;
-
-const createMockLocation = (latitude: number, longitude: number): Location.LocationObject => ({
-  coords: {
-    latitude,
-    longitude,
-    altitude: 0,
-    accuracy: 1,
-    altitudeAccuracy: 1,
-    heading: 0,
-    speed: 0,
-  },
-  timestamp: Date.now(),
-});
-
-const buildMockRoute = (
-  start: { latitude: number; longitude: number },
-  targets: { latitude: number; longitude: number }[],
-): { latitude: number; longitude: number }[] => {
-  const routeTargets = [start, ...targets.slice(0, 6)];
-
-  return routeTargets.flatMap((target, targetIndex) => {
-    const previousTarget = routeTargets[targetIndex - 1];
-
-    if (!previousTarget) {
-      return [target];
-    }
-
-    return Array.from({ length: MOCK_ROUTE_STEPS_BETWEEN_POINTS }, (_, stepIndex) => {
-      const progress = (stepIndex + 1) / MOCK_ROUTE_STEPS_BETWEEN_POINTS;
-
-      return {
-        latitude: previousTarget.latitude + (target.latitude - previousTarget.latitude) * progress,
-        longitude: previousTarget.longitude + (target.longitude - previousTarget.longitude) * progress,
-      };
-    });
-  });
-};
 
 export const WorkRoutineMap = () => {
   const [showFiltersMenu, setShowFiltersMenu] = useState(false);
@@ -78,7 +41,6 @@ export const WorkRoutineMap = () => {
   const lastLocationRef = useRef<Location.LocationObject | null>(null);
   const lastFittedNearestPlantIdRef = useRef<string | null>(null);
   const isMockingLocationRef = useRef(false);
-  const mockWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const theme = useColorScheme() ?? 'light';
 
   const routeLineCoordinates = useMemo(() => {
@@ -145,59 +107,6 @@ export const WorkRoutineMap = () => {
     },
     [animateMapToCoordinate, setLocation],
   );
-
-  const stopMockWalk = useCallback(() => {
-    if (mockWalkIntervalRef.current) {
-      clearInterval(mockWalkIntervalRef.current);
-      mockWalkIntervalRef.current = null;
-    }
-
-    isMockingLocationRef.current = false;
-  }, []);
-
-  const moveToMockCoordinate = useCallback(
-    (latitude: number, longitude: number) => {
-      if (!__DEV__) {
-        return;
-      }
-
-      stopMockWalk();
-      isMockingLocationRef.current = true;
-      applyLocationUpdate(createMockLocation(latitude, longitude));
-    },
-    [applyLocationUpdate, stopMockWalk],
-  );
-
-  const startMockWalk = useCallback(() => {
-    if (!__DEV__ || !userLocation || searchPlantsData.length === 0) {
-      return;
-    }
-
-    stopMockWalk();
-    isMockingLocationRef.current = true;
-
-    const route = buildMockRoute(
-      {
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
-      },
-      searchPlantsData.map((plant) => ({ latitude: plant.latitude, longitude: plant.longitude })),
-    );
-
-    let routeIndex = 0;
-
-    mockWalkIntervalRef.current = setInterval(() => {
-      const nextCoordinate = route[routeIndex];
-
-      if (!nextCoordinate) {
-        stopMockWalk();
-        return;
-      }
-
-      applyLocationUpdate(createMockLocation(nextCoordinate.latitude, nextCoordinate.longitude));
-      routeIndex += 1;
-    }, MOCK_LOCATION_UPDATE_INTERVAL_MS);
-  }, [applyLocationUpdate, searchPlantsData, stopMockWalk, userLocation]);
 
   useEffect(() => {
     if (!userLocation || searchPlantsData.length === 0) {
@@ -310,9 +219,8 @@ export const WorkRoutineMap = () => {
     return () => {
       mounted = false;
       subscription?.remove();
-      stopMockWalk();
     };
-  }, [applyLocationUpdate, setLocation, stopMockWalk]);
+  }, [applyLocationUpdate, setLocation]);
 
   if (permissionDenied) {
     return (
@@ -396,51 +304,14 @@ export const WorkRoutineMap = () => {
           ) : null}
         </MapView>
 
-        {__DEV__ && searchPlantsData.length > 0 ? (
-          <View
-            style={[
-              styles.mockControls,
-              {
-                borderColor: Colors[theme].cardBorder,
-                backgroundColor: Colors[theme].card,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.mockButtonPrimary, { backgroundColor: Colors[theme].confirmationButtonBackground }]}
-              onPress={startMockWalk}
-            >
-              <Text
-                style={[
-                  styles.mockButtonPrimaryText,
-                  { color: theme === 'dark' ? Colors.dark.text : Colors.light.background },
-                ]}
-              >
-                Simular
-              </Text>
-            </TouchableOpacity>
-
-            {searchPlantsData.slice(0, 3).map((plant, index) => (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                key={plant.id}
-                style={[styles.mockButton, { backgroundColor: Colors[theme].cancelButtonBackground }]}
-                onPress={() => moveToMockCoordinate(plant.latitude, plant.longitude)}
-              >
-                <Text style={[styles.mockButtonText, { color: Colors[theme].text }]}>P{index + 1}</Text>
-              </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.mockButton, { backgroundColor: Colors[theme].cancelButtonBackground }]}
-              onPress={stopMockWalk}
-            >
-              <Text style={[styles.mockButtonText, { color: Colors[theme].text }]}>Parar</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
+        <WorkRoutineRouteSimulation
+          applyLocationUpdate={applyLocationUpdate}
+          onMockingLocationChange={(isMockingLocation) => {
+            isMockingLocationRef.current = isMockingLocation;
+          }}
+          plantsData={searchPlantsData}
+          userLocation={userLocation}
+        />
       </View>
 
       <View style={styles.actionsContainer}>
@@ -449,58 +320,3 @@ export const WorkRoutineMap = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  mapContainer: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  actionsContainer: {
-    height: 96,
-    alignSelf: 'stretch',
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    gap: 8,
-  },
-  mockControls: {
-    position: 'absolute',
-    right: 14,
-    bottom: 12,
-    left: 14,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 6,
-    zIndex: 2,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  mockButton: {
-    minWidth: 40,
-    alignItems: 'center',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  mockButtonPrimary: {
-    alignItems: 'center',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  mockButtonText: {
-    fontWeight: '600',
-  },
-  mockButtonPrimaryText: {
-    fontWeight: '700',
-  },
-});
