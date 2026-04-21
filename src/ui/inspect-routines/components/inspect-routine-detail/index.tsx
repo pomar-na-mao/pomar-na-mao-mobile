@@ -6,6 +6,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { useInspectRoutinesStore } from '@/data/store/inspect-routines/use-inspect-routines-store';
 import type { PlantData, Position } from '@/domain/models/shared/plant-data.model';
+import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { darkMapStyle } from '../../../../../mapStyle';
@@ -360,24 +361,47 @@ export const InspectRoutineDetail = () => {
         )}
 
         {__DEV__ ? (
-          <View style={localStyles.mockControls}>
-            <TouchableOpacity activeOpacity={0.8} style={localStyles.mockButtonPrimary} onPress={startMockWalk}>
-              <Text style={localStyles.mockButtonPrimaryText}>Simular</Text>
+          <View
+            style={[
+              localStyles.mockControls,
+              {
+                borderColor: Colors[theme].cardBorder,
+                backgroundColor: Colors[theme].card,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[localStyles.mockButtonPrimary, { backgroundColor: Colors[theme].confirmationButtonBackground }]}
+              onPress={startMockWalk}
+            >
+              <Text
+                style={[
+                  localStyles.mockButtonPrimaryText,
+                  { color: theme === 'dark' ? Colors.dark.text : Colors.light.background },
+                ]}
+              >
+                Simular
+              </Text>
             </TouchableOpacity>
 
             {plantsData.slice(0, 3).map((plant, index) => (
               <TouchableOpacity
                 activeOpacity={0.8}
                 key={plant.id}
-                style={localStyles.mockButton}
+                style={[localStyles.mockButton, { backgroundColor: Colors[theme].cancelButtonBackground }]}
                 onPress={() => moveToMockCoordinate(plant.latitude, plant.longitude)}
               >
-                <Text style={localStyles.mockButtonText}>P{index + 1}</Text>
+                <Text style={[localStyles.mockButtonText, { color: Colors[theme].text }]}>P{index + 1}</Text>
               </TouchableOpacity>
             ))}
 
-            <TouchableOpacity activeOpacity={0.8} style={localStyles.mockButton} onPress={stopMockWalk}>
-              <Text style={localStyles.mockButtonText}>Parar</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[localStyles.mockButton, { backgroundColor: Colors[theme].cancelButtonBackground }]}
+              onPress={stopMockWalk}
+            >
+              <Text style={[localStyles.mockButtonText, { color: Colors[theme].text }]}>Parar</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -407,9 +431,7 @@ const localStyles = StyleSheet.create({
     gap: 6,
     zIndex: 2,
     borderWidth: 1,
-    borderColor: 'rgba(28, 29, 28, 0.1)',
     borderRadius: 8,
-    backgroundColor: 'rgba(248, 249, 248, 0.92)',
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
@@ -417,24 +439,20 @@ const localStyles = StyleSheet.create({
     minWidth: 40,
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#E5E8E5',
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   mockButtonPrimary: {
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#2B4C2C',
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   mockButtonText: {
-    color: '#1C1D1C',
     fontSize: 12,
     fontWeight: '600',
   },
   mockButtonPrimaryText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },

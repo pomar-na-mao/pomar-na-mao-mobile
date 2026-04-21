@@ -396,25 +396,48 @@ export const WorkRoutineMap = () => {
           ) : null}
         </MapView>
 
-        {__DEV__ ? (
-          <View style={styles.mockControls}>
-            <TouchableOpacity activeOpacity={0.8} style={styles.mockButtonPrimary} onPress={startMockWalk}>
-              <Text style={styles.mockButtonPrimaryText}>Simular</Text>
+        {__DEV__ && searchPlantsData.length > 0 ? (
+          <View
+            style={[
+              styles.mockControls,
+              {
+                borderColor: Colors[theme].cardBorder,
+                backgroundColor: Colors[theme].card,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.mockButtonPrimary, { backgroundColor: Colors[theme].confirmationButtonBackground }]}
+              onPress={startMockWalk}
+            >
+              <Text
+                style={[
+                  styles.mockButtonPrimaryText,
+                  { color: theme === 'dark' ? Colors.dark.text : Colors.light.background },
+                ]}
+              >
+                Simular
+              </Text>
             </TouchableOpacity>
 
             {searchPlantsData.slice(0, 3).map((plant, index) => (
               <TouchableOpacity
                 activeOpacity={0.8}
                 key={plant.id}
-                style={styles.mockButton}
+                style={[styles.mockButton, { backgroundColor: Colors[theme].cancelButtonBackground }]}
                 onPress={() => moveToMockCoordinate(plant.latitude, plant.longitude)}
               >
-                <Text style={styles.mockButtonText}>P{index + 1}</Text>
+                <Text style={[styles.mockButtonText, { color: Colors[theme].text }]}>P{index + 1}</Text>
               </TouchableOpacity>
             ))}
 
-            <TouchableOpacity activeOpacity={0.8} style={styles.mockButton} onPress={stopMockWalk}>
-              <Text style={styles.mockButtonText}>Parar</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.mockButton, { backgroundColor: Colors[theme].cancelButtonBackground }]}
+              onPress={stopMockWalk}
+            >
+              <Text style={[styles.mockButtonText, { color: Colors[theme].text }]}>Parar</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -457,9 +480,7 @@ const styles = StyleSheet.create({
     gap: 6,
     zIndex: 2,
     borderWidth: 1,
-    borderColor: 'rgba(28, 29, 28, 0.1)',
     borderRadius: 8,
-    backgroundColor: 'rgba(248, 249, 248, 0.92)',
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
@@ -467,23 +488,19 @@ const styles = StyleSheet.create({
     minWidth: 40,
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#E5E8E5',
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   mockButtonPrimary: {
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#2B4C2C',
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   mockButtonText: {
-    color: '#1C1D1C',
     fontWeight: '600',
   },
   mockButtonPrimaryText: {
-    color: '#FFFFFF',
     fontWeight: '700',
   },
 });
