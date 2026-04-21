@@ -6,8 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WorkRoutineScreen() {
   return (
-    <ThemedView style={{ flex: 1, paddingHorizontal: 16 }}>
-      <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
+    <ThemedView style={{ flex: 1 }}>
+      <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
         <WorkRoutineMapProvider>
           <WorkRoutineMap />
         </WorkRoutineMapProvider>

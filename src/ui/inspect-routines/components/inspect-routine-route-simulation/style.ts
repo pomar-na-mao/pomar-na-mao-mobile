@@ -48,9 +48,4 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  mockButtonPrimaryText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 });

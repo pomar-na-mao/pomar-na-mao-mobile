@@ -9,8 +9,13 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   actionsContainer: {
-    height: 96,
-    alignSelf: 'stretch',
+    position: 'absolute',
+    bottom: 24,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
   },
   centered: {
     flex: 1,

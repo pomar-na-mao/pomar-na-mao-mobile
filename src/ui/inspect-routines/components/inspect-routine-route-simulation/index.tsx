@@ -14,11 +14,11 @@ interface Coordinate {
   longitude: number;
 }
 
-interface WorkRoutineRouteSimulationProps {
+interface InspectRoutineRouteSimulationProps {
   applyLocationUpdate: (location: Location.LocationObject) => void;
   onMockingLocationChange: (isMockingLocation: boolean) => void;
   plantsData: PlantData[];
-  userLocation: Location.LocationObject;
+  userLocation: Location.LocationObject | null;
 }
 
 const createMockLocation = (latitude: number, longitude: number): Location.LocationObject => ({
@@ -55,7 +55,7 @@ const buildMockRoute = (start: Coordinate, targets: Coordinate[]): Coordinate[] 
   });
 };
 
-export const WorkRoutineRouteSimulation: React.FC<WorkRoutineRouteSimulationProps> = ({
+export const InspectRoutineRouteSimulation: React.FC<InspectRoutineRouteSimulationProps> = ({
   applyLocationUpdate,
   onMockingLocationChange,
   plantsData,
@@ -88,7 +88,7 @@ export const WorkRoutineRouteSimulation: React.FC<WorkRoutineRouteSimulationProp
   );
 
   const startMockWalk = useCallback(() => {
-    if (!__DEV__ || plantsData.length === 0) {
+    if (!__DEV__ || !userLocation || plantsData.length === 0) {
       return;
     }
 

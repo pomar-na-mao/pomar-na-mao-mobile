@@ -6,11 +6,10 @@ import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
-import { ThemedView } from '@/shared/themes/themed-view';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Network from 'expo-network';
 import * as React from 'react';
-import { TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { styles } from './style';
 
 interface WorkRoutineActionsProps {
@@ -152,70 +151,69 @@ export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFi
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <TouchableOpacity
+    <View style={styles.dockContainer}>
+      <View
         style={[
-          styles.button,
+          styles.pillBar,
           {
-            backgroundColor: Colors[theme].card,
-            borderColor: Colors[theme].line,
+            backgroundColor: theme === 'dark' ? 'rgba(28, 29, 28, 0.92)' : 'rgba(255, 255, 255, 0.92)',
           },
         ]}
-        activeOpacity={0.8}
-        onPress={onOpenDetails}
-        accessibilityRole="button"
-        accessibilityLabel="Abrir detalhes"
       >
-        <MaterialCommunityIcons name="file-document-outline" size={22} color={Colors[theme].text} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.secondaryButton,
+            {
+              backgroundColor: Colors[theme].background,
+              borderColor: Colors[theme].line,
+            },
+          ]}
+          activeOpacity={0.8}
+          onPress={onOpenDetails}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir detalhes"
+        >
+          <MaterialCommunityIcons name="file-document-outline" size={22} color={Colors[theme].text} />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: Colors[theme].tint,
-            borderColor: Colors[theme].tint,
-          },
-        ]}
-        onPress={handleOpenFiltersPress}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel="Buscar plantas"
-      >
-        <MaterialCommunityIcons name="magnify" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.primaryButton, { backgroundColor: Colors[theme].tint }]}
+          onPress={handleOpenFiltersPress}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar plantas"
+        >
+          <MaterialCommunityIcons name="magnify" size={20} color="#FFFFFF" />
+          <Text style={styles.primaryButtonText}>Buscar</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: Colors[theme].card,
-            borderColor: Colors[theme].line,
-          },
-        ]}
-        activeOpacity={0.8}
-        onPress={handleResetWorkRoutinePress}
-        accessibilityRole="button"
-        accessibilityLabel="Resetar pesquisa"
-      >
-        <MaterialCommunityIcons name="backup-restore" size={22} color={Colors[theme].text} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.primaryButton, { backgroundColor: Colors[theme].tint }]}
+          activeOpacity={0.8}
+          onPress={handleSendUpdatesPress}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar atualizações"
+        >
+          <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
+          <Text style={styles.primaryButtonText}>Enviar</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: Colors[theme].tint,
-            borderColor: Colors[theme].tint,
-          },
-        ]}
-        activeOpacity={0.8}
-        onPress={handleSendUpdatesPress}
-        accessibilityRole="button"
-        accessibilityLabel="Enviar atualizações"
-      >
-        <MaterialCommunityIcons name="send" size={22} color="#FFFFFF" />
-      </TouchableOpacity>
-    </ThemedView>
+        <TouchableOpacity
+          style={[
+            styles.secondaryButton,
+            {
+              backgroundColor: Colors[theme].background,
+              borderColor: Colors[theme].line,
+            },
+          ]}
+          activeOpacity={0.8}
+          onPress={handleResetWorkRoutinePress}
+          accessibilityRole="button"
+          accessibilityLabel="Resetar pesquisa"
+        >
+          <MaterialCommunityIcons name="backup-restore" size={22} color={Colors[theme].text} />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
