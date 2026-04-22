@@ -13,6 +13,11 @@ export interface Coordinate {
   accuracy?: number;
 }
 
+export interface NearestPlantResult {
+  plant: PlantData;
+  distance: number;
+}
+
 export const maxAcceptableAccuracy = 20; // meters
 
 export const threshold = 2; // meters
@@ -138,7 +143,10 @@ export const getPolygonCentroid = (points: Point[]): Point | null => {
   };
 };
 
-export const detectNearestPlant = (currentLocation: LocationObject, plants: PlantData[]): PlantData | null => {
+export const detectNearestPlantWithDistance = (
+  currentLocation: LocationObject,
+  plants: PlantData[],
+): NearestPlantResult | null => {
   if (!plants || plants.length === 0) {
     return null;
   }
@@ -177,5 +185,12 @@ export const detectNearestPlant = (currentLocation: LocationObject, plants: Plan
     }
   }
 
-  return nearestCollect;
+  return {
+    plant: nearestCollect,
+    distance: minimumDistance,
+  };
+};
+
+export const detectNearestPlant = (currentLocation: LocationObject, plants: PlantData[]): PlantData | null => {
+  return detectNearestPlantWithDistance(currentLocation, plants)?.plant ?? null;
 };

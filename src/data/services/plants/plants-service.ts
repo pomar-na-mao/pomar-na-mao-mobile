@@ -32,6 +32,10 @@ class PlantsService {
   async insert(plant: PlantData): Promise<PostgrestSingleResponse<PlantData>> {
     return await supabase.from('plants').insert([plant]).select().single();
   }
+
+  async update(id: string, plant: Partial<PlantData>): Promise<PostgrestSingleResponse<null>> {
+    return await supabase.from('plants').update(plant).eq('id', id);
+  }
 }
 
 export const plantsService = new PlantsService();
