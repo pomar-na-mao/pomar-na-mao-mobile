@@ -26,6 +26,12 @@ class PlantsRepository {
 
     return { data, error };
   }
+
+  async update(id: string, plant: Partial<PlantData>) {
+    const { error } = await plantsService.update(id, plant);
+
+    return { error };
+  }
 }
 
 export const plantsRepository = new PlantsRepository();

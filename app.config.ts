@@ -4,7 +4,7 @@ export default {
   expo: {
     name: 'Pomar na mão',
     slug: 'pomar-na-mao-mobile',
-    version: '1.0.1',
+    version: '1.1.0',
     orientation: 'portrait',
     icon: './src/assets/images/icon.png',
     scheme: 'pomarnamaomobile',
@@ -20,7 +20,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F8F9F8',
         foregroundImage: './src/assets/images/android-icon-foreground.png',
       },
       edgeToEdgeEnabled: true,
@@ -47,7 +47,10 @@ export default {
           image: './src/assets/images/splash-icon.png',
           imageWidth: 200,
           resizeMode: 'contain',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#F8F9F8',
+          dark: {
+            backgroundColor: '#1C1D1C',
+          },
         },
       ],
     ],
