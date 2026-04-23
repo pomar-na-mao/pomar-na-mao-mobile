@@ -1,6 +1,6 @@
 import { ThemedView } from '@/shared/themes/themed-view';
-import { WorkRoutineMap } from '@/ui/field-works/components/work-routine-map';
-import { WorkRoutineMapProvider } from '@/ui/field-works/view-models/useWorkRoutineMap';
+import { WorkRoutineMap } from '@/ui/work-routines/components/work-routine-map';
+import { WorkRoutineMapProvider } from '@/ui/work-routines/view-models/useWorkRoutineMap';
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

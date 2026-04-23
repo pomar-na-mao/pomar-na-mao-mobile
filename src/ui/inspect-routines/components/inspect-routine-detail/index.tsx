@@ -2,12 +2,13 @@ import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolo
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { useInspectRoutinesStore } from '@/data/store/inspect-routines/use-inspect-routines-store';
 import type { PlantData, Position } from '@/domain/models/shared/plant-data.model';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
+import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import { darkMapStyle } from '../../../../../mapStyle';
 import { InspectRoutineNearestPlantCard } from '../../components/inspect-routine-nearest-plant-card';
 import { CardSkeleton } from '../card-skeleton';
@@ -21,7 +22,6 @@ const CAMERA_ANIMATION_INTERVAL_MS = 350;
 const INITIAL_REGION_DELTA = 0.001;
 const LOCATION_DISTANCE_INTERVAL_METERS = 1;
 const LOCATION_TIME_INTERVAL_MS = 500;
-const MARKER_ANIMATION_DURATION_MS = 450;
 const MIN_LOCATION_CHANGE_METERS = 0.35;
 const NEAREST_PLANT_SWITCH_MARGIN_METERS = 0.75;
 
@@ -33,7 +33,6 @@ export const InspectRoutineDetail = () => {
     useInspectRoutinesStore();
 
   const mapRef = useRef<MapView>(null);
-  const userMarkerRef = useRef<React.ElementRef<typeof Marker>>(null);
   const lastCameraAnimationAtRef = useRef(0);
   const lastLocationRef = useRef<Location.LocationObject | null>(null);
   const isMockingLocationRef = useRef(false);
@@ -60,8 +59,6 @@ export const InspectRoutineDetail = () => {
   }, [selectedInspection?.plant_data]);
 
   const animateMapToCoordinate = useCallback((coordinate: { latitude: number; longitude: number }) => {
-    userMarkerRef.current?.animateMarkerToCoordinate(coordinate, MARKER_ANIMATION_DURATION_MS);
-
     const now = Date.now();
 
     if (now - lastCameraAnimationAtRef.current < CAMERA_ANIMATION_INTERVAL_MS) {
@@ -250,11 +247,9 @@ export const InspectRoutineDetail = () => {
             initialRegion={initialLocation}
           >
             {location ? (
-              <Marker
-                ref={userMarkerRef}
+              <UserLocationMarker
                 coordinate={{ latitude: location.coords.latitude, longitude: location.coords.longitude }}
-                tracksViewChanges={false}
-              ></Marker>
+              />
             ) : null}
             <RoutinePlantsCircles nearestPlantId={nearestPlant?.id ?? null} plantsData={plantsData} />
           </MapView>
