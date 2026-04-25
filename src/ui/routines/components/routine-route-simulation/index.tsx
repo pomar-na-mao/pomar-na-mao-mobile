@@ -14,7 +14,7 @@ interface Coordinate {
   longitude: number;
 }
 
-interface WorkRoutineRouteSimulationProps {
+interface RoutineRouteSimulationProps {
   applyLocationUpdate: (location: Location.LocationObject) => void;
   onMockingLocationChange: (isMockingLocation: boolean) => void;
   plantsData: PlantData[];
@@ -55,7 +55,7 @@ const buildMockRoute = (start: Coordinate, targets: Coordinate[]): Coordinate[] 
   });
 };
 
-export const WorkRoutineRouteSimulation: React.FC<WorkRoutineRouteSimulationProps> = ({
+export const RoutineRouteSimulation: React.FC<RoutineRouteSimulationProps> = ({
   applyLocationUpdate,
   onMockingLocationChange,
   plantsData,

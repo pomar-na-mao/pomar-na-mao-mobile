@@ -1,19 +1,18 @@
 import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import { useSQLiteContext } from 'expo-sqlite';
 
-export interface SqliteWorkRoutinePlant {
+export interface SqliteRoutinePlant {
   id: string;
   plant_data: string;
   updated_at: string;
 }
 
-export function useWorkRoutineSqliteService() {
+export function useRoutineSqliteService() {
   const database = useSQLiteContext();
 
   async function upsertPlant(plant: PlantData) {
     const statement = await database.prepareAsync(
-      'INSERT OR REPLACE INTO work_routine_plants (id, plant_data, updated_at) ' +
-        'VALUES ($id, $plantData, $updatedAt)',
+      'INSERT OR REPLACE INTO routine_plants (id, plant_data, updated_at) ' + 'VALUES ($id, $plantData, $updatedAt)',
     );
 
     try {
@@ -31,8 +30,8 @@ export function useWorkRoutineSqliteService() {
 
   async function findById(id: string): Promise<PlantData | null> {
     try {
-      const query = 'SELECT * FROM work_routine_plants WHERE id = ?';
-      const result = await database.getFirstAsync<SqliteWorkRoutinePlant>(query, [id]);
+      const query = 'SELECT * FROM routine_plants WHERE id = ?';
+      const result = await database.getFirstAsync<SqliteRoutinePlant>(query, [id]);
 
       if (!result) {
         return null;
@@ -46,8 +45,8 @@ export function useWorkRoutineSqliteService() {
 
   async function searchAll(): Promise<PlantData[]> {
     try {
-      const query = 'SELECT * FROM work_routine_plants';
-      const response = await database.getAllAsync<SqliteWorkRoutinePlant>(query);
+      const query = 'SELECT * FROM routine_plants';
+      const response = await database.getAllAsync<SqliteRoutinePlant>(query);
 
       return response.map((item) => JSON.parse(item.plant_data) as PlantData);
     } catch (error) {
@@ -57,7 +56,7 @@ export function useWorkRoutineSqliteService() {
 
   async function clearAll() {
     try {
-      await database.execAsync('DELETE FROM work_routine_plants');
+      await database.execAsync('DELETE FROM routine_plants');
     } catch (error) {
       throw error;
     }
@@ -65,13 +64,12 @@ export function useWorkRoutineSqliteService() {
 
   async function replaceAll(plants: PlantData[]) {
     const statement = await database.prepareAsync(
-      'INSERT OR REPLACE INTO work_routine_plants (id, plant_data, updated_at) ' +
-        'VALUES ($id, $plantData, $updatedAt)',
+      'INSERT OR REPLACE INTO routine_plants (id, plant_data, updated_at) ' + 'VALUES ($id, $plantData, $updatedAt)',
     );
 
     try {
       await database.execAsync('BEGIN TRANSACTION');
-      await database.execAsync('DELETE FROM work_routine_plants');
+      await database.execAsync('DELETE FROM routine_plants');
 
       for (const plant of plants) {
         await statement.executeAsync({

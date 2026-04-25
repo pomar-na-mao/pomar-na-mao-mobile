@@ -1,30 +1,30 @@
 import { plantsRepository } from '@/data/repositories/plants/plants-repository';
-import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
-import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
-import type { WorkRoutineFilter } from '@/domain/models/work-routine/work-routine-search.schema';
+import { useRoutineSqliteService } from '@/data/services/routine/use-routine-sqlite-service';
+import { useRoutineStore } from '@/data/store/routine/use-routine-store';
+import type { RoutineFilter } from '@/domain/models/routine/routine-search.schema';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { detectNearestPlantWithDistance } from '@/utils/geolocation/geolocation-math';
 import React, { createContext, useContext, useEffect } from 'react';
 
-interface WorkRoutineMapContextProps {
-  loadPlantsByFilters(filters: WorkRoutineFilter | null): Promise<void>;
+interface RoutineMapContextProps {
+  loadPlantsByFilters(filters: RoutineFilter | null): Promise<void>;
 }
 
-const WorkRoutineMapContext = createContext({} as WorkRoutineMapContextProps);
+const RoutineMapContext = createContext({} as RoutineMapContextProps);
 
-export const WorkRoutineMapProvider = ({ children }: { children: React.ReactNode }) => {
-  const { setSearchPlantsData, location, setNearestPlant } = useWorkRoutineStore((state) => state);
+export const RoutineMapProvider = ({ children }: { children: React.ReactNode }) => {
+  const { setSearchPlantsData, location, setNearestPlant } = useRoutineStore((state) => state);
 
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
-  const workRoutineSqliteService = useWorkRoutineSqliteService();
+  const routineSqliteService = useRoutineSqliteService();
 
   useEffect(() => {
     async function loadSavedPlants() {
       setIsLoading(true);
       try {
-        const locallyUpdatedPlants = await workRoutineSqliteService.searchAll();
+        const locallyUpdatedPlants = await routineSqliteService.searchAll();
         if (locallyUpdatedPlants && locallyUpdatedPlants.length > 0) {
           setSearchPlantsData(locallyUpdatedPlants);
         }
@@ -38,7 +38,7 @@ export const WorkRoutineMapProvider = ({ children }: { children: React.ReactNode
     loadSavedPlants();
   }, []);
 
-  async function loadPlantsByFilters(filters: WorkRoutineFilter | null): Promise<void> {
+  async function loadPlantsByFilters(filters: RoutineFilter | null): Promise<void> {
     setIsLoading(true);
 
     try {
@@ -53,14 +53,14 @@ export const WorkRoutineMapProvider = ({ children }: { children: React.ReactNode
       }
 
       if (data && data.length > 0) {
-        const locallyUpdatedPlants = await workRoutineSqliteService.searchAll();
+        const locallyUpdatedPlants = await routineSqliteService.searchAll();
         const locallyUpdatedPlantsById = new Map(locallyUpdatedPlants.map((plant) => [plant.id, plant]));
 
         const normalizedPlantsData = data.map(
           (item) => locallyUpdatedPlantsById.get(item.id) ?? { ...item, wasUpdated: false },
         );
 
-        await workRoutineSqliteService.replaceAll(normalizedPlantsData);
+        await routineSqliteService.replaceAll(normalizedPlantsData);
         setSearchPlantsData(normalizedPlantsData);
 
         if (location) {
@@ -73,7 +73,7 @@ export const WorkRoutineMapProvider = ({ children }: { children: React.ReactNode
         return;
       }
 
-      await workRoutineSqliteService.clearAll();
+      await routineSqliteService.clearAll();
       setSearchPlantsData([]);
       setNearestPlant(null);
       setMessage('Nenhuma planta encontrada para os filtros selecionados.\nAjuste os filtros e tente novamente!');
@@ -89,7 +89,7 @@ export const WorkRoutineMapProvider = ({ children }: { children: React.ReactNode
     }
   }
 
-  return <WorkRoutineMapContext.Provider value={{ loadPlantsByFilters }}>{children}</WorkRoutineMapContext.Provider>;
+  return <RoutineMapContext.Provider value={{ loadPlantsByFilters }}>{children}</RoutineMapContext.Provider>;
 };
 
-export const useWorkRoutineMap = () => useContext(WorkRoutineMapContext);
+export const useRoutineMap = () => useContext(RoutineMapContext);

@@ -1,11 +1,11 @@
-import type { WorkRoutineFilter } from '@/domain/models/work-routine/work-routine-search.schema';
+import type { RoutineFilter } from '@/domain/models/routine/routine-search.schema';
 import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import * as Location from 'expo-location';
 import { create } from 'zustand';
 
-interface WorkRoutineStore {
-  workRoutineFilters: WorkRoutineFilter | null;
-  setWorkRoutineFilters: (filters: WorkRoutineFilter | null) => void;
+interface RoutineStore {
+  routineFilters: RoutineFilter | null;
+  setRoutineFilters: (filters: RoutineFilter | null) => void;
 
   searchPlantsData: PlantData[];
   setSearchPlantsData: (plantsData: PlantData[]) => void;
@@ -17,9 +17,9 @@ interface WorkRoutineStore {
   setLocation: (location: Location.LocationObject | null) => void;
 }
 
-export const useWorkRoutineStore = create<WorkRoutineStore>((set) => ({
-  workRoutineFilters: null,
-  setWorkRoutineFilters: (workRoutineFilters) => set(() => ({ workRoutineFilters })),
+export const useRoutineStore = create<RoutineStore>((set) => ({
+  routineFilters: null,
+  setRoutineFilters: (routineFilters) => set(() => ({ routineFilters })),
 
   searchPlantsData: [],
   setSearchPlantsData: (searchPlantsData) => set(() => ({ searchPlantsData })),

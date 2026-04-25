@@ -3,13 +3,13 @@ import { Colors } from '@/shared/constants/theme';
 import { memo } from 'react';
 import { Circle } from 'react-native-maps';
 
-interface WorkRoutinePlantCircleProps {
+interface RoutinePlantCircleProps {
   isNearestPlant: boolean;
   marker: PlantsMarker;
   theme: keyof typeof Colors;
 }
 
-export const WorkRoutinePlantCircle = memo(({ isNearestPlant, marker, theme }: WorkRoutinePlantCircleProps) => {
+export const RoutinePlantCircle = memo(({ isNearestPlant, marker, theme }: RoutinePlantCircleProps) => {
   const circleColor = isNearestPlant ? Colors[theme].secondary : Colors[theme].plantCircle;
 
   return (
@@ -26,4 +26,4 @@ export const WorkRoutinePlantCircle = memo(({ isNearestPlant, marker, theme }: W
   );
 });
 
-WorkRoutinePlantCircle.displayName = 'WorkRoutinePlantCircle';
+RoutinePlantCircle.displayName = 'RoutinePlantCircle';

@@ -1,5 +1,5 @@
-import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
-import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
+import { useRoutineSqliteService } from '@/data/services/routine/use-routine-sqlite-service';
+import { useRoutineStore } from '@/data/store/routine/use-routine-store';
 import type { PlantInformation } from '@/domain/models/inspect-routines/inspect-routines-informations.schema';
 import type { HorizontalTab } from '@/domain/models/shared/horizontal-tab.model';
 import type { BooleanKeys, PlantData } from '@/domain/models/shared/plant-data.model';
@@ -17,21 +17,21 @@ import { PlantInformationForm } from './plant-information-form';
 import { PlantOccurrencesForm } from './plant-occurrences-form';
 import { styles } from './style';
 
-interface NearestPlantInWorkRoutineModalDataProps {
+interface NearestPlantInRoutineModalDataProps {
   isDetailModalVisible: boolean;
   setIsDetailModalVisible: (isDetailModalVisible: boolean) => void;
   plant: PlantData | null;
 }
 
-export const NearestPlantInWorkRoutineModalData: React.FC<NearestPlantInWorkRoutineModalDataProps> = ({
+export const NearestPlantInRoutineModalData: React.FC<NearestPlantInRoutineModalDataProps> = ({
   isDetailModalVisible,
   setIsDetailModalVisible,
   plant,
 }) => {
   const [activeTab, setActiveTab] = useState(plantDataTabs[0]);
 
-  const workRoutineSqliteService = useWorkRoutineSqliteService();
-  const { searchPlantsData, setSearchPlantsData, setNearestPlant } = useWorkRoutineStore();
+  const routineSqliteService = useRoutineSqliteService();
+  const { searchPlantsData, setSearchPlantsData, setNearestPlant } = useRoutineStore();
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
   const theme = useColorScheme() ?? 'light';
@@ -45,7 +45,7 @@ export const NearestPlantInWorkRoutineModalData: React.FC<NearestPlantInWorkRout
     setIsLoading(true);
 
     try {
-      await workRoutineSqliteService.upsertPlant(updatedPlant);
+      await routineSqliteService.upsertPlant(updatedPlant);
 
       setSearchPlantsData(searchPlantsData.map((item) => (item.id === updatedPlant.id ? updatedPlant : item)));
       setNearestPlant(updatedPlant);

@@ -3,12 +3,9 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, useColorScheme, View } from 'react-native';
 
-import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
-import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
-import {
-  workRoutineSearchSchema,
-  type WorkRoutineFilter,
-} from '@/domain/models/work-routine/work-routine-search.schema';
+import { useRoutineSqliteService } from '@/data/services/routine/use-routine-sqlite-service';
+import { useRoutineStore } from '@/data/store/routine/use-routine-store';
+import { routineSearchSchema, type RoutineFilter } from '@/domain/models/routine/routine-search.schema';
 import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
@@ -20,28 +17,28 @@ import { useRegionOptions } from '@/ui/shared/hooks/use-regions-options';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useWorkRoutineMap } from '../../view-models/useWorkRoutineMap';
+import { useRoutineMap } from '../../view-models/useRoutineMap';
 import { styles } from './styles';
 
-interface WorkRoutineRequiredFiltersProps {
+interface RoutineRequiredFiltersProps {
   closeMenu: () => void;
 }
 
-export const WorkRoutineRequiredFilters: React.FC<WorkRoutineRequiredFiltersProps> = ({ closeMenu }) => {
-  const workRoutineSqliteService = useWorkRoutineSqliteService();
-  const workRoutineFilters = useWorkRoutineStore((state) => state.workRoutineFilters);
-  const setSearchPlantsData = useWorkRoutineStore((state) => state.setSearchPlantsData);
-  const setNearestPlant = useWorkRoutineStore((state) => state.setNearestPlant);
-  const setWorkRoutineFilters = useWorkRoutineStore((state) => state.setWorkRoutineFilters);
-  const { loadPlantsByFilters } = useWorkRoutineMap();
+export const RoutineRequiredFilters: React.FC<RoutineRequiredFiltersProps> = ({ closeMenu }) => {
+  const routineSqliteService = useRoutineSqliteService();
+  const routineFilters = useRoutineStore((state) => state.routineFilters);
+  const setSearchPlantsData = useRoutineStore((state) => state.setSearchPlantsData);
+  const setNearestPlant = useRoutineStore((state) => state.setNearestPlant);
+  const setRoutineFilters = useRoutineStore((state) => state.setRoutineFilters);
+  const { loadPlantsByFilters } = useRoutineMap();
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
 
-  const { formState, handleSubmit, setValue, watch } = useForm<WorkRoutineFilter>({
-    resolver: zodResolver(workRoutineSearchSchema),
+  const { formState, handleSubmit, setValue, watch } = useForm<RoutineFilter>({
+    resolver: zodResolver(routineSearchSchema),
     defaultValues: {
-      region: workRoutineFilters?.region ?? null,
-      occurrence: workRoutineFilters?.occurrence ?? null,
+      region: routineFilters?.region ?? null,
+      occurrence: routineFilters?.occurrence ?? null,
     },
   });
 
@@ -57,7 +54,7 @@ export const WorkRoutineRequiredFilters: React.FC<WorkRoutineRequiredFiltersProp
   }, [isLoadingRegions, isLoadingOccurrences]);
 
   useEffect(() => {
-    setWorkRoutineFilters({
+    setRoutineFilters({
       region: regionValue ?? null,
       occurrence: occurrenceValue ?? null,
     });
@@ -67,12 +64,12 @@ export const WorkRoutineRequiredFilters: React.FC<WorkRoutineRequiredFiltersProp
     setIsLoading(true);
 
     try {
-      await workRoutineSqliteService.clearAll();
+      await routineSqliteService.clearAll();
       setValue('region', null);
       setValue('occurrence', null);
       setSearchPlantsData([]);
       setNearestPlant(null);
-      setWorkRoutineFilters(null);
+      setRoutineFilters(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setMessage('Erro ao limpar a base local da rotina de trabalho.\n' + message);
@@ -82,7 +79,7 @@ export const WorkRoutineRequiredFilters: React.FC<WorkRoutineRequiredFiltersProp
     }
   };
 
-  const searchWorkRoutineData = async () => {
+  const searchRoutineData = async () => {
     await loadPlantsByFilters({
       region: regionValue ? String(regionValue) : null,
       occurrence: occurrenceValue ? String(occurrenceValue) : null,
@@ -137,7 +134,7 @@ export const WorkRoutineRequiredFilters: React.FC<WorkRoutineRequiredFiltersProp
               <Button
                 variant="primary"
                 title="Buscar"
-                onPress={handleSubmit(searchWorkRoutineData)}
+                onPress={handleSubmit(searchRoutineData)}
                 disabled={!regionValue}
               />
             </View>

@@ -34,10 +34,10 @@ const cards: CardItem[] = [
     icon: 'event-note',
   },
   {
-    id: 'work-routine',
-    title: 'Rotina de trabalho',
-    subtitle: 'Inicie um trabalho para tratamento de ocorrências de árvores!',
-    route: '/work-routine' as ExpoRouterPath,
+    id: 'routine',
+    title: 'Rotina',
+    subtitle: 'Inicie uma rotina para avaliação de ocorrências!',
+    route: '/routine' as ExpoRouterPath,
     icon: 'work',
   },
   {

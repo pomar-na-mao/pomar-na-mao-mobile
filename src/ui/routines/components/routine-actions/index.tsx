@@ -1,6 +1,6 @@
-import { workRoutinesRepository } from '@/data/repositories/work-routines/work-routines-repository';
-import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
-import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
+import { routinesRepository } from '@/data/repositories/routines/routines-repository';
+import { useRoutineSqliteService } from '@/data/services/routine/use-routine-sqlite-service';
+import { useRoutineStore } from '@/data/store/routine/use-routine-store';
 import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
@@ -12,17 +12,17 @@ import * as React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { styles } from './style';
 
-interface WorkRoutineActionsProps {
+interface RoutineActionsProps {
   onOpenFilters: () => void;
   onOpenDetails: () => void;
 }
 
-export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFilters, onOpenDetails }) => {
+export const RoutineActions: React.FC<RoutineActionsProps> = ({ onOpenFilters, onOpenDetails }) => {
   const { setIsLoading } = useLoadingStore();
   const theme = useColorScheme() ?? 'light';
   const { setMessage, setIsVisible } = useAlertBoxStore();
-  const workRoutineSqliteService = useWorkRoutineSqliteService();
-  const { workRoutineFilters, setSearchPlantsData, setNearestPlant, setWorkRoutineFilters } = useWorkRoutineStore(
+  const routineSqliteService = useRoutineSqliteService();
+  const { routineFilters, setSearchPlantsData, setNearestPlant, setRoutineFilters } = useRoutineStore(
     (state) => state,
   );
 
@@ -40,14 +40,14 @@ export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFi
     }
   };
 
-  const handleResetWorkRoutinePress = async () => {
+  const handleResetRoutinePress = async () => {
     setIsLoading(true);
 
     try {
-      await workRoutineSqliteService.clearAll();
+      await routineSqliteService.clearAll();
       setSearchPlantsData([]);
       setNearestPlant(null);
-      setWorkRoutineFilters(null);
+      setRoutineFilters(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setMessage('Erro ao limpar os dados locais da rotina de trabalho.\n' + message);
@@ -71,7 +71,7 @@ export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFi
     }
 
     try {
-      const locallyUpdatedPlants = await workRoutineSqliteService.searchAll();
+      const locallyUpdatedPlants = await routineSqliteService.searchAll();
       const plantsToSend = locallyUpdatedPlants.filter((plant) => plant.wasUpdated);
 
       if (plantsToSend.length === 0) {
@@ -80,12 +80,12 @@ export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFi
         return;
       }
 
-      const newWorkRoutine = {
+      const newRoutine = {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         description: '',
         date: new Date().toISOString(),
-        region: workRoutineFilters?.region ?? plantsToSend[0]?.region ?? '',
+        region: routineFilters?.region ?? plantsToSend[0]?.region ?? '',
       };
 
       const enrichedPlantData = plantsToSend.map((plant) => ({
@@ -123,8 +123,8 @@ export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFi
         is_approved: false,
       }));
 
-      const { error: rpcError } = await workRoutinesRepository.createANewWorkRoutineWithPlants(
-        newWorkRoutine,
+      const { error: rpcError } = await routinesRepository.createANewRoutineWithPlants(
+        newRoutine,
         enrichedPlantData as Partial<PlantData>[],
       );
 
@@ -134,10 +134,10 @@ export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFi
         return;
       }
 
-      await workRoutineSqliteService.clearAll();
+      await routineSqliteService.clearAll();
       setSearchPlantsData([]);
       setNearestPlant(null);
-      setWorkRoutineFilters(null);
+      setRoutineFilters(null);
 
       setMessage('Dados enviados com sucesso.');
       setIsVisible(true);
@@ -207,7 +207,7 @@ export const WorkRoutineActions: React.FC<WorkRoutineActionsProps> = ({ onOpenFi
             },
           ]}
           activeOpacity={0.8}
-          onPress={handleResetWorkRoutinePress}
+          onPress={handleResetRoutinePress}
           accessibilityRole="button"
           accessibilityLabel="Resetar pesquisa"
         >

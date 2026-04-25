@@ -1,15 +1,15 @@
-import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
+import { useRoutineStore } from '@/data/store/routine/use-routine-store';
 import type { Region } from '@/domain/models/shared/geolocation.model';
 import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
-import { NearestPlantInWorkRoutineModalData } from '@/ui/work-routines/components/nearest-plant-in-work-routine-modal-data';
-import { WorkRoutineActions } from '@/ui/work-routines/components/work-routine-actions';
-import { WorkRoutinePlantsCircles } from '@/ui/work-routines/components/work-routine-plants-circles';
-import { WorkRoutineRequiredFilters } from '@/ui/work-routines/components/work-routine-required-filters';
-import { WorkRoutineRouteSimulation } from '@/ui/work-routines/components/work-routine-route-simulation';
+import { NearestPlantInRoutineModalData } from '@/ui/routines/components/nearest-plant-in-routine-modal-data';
+import { RoutineActions } from '@/ui/routines/components/routine-actions';
+import { RoutinePlantsCircles } from '@/ui/routines/components/routine-plants-circles';
+import { RoutineRequiredFilters } from '@/ui/routines/components/routine-required-filters';
+import { RoutineRouteSimulation } from '@/ui/routines/components/routine-route-simulation';
 import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolocation/geolocation-math';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -26,14 +26,14 @@ const ROUTE_EDGE_PADDING = { top: 80, right: 80, bottom: 120, left: 80 };
 const ROUTE_STROKE_WIDTH = 5;
 const ROUTE_OUTLINE_WIDTH = 9;
 
-export const WorkRoutineMap = () => {
+export const RoutineMap = () => {
   const [showFiltersMenu, setShowFiltersMenu] = useState(false);
   const [showPlantDetails, setShowPlantDetails] = useState(false);
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
-  const { searchPlantsData, nearestPlant, setLocation, setNearestPlant } = useWorkRoutineStore((state) => state);
+  const { searchPlantsData, nearestPlant, setLocation, setNearestPlant } = useRoutineStore((state) => state);
   const { setMessage, setIsVisible } = useAlertBoxStore();
 
   const mapRef = useRef<MapView>(null);
@@ -264,10 +264,10 @@ export const WorkRoutineMap = () => {
         transparent={true}
         onRequestClose={() => setShowFiltersMenu(false)}
       >
-        {showFiltersMenu ? <WorkRoutineRequiredFilters closeMenu={() => setShowFiltersMenu(false)} /> : null}
+        {showFiltersMenu ? <RoutineRequiredFilters closeMenu={() => setShowFiltersMenu(false)} /> : null}
       </Modal>
 
-      <NearestPlantInWorkRoutineModalData
+      <NearestPlantInRoutineModalData
         isDetailModalVisible={showPlantDetails}
         plant={nearestPlant}
         setIsDetailModalVisible={setShowPlantDetails}
@@ -312,13 +312,13 @@ export const WorkRoutineMap = () => {
             </>
           ) : null}
           {searchPlantsData?.length ? (
-            <WorkRoutinePlantsCircles plantsData={searchPlantsData} nearestPlantId={nearestPlant?.id ?? null} />
+            <RoutinePlantsCircles plantsData={searchPlantsData} nearestPlantId={nearestPlant?.id ?? null} />
           ) : null}
         </MapView>
       </View>
 
       <View style={styles.actionsContainer}>
-        <WorkRoutineRouteSimulation
+        <RoutineRouteSimulation
           applyLocationUpdate={applyLocationUpdate}
           onMockingLocationChange={(isMockingLocation) => {
             isMockingLocationRef.current = isMockingLocation;
@@ -326,7 +326,7 @@ export const WorkRoutineMap = () => {
           plantsData={searchPlantsData}
           userLocation={userLocation}
         />
-        <WorkRoutineActions onOpenDetails={openNearestPlantDetails} onOpenFilters={() => setShowFiltersMenu(true)} />
+        <RoutineActions onOpenDetails={openNearestPlantDetails} onOpenFilters={() => setShowFiltersMenu(true)} />
       </View>
     </View>
   );
