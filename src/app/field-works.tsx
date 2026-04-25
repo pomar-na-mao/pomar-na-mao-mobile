@@ -20,20 +20,6 @@ interface CardItem {
 
 const cards: CardItem[] = [
   {
-    id: 'inspect-routine',
-    title: 'Insp. planta',
-    subtitle: 'Inicie uma inspeção de rotina dentro de uma zona!',
-    route: '/inspect-routine' as ExpoRouterPath,
-    icon: 'assignment',
-  },
-  {
-    id: 'inspect-annotation',
-    title: 'Insp. anotação',
-    subtitle: 'Registre ocorrências identificadas em campo!',
-    route: '/inspect-annotation' as ExpoRouterPath,
-    icon: 'event-note',
-  },
-  {
     id: 'routine',
     title: 'Rotina',
     subtitle: 'Inicie uma rotina para avaliação de ocorrências!',
@@ -41,22 +27,29 @@ const cards: CardItem[] = [
     icon: 'work',
   },
   {
+    id: 'inspect-annotation',
+    title: 'Anotação',
+    subtitle: 'Registre ocorrências identificadas em campo!',
+    route: '/inspect-annotation' as ExpoRouterPath,
+    icon: 'event-note',
+  },
+  {
     id: 'add-plant',
-    title: 'Adicionar planta',
+    title: 'Nova planta',
     subtitle: 'Adicione uma nova planta na base!',
     route: '/add-plant' as ExpoRouterPath,
     icon: 'local-florist',
   },
   {
     id: 'pulverization',
-    title: 'Pulverização',
+    title: 'Pulverização (Em Breve)',
     subtitle: 'Registre sua rota durante uma pulverização para registrar!',
     route: null,
     icon: 'water-drop',
   },
   {
     id: 'harvest',
-    title: 'Colheita',
+    title: 'Colheita (Em breve)',
     subtitle: 'Registre sua rota durante a colheita para registrar!',
     route: null,
     icon: 'shopping-basket',

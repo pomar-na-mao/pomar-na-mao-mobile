@@ -72,7 +72,7 @@ export const RoutineRequiredFilters: React.FC<RoutineRequiredFiltersProps> = ({ 
       setRoutineFilters(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setMessage('Erro ao limpar a base local da rotina de trabalho.\n' + message);
+      setMessage('Erro ao limpar a base local da rotina.\n' + message);
       setIsVisible(true);
     } finally {
       setIsLoading(false);

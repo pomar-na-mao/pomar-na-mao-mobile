@@ -157,7 +157,7 @@ export const AddPlant = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: Colors[theme].background }]}>
             <ThemedText style={styles.modalTitle} type="defaultSemiBold">
-              Adicionar Planta
+              Nova planta
             </ThemedText>
 
             <TextInput

@@ -82,7 +82,7 @@ export const RoutineMapProvider = ({ children }: { children: React.ReactNode }) 
       const message = error instanceof Error ? error.message : String(error);
       setSearchPlantsData([]);
       setNearestPlant(null);
-      setMessage('Erro ao atualizar a base local da rotina de trabalho.\n' + message);
+      setMessage('Erro ao atualizar a base local da rotina.\n' + message);
       setIsVisible(true);
     } finally {
       setIsLoading(false);

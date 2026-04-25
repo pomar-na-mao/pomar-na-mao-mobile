@@ -5,12 +5,6 @@ export const PLANT_COLLECT_STORAGE = 'storage/v1/object/public/plant-collect/upl
 
 export const fieldWorks: HorizontalTab[] = [
   {
-    key: 'inspect-routine',
-    label: 'Insp. planta',
-    isDisabled: false,
-    showFilters: true,
-  },
-  {
     key: 'inspect-annotation',
     label: 'Insp. anotação',
     isDisabled: false,

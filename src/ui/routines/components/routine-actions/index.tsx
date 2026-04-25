@@ -22,9 +22,7 @@ export const RoutineActions: React.FC<RoutineActionsProps> = ({ onOpenFilters, o
   const theme = useColorScheme() ?? 'light';
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const routineSqliteService = useRoutineSqliteService();
-  const { routineFilters, setSearchPlantsData, setNearestPlant, setRoutineFilters } = useRoutineStore(
-    (state) => state,
-  );
+  const { routineFilters, setSearchPlantsData, setNearestPlant, setRoutineFilters } = useRoutineStore((state) => state);
 
   const handleOpenFiltersPress = async () => {
     setIsLoading(true);
@@ -50,7 +48,7 @@ export const RoutineActions: React.FC<RoutineActionsProps> = ({ onOpenFilters, o
       setRoutineFilters(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setMessage('Erro ao limpar os dados locais da rotina de trabalho.\n' + message);
+      setMessage('Erro ao limpar os dados locais da rotina.\n' + message);
       setIsVisible(true);
     } finally {
       setIsLoading(false);
