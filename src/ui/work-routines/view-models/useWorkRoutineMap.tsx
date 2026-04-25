@@ -1,11 +1,11 @@
+import { plantsRepository } from '@/data/repositories/plants/plants-repository';
 import { useWorkRoutineSqliteService } from '@/data/services/work-routine/use-work-routine-sqlite-service';
 import { useWorkRoutineStore } from '@/data/store/work-routine/use-work-routine-store';
 import type { WorkRoutineFilter } from '@/domain/models/work-routine/work-routine-search.schema';
-import { plantsRepository } from '@/data/repositories/plants/plants-repository';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { detectNearestPlantWithDistance } from '@/utils/geolocation/geolocation-math';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
 interface WorkRoutineMapContextProps {
   loadPlantsByFilters(filters: WorkRoutineFilter | null): Promise<void>;
@@ -19,6 +19,24 @@ export const WorkRoutineMapProvider = ({ children }: { children: React.ReactNode
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
   const workRoutineSqliteService = useWorkRoutineSqliteService();
+
+  useEffect(() => {
+    async function loadSavedPlants() {
+      setIsLoading(true);
+      try {
+        const locallyUpdatedPlants = await workRoutineSqliteService.searchAll();
+        if (locallyUpdatedPlants && locallyUpdatedPlants.length > 0) {
+          setSearchPlantsData(locallyUpdatedPlants);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar plantas salvas localmente:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadSavedPlants();
+  }, []);
 
   async function loadPlantsByFilters(filters: WorkRoutineFilter | null): Promise<void> {
     setIsLoading(true);
