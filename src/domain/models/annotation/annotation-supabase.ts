@@ -1,6 +1,6 @@
 import type { BooleanKeys } from '../shared/plant-data.model';
 
-export interface SupabaseInspectAnnotation {
+export interface SupabaseAnnotation {
   id?: string;
   latitude: number;
   longitude: number;

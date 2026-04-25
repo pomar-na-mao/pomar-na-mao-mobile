@@ -2,7 +2,7 @@ import { type SQLiteDatabase } from 'expo-sqlite';
 
 export async function dropDatabases(database: SQLiteDatabase) {
   await database.execAsync(`DROP TABLE IF EXISTS inspect_routines;`);
-  await database.execAsync(`DROP TABLE IF EXISTS inspect_annotations;`);
+  await database.execAsync(`DROP TABLE IF EXISTS annotations;`);
   await database.execAsync(`DROP TABLE IF EXISTS new_plants;`);
   await database.execAsync(`DROP TABLE IF EXISTS routine_plants;`);
 }
@@ -22,7 +22,7 @@ export async function initializeDatabases(database: SQLiteDatabase) {
 
   await database.execAsync(
     `
-     CREATE TABLE IF NOT EXISTS inspect_annotations (
+     CREATE TABLE IF NOT EXISTS annotations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       latitude REAL,
       longitude REAL,

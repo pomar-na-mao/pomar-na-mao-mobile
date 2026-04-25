@@ -22,7 +22,7 @@ function MainLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="field-works" options={{ headerShown: false }} />
 
-        <Stack.Screen name="inspect-annotation" options={{ title: 'Anotação' }} />
+        <Stack.Screen name="annotation" options={{ title: 'Anotação' }} />
         <Stack.Screen name="routine" options={{ title: 'Rotina' }} />
         <Stack.Screen name="add-plant" options={{ title: 'Nova planta' }} />
       </Stack>

@@ -2,7 +2,7 @@ import type { Region } from '@/domain/models/shared/geolocation.model';
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
-import { useInspectAnnotation } from '@/ui/inspect-annotation/view-models/useInspectAnnotation';
+import { useAnnotation } from '@/ui/annotation/view-models/useAnnotation';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
@@ -10,10 +10,10 @@ import { ActivityIndicator, Modal, StyleSheet, TouchableOpacity, View } from 're
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
 import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
-import { InspectAnnotationInsert } from '../inspect-annotation-insert';
+import { AnnotationInsert } from '../annotation-insert';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-export const InspectAnnotation = () => {
+export const Annotation = () => {
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
@@ -21,7 +21,7 @@ export const InspectAnnotation = () => {
 
   const mapRef = useRef<MapView>(null);
   const theme = useColorScheme() ?? 'light';
-  const { sendAnnotations, deleteAnnotations, pendingCount } = useInspectAnnotation();
+  const { sendAnnotations, deleteAnnotations, pendingCount } = useAnnotation();
   const { isLoading } = useLoadingStore();
 
   useEffect(() => {
@@ -113,7 +113,7 @@ export const InspectAnnotation = () => {
         transparent={true}
         onRequestClose={() => setShowAnnotationModal(false)}
       >
-        <InspectAnnotationInsert closeMenu={() => setShowAnnotationModal(false)} />
+        <AnnotationInsert closeMenu={() => setShowAnnotationModal(false)} />
       </Modal>
 
       <View style={styles.mapContainer}>

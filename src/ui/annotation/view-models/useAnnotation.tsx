@@ -1,26 +1,26 @@
-import { inspectAnnotationRepository } from '@/data/repositories/inspect-annotation/inspect-annotation-repository';
-import { useInspectAnnotationSqliteService } from '@/data/services/inspect-annotation/use-inspect-annotation-sqlite-service';
-import type { SupabaseInspectAnnotation } from '@/domain/models/inspect-annotation/inspect-annotation-supabase';
+import { annotationRepository } from '@/data/repositories/annotation/annotation-repository';
+import { useAnnotationSqliteService } from '@/data/services/annotation/use-annotation-sqlite-service';
+import type { SupabaseAnnotation } from '@/domain/models/annotation/annotation-supabase';
 import type { PlantInformation } from '@/domain/models/inspect-routines/inspect-routines-informations.schema';
 import type { BooleanKeys } from '@/domain/models/shared/plant-data.model';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
-import type { PlantAnnotationData } from '@/ui/inspect-annotation/components/inspect-annotation-insert/plant-annotation-form';
+import type { PlantAnnotationData } from '@/ui/annotation/components/annotation-insert/plant-annotation-form';
 import * as Location from 'expo-location';
 import * as Network from 'expo-network';
 import React, { createContext, useContext } from 'react';
 
-interface InspectAnnotationContextProps {
+interface AnnotationContextProps {
   submitAnnotation: (data: PlantAnnotationData) => Promise<void>;
   sendAnnotations: () => Promise<void>;
   deleteAnnotations: () => Promise<void>;
   pendingCount: number;
 }
 
-const InspectAnnotationContext = createContext({} as InspectAnnotationContextProps);
+const AnnotationContext = createContext({} as AnnotationContextProps);
 
-export const InspectAnnotationProvider = ({ children }: { children: React.ReactNode }) => {
-  const { create, searchAll, remove } = useInspectAnnotationSqliteService();
+export const AnnotationProvider = ({ children }: { children: React.ReactNode }) => {
+  const { create, searchAll, remove } = useAnnotationSqliteService();
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
   const [pendingCount, setPendingCount] = React.useState(0);
@@ -84,7 +84,7 @@ export const InspectAnnotationProvider = ({ children }: { children: React.ReactN
     }
 
     try {
-      const mappedAnnotations: SupabaseInspectAnnotation[] = annotations.map((annotation) => {
+      const mappedAnnotations: SupabaseAnnotation[] = annotations.map((annotation) => {
         const info: PlantInformation =
           typeof annotation.information === 'string' ? JSON.parse(annotation.information) : annotation.information;
 
@@ -105,7 +105,7 @@ export const InspectAnnotationProvider = ({ children }: { children: React.ReactN
         };
       });
 
-      const { error } = await inspectAnnotationRepository.insert(mappedAnnotations);
+      const { error } = await annotationRepository.insert(mappedAnnotations);
 
       if (error) {
         setMessage('Erro ao enviar as anotações.');
@@ -148,10 +148,10 @@ export const InspectAnnotationProvider = ({ children }: { children: React.ReactN
   }
 
   return (
-    <InspectAnnotationContext.Provider value={{ submitAnnotation, sendAnnotations, deleteAnnotations, pendingCount }}>
+    <AnnotationContext.Provider value={{ submitAnnotation, sendAnnotations, deleteAnnotations, pendingCount }}>
       {children}
-    </InspectAnnotationContext.Provider>
+    </AnnotationContext.Provider>
   );
 };
 
-export const useInspectAnnotation = () => useContext(InspectAnnotationContext);
+export const useAnnotation = () => useContext(AnnotationContext);

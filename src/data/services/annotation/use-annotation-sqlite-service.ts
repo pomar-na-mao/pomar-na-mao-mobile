@@ -1,12 +1,12 @@
-import type { SqliteAnnotation } from '@/domain/models/inspect-annotation/inspect-annotation.model';
+import type { SqliteAnnotation } from '@/domain/models/annotation/annotation.model';
 import { useSQLiteContext } from 'expo-sqlite';
 
-export function useInspectAnnotationSqliteService() {
+export function useAnnotationSqliteService() {
   const database = useSQLiteContext();
 
   async function create(annotation: Omit<SqliteAnnotation, 'id'>) {
     const statement = await database.prepareAsync(
-      'INSERT INTO inspect_annotations (latitude, longitude, information, occurrences, created_at) ' +
+      'INSERT INTO annotations (latitude, longitude, information, occurrences, created_at) ' +
         'VALUES ($latitude, $longitude, $information, $occurrences, $createdAt)',
     );
 
@@ -31,7 +31,7 @@ export function useInspectAnnotationSqliteService() {
 
   async function findById(id: number): Promise<SqliteAnnotation | null> {
     try {
-      const query = 'SELECT * FROM inspect_annotations WHERE id = ?';
+      const query = 'SELECT * FROM annotations WHERE id = ?';
 
       const result = await database.getFirstAsync<SqliteAnnotation>(query, [id]);
 
@@ -43,7 +43,7 @@ export function useInspectAnnotationSqliteService() {
 
   async function searchAll(): Promise<SqliteAnnotation[] | null> {
     try {
-      const query = 'SELECT * FROM inspect_annotations';
+      const query = 'SELECT * FROM annotations';
 
       const response = await database.getAllAsync<SqliteAnnotation>(query);
 
@@ -55,7 +55,7 @@ export function useInspectAnnotationSqliteService() {
 
   async function remove(id: number) {
     try {
-      await database.execAsync(`DELETE FROM inspect_annotations WHERE id = ` + id);
+      await database.execAsync(`DELETE FROM annotations WHERE id = ` + id);
     } catch (error) {
       throw error;
     }

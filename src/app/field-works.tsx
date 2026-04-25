@@ -27,10 +27,10 @@ const cards: CardItem[] = [
     icon: 'work',
   },
   {
-    id: 'inspect-annotation',
+    id: 'annotation',
     title: 'Anotação',
     subtitle: 'Registre ocorrências identificadas em campo!',
-    route: '/inspect-annotation' as ExpoRouterPath,
+    route: '/annotation' as ExpoRouterPath,
     icon: 'event-note',
   },
   {

@@ -1,6 +1,6 @@
 import { Colors } from '@/shared/constants/theme';
 import { ThemedView } from '@/shared/themes/themed-view';
-import { useInspectAnnotation } from '@/ui/inspect-annotation/view-models/useInspectAnnotation';
+import { useAnnotation } from '@/ui/annotation/view-models/useAnnotation';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
@@ -8,14 +8,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PlantAnnotationForm, type PlantAnnotationData } from './plant-annotation-form';
 import { RealTimeLocationCard } from './real-time-location-card';
 
-interface InspectAnnotationInsertProps {
+interface AnnotationInsertProps {
   closeMenu: () => void;
 }
 
-export const InspectAnnotationInsert: React.FC<InspectAnnotationInsertProps> = ({ closeMenu }) => {
+export const AnnotationInsert: React.FC<AnnotationInsertProps> = ({ closeMenu }) => {
   const theme = useColorScheme() ?? 'light';
 
-  const { submitAnnotation } = useInspectAnnotation();
+  const { submitAnnotation } = useAnnotation();
 
   const submitAnnotationHandler = async (data: PlantAnnotationData) => {
     await submitAnnotation(data);
