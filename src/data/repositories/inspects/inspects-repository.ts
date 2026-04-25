@@ -27,8 +27,8 @@ class InspectsRepository {
     return { error };
   }
 
-  async approveInspectAnnotation(id: string) {
-    const { data, error } = await inspectsService.approveInspectAnnotation(id);
+  async approveAnnotation(id: string) {
+    const { data, error } = await inspectsService.approveAnnotation(id);
 
     return { data, error };
   }

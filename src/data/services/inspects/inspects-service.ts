@@ -25,8 +25,8 @@ class InspectsService {
     return await supabase.from('plants').update(data).eq('id', id);
   }
 
-  async approveInspectAnnotation(id: string): Promise<PostgrestSingleResponse<string>> {
-    return await supabase.rpc('approve_inspect_annotation', {
+  async approveAnnotation(id: string): Promise<PostgrestSingleResponse<string>> {
+    return await supabase.rpc('approve_annotation', {
       p_annotation_id: id,
     });
   }
