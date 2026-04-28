@@ -1,7 +1,7 @@
 # Pomar na Mão 🍎🌳
 
 <p align="center">
-  <strong>A mobile farm management application for agricultural inspections and plant geolocation.</strong>
+  <strong>A mobile farm management application for agricultural routines and plant geolocation.</strong>
 </p>
 
 <p align="center">
@@ -16,18 +16,18 @@
 
 ## 📱 Overview
 
-**Pomar na Mão** is a comprehensive mobile application designed for farmers and agricultural professionals to efficiently manage their orchards and farms. The app enables field inspectors to perform plant inspections using GPS-based geolocation, track the health status of plants, and synchronize data both online and offline.
+**Pomar na Mão** is a comprehensive mobile application designed for farmers and agricultural professionals to efficiently manage their orchards and farms. The app enables field workers to perform routine tasks using GPS-based geolocation, track the health status of plants, and synchronize data both online and offline.
 
 ### Key Features
 
-- 🌐 **Geolocation-Based Inspections** - Locate and identify plants using GPS coordinates on interactive maps
-- 📋 **Inspection Routines** - Create, manage, and complete systematic plant inspections
+- 🌐 **Geolocation-Based Field Mapping** - Locate and identify plants using GPS coordinates on interactive maps
+- 📋 **Field Routines** - Create, manage, and complete systematic agricultural routines
 - 🚜 **Field Work Management** - Track and manage agricultural field activities
-- 🗺️ **Interactive Maps** - Visualize plants and inspection routes with map markers
+- 🗺️ **Interactive Maps** - Visualize plants and field routes with map markers
 - 🌱 **Plant Information Management** - Comprehensive plant data tracking including variety, mass, life cycle, and planting dates
 - 📝 **Occurrence Tracking** - Detailed tracking of plant health issues and environmental factors
 - 📱 **Dual-Tab Modal Interface** - Intuitive plant data management with separate tabs for occurrences and information
-- 🎯 **Enhanced Plant Inspection** - Advanced inspection workflows with detailed plant health monitoring
+- 🎯 **Enhanced Plant Management** - Advanced field workflows with detailed plant health monitoring
 - 📊 **Comprehensive Data Validation** - Robust form validation using Zod schemas for data integrity
 - 🌈 **Dynamic UI Components** - Reusable, theme-aware UI components with consistent styling
 
@@ -52,8 +52,8 @@ src/
 │   └── styles/             # Shared styling
 ├── ui/                     # Presentation layer (UI components)
 │   ├── add-plant/          # Plant addition components
-│   ├── inspect-annotation/ # Annotation components
-│   ├── inspect-routines/   # Inspection routine components
+│   ├── annotation/         # Annotation components
+│   ├── routines/           # Field routine components
 │   └── shared/             # Reusable UI components
 └── utils/                  # Utility functions
     ├── date/               # Date formatting utilities
@@ -128,9 +128,8 @@ npm start
 - `/` - Home dashboard
 - `/add-plant` - Add new plant to the orchard
 - `/field-works` - Field work management
-- `/inspect-annotation` - Detailed plant annotation
-- `/inspect-routine` - Inspection routine management
-- `/(inspect-routine)/inspect-routine-in-action-detection/[id]` - Active inspection workflow
+- `/annotation` - Detailed plant annotation
+- `/routine` - Field routine management
 
 ---
 
