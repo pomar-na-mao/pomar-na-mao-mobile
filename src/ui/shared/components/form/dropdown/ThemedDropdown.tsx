@@ -15,6 +15,7 @@ export interface ThemedDropdownProps {
   options: DropdownOption[];
   placeholder?: string;
   error?: string;
+  disabled?: boolean;
   // Opcional: ícone para indicar dropdown (ex: seta para baixo)
   rightIcon?: React.ReactNode;
 }
@@ -26,6 +27,7 @@ const ThemedDropdown: React.FC<ThemedDropdownProps> = ({
   options,
   placeholder = 'Selecione uma opção',
   error,
+  disabled = false,
   rightIcon,
 }) => {
   const theme = useColorScheme() ?? 'light';
@@ -46,9 +48,11 @@ const ThemedDropdown: React.FC<ThemedDropdownProps> = ({
 
       <TouchableOpacity
         activeOpacity={0.7}
+        disabled={disabled}
         onPress={() => setVisible(true)}
         style={[
           styles.input,
+          disabled && styles.disabledInput,
           {
             backgroundColor: Colors[theme].inputBackground,
             borderColor: error ? Colors[theme].inputError : Colors[theme].inputBorder,
@@ -61,7 +65,11 @@ const ThemedDropdown: React.FC<ThemedDropdownProps> = ({
         <Text
           style={{
             fontSize: 16,
-            color: selectedOption ? Colors[theme].text : Colors[theme].inputPlaceholder,
+            color: disabled
+              ? Colors[theme].disabledText
+              : selectedOption
+                ? Colors[theme].text
+                : Colors[theme].inputPlaceholder,
           }}
         >
           {selectedOption ? selectedOption.label : placeholder}
@@ -117,6 +125,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     height: 54,
+  },
+  disabledInput: {
+    opacity: 0.6,
   },
   errorText: {
     marginTop: 4,
