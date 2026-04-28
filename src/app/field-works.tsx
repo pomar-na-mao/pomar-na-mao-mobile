@@ -41,10 +41,10 @@ const cards: CardItem[] = [
     icon: 'local-florist',
   },
   {
-    id: 'pulverization',
-    title: 'Pulverização (Em Breve)',
-    subtitle: 'Registre sua rota durante uma pulverização para registrar!',
-    route: null,
+    id: 'spraying',
+    title: 'Pulverização',
+    subtitle: 'Registre uma pulverização para associar plantas!',
+    route: '/spraying' as ExpoRouterPath,
     icon: 'water-drop',
   },
   {

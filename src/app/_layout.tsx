@@ -25,6 +25,7 @@ function MainLayout() {
         <Stack.Screen name="annotation" options={{ title: 'Anotação' }} />
         <Stack.Screen name="routine" options={{ title: 'Rotina' }} />
         <Stack.Screen name="add-plant" options={{ title: 'Nova planta' }} />
+        <Stack.Screen name="spraying" options={{ title: 'Pulverização' }} />
       </Stack>
       <StatusBar style="auto" />
     </>
