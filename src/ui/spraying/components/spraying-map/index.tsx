@@ -3,14 +3,13 @@ import type { Region } from '@/domain/models/shared/geolocation.model';
 import { Colors } from '@/shared/constants/theme';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { RoutinePlantsCircles } from '@/ui/routines/components/routine-plants-circles';
-import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import { SprayingRouteSimulation } from '@/ui/spraying/components/spraying-route-simulation';
 import { useSpraying } from '@/ui/spraying/view-models/use-spraying';
 import { twoPointsDistance } from '@/utils/geolocation/geolocation-math';
 import * as Location from 'expo-location';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
-import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
 
 const CAMERA_ANIMATION_DURATION_MS = 500;
@@ -79,7 +78,7 @@ export const SprayingMap = memo(() => {
       if (status !== 'granted') return;
 
       const current = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.Accuracy.BestForNavigation,
       });
 
       lastLocationRef.current = current;
@@ -93,8 +92,9 @@ export const SprayingMap = memo(() => {
 
       subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 5,
+          accuracy: Location.Accuracy.BestForNavigation,
+          distanceInterval: 1,
+          timeInterval: 1_000,
         },
         (loc) => {
           if (__DEV__ && isMockingLocationRef.current) {
@@ -131,11 +131,13 @@ export const SprayingMap = memo(() => {
         initialRegion={initialRegion}
       >
         {userLocation && (
-          <UserLocationMarker
+          <Marker
             coordinate={{
               latitude: userLocation.coords.latitude,
               longitude: userLocation.coords.longitude,
             }}
+            anchor={{ x: 0.5, y: 1 }}
+            zIndex={99}
           />
         )}
 

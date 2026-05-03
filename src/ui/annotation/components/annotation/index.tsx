@@ -7,9 +7,8 @@ import { useLoadingStore } from '@/shared/hooks/use-loading';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
-import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import { AnnotationInsert } from '../annotation-insert';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -39,7 +38,7 @@ export const Annotation = () => {
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
+        accuracy: Location.Accuracy.BestForNavigation,
       });
 
       if (!mounted) return;
@@ -56,8 +55,9 @@ export const Annotation = () => {
 
       subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Highest,
-          distanceInterval: 3,
+          accuracy: Location.Accuracy.BestForNavigation,
+          distanceInterval: 1,
+          timeInterval: 1_000,
         },
         (newLocation) => {
           if (!mounted) return;
@@ -126,11 +126,13 @@ export const Annotation = () => {
           showsUserLocation={false}
           showsMyLocationButton={false}
         >
-          <UserLocationMarker
+          <Marker
             coordinate={{
               latitude: userLocation.coords.latitude,
               longitude: userLocation.coords.longitude,
             }}
+            anchor={{ x: 0.5, y: 1 }}
+            zIndex={99}
           />
         </MapView>
       </View>

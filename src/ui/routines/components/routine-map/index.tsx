@@ -4,7 +4,6 @@ import { Colors } from '@/shared/constants/theme';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
-import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import { NearestPlantInRoutineModalData } from '@/ui/routines/components/nearest-plant-in-routine-modal-data';
 import { RoutineActions } from '@/ui/routines/components/routine-actions';
 import { RoutinePlantsCircles } from '@/ui/routines/components/routine-plants-circles';
@@ -14,7 +13,7 @@ import { detectNearestPlantWithDistance, twoPointsDistance } from '@/utils/geolo
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, View } from 'react-native';
-import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
 import { styles } from './style';
 
@@ -194,7 +193,7 @@ export const RoutineMap = () => {
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
+        accuracy: Location.Accuracy.BestForNavigation,
       });
 
       if (!mounted) return;
@@ -213,8 +212,9 @@ export const RoutineMap = () => {
 
       subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Highest,
-          distanceInterval: 3,
+          accuracy: Location.Accuracy.BestForNavigation,
+          distanceInterval: 1,
+          timeInterval: 1_000,
         },
         (newLocation) => {
           if (!mounted) return;
@@ -283,11 +283,13 @@ export const RoutineMap = () => {
           showsUserLocation={false}
           showsMyLocationButton={false}
         >
-          <UserLocationMarker
+          <Marker
             coordinate={{
               latitude: userLocation.coords.latitude,
               longitude: userLocation.coords.longitude,
             }}
+            anchor={{ x: 0.5, y: 1 }}
+            zIndex={99}
           />
           {routeLineCoordinates ? (
             <>

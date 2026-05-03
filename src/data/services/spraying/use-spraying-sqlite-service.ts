@@ -11,6 +11,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 // Buffer em memória para pontos GPS (não grava a cada ponto)
 let routePointBuffer: SprayingRoutePoint[] = [];
+let routePointFlushPromise: Promise<void> = Promise.resolve();
 
 export function useSprayingSqliteService() {
   const database = useSQLiteContext();
@@ -240,11 +241,12 @@ export function useSprayingSqliteService() {
     routePointBuffer.push(point);
   }
 
-  async function flushRouteBuffer(): Promise<void> {
+  async function flushRouteBufferNow(): Promise<void> {
     if (routePointBuffer.length === 0) return;
 
     const pointsToFlush = [...routePointBuffer];
     routePointBuffer = [];
+    let transactionStarted = false;
 
     const statement = await database.prepareAsync(
       'INSERT OR IGNORE INTO spraying_route_points (id, session_id, latitude, longitude, gps_timestamp, accuracy) ' +
@@ -253,6 +255,7 @@ export function useSprayingSqliteService() {
 
     try {
       await database.execAsync('BEGIN TRANSACTION');
+      transactionStarted = true;
 
       for (const point of pointsToFlush) {
         await statement.executeAsync({
@@ -266,14 +269,22 @@ export function useSprayingSqliteService() {
       }
 
       await database.execAsync('COMMIT');
+      transactionStarted = false;
     } catch (error) {
-      await database.execAsync('ROLLBACK');
+      if (transactionStarted) {
+        await database.execAsync('ROLLBACK');
+      }
       // Devolve os pontos para o buffer se a gravação falhar
       routePointBuffer = [...pointsToFlush, ...routePointBuffer];
       throw error;
     } finally {
       await statement.finalizeAsync();
     }
+  }
+
+  async function flushRouteBuffer(): Promise<void> {
+    routePointFlushPromise = routePointFlushPromise.then(flushRouteBufferNow, flushRouteBufferNow);
+    return routePointFlushPromise;
   }
 
   // ─── Associated Plants ────────────────────────────────────────────────────────

@@ -5,6 +5,8 @@ interface AssociatePlantsResult {
   distance_meters: number;
 }
 
+export const SPRAYING_ASSOCIATION_RADIUS_METERS = 6;
+
 class SprayingSupabaseService {
   async getActiveProducts() {
     const { data, error } = await supabase
@@ -20,7 +22,10 @@ class SprayingSupabaseService {
     return data ?? [];
   }
 
-  async associatePlantsViaRPC(sessionId: string, radiusMeters = 15): Promise<AssociatePlantsResult[]> {
+  async associatePlantsViaRPC(
+    sessionId: string,
+    radiusMeters = SPRAYING_ASSOCIATION_RADIUS_METERS,
+  ): Promise<AssociatePlantsResult[]> {
     const { data, error } = await supabase.rpc('associate_plants_to_session', {
       p_session_id: sessionId,
       p_radius_meters: radiusMeters,

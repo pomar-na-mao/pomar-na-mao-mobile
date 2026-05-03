@@ -22,8 +22,9 @@ export function useSprayingGpsTracker() {
 
     subscriptionRef.current = await Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 10,
+        accuracy: Location.Accuracy.BestForNavigation,
+        distanceInterval: 1,
+        timeInterval: 1_000,
       },
       (location) => {
         const point = {

@@ -1,5 +1,8 @@
 import { plantsRepository } from '@/data/repositories/plants/plants-repository';
-import { sprayingSupabaseService } from '@/data/services/spraying/spraying-supabase-service';
+import {
+  SPRAYING_ASSOCIATION_RADIUS_METERS,
+  sprayingSupabaseService,
+} from '@/data/services/spraying/spraying-supabase-service';
 import { useSprayingSqliteService } from '@/data/services/spraying/use-spraying-sqlite-service';
 import { useSprayingStore } from '@/data/store/spraying/use-spraying-store';
 import type { PlantData } from '@/domain/models/shared/plant-data.model';
@@ -195,7 +198,7 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
   }, []);
 
   const syncSession = useCallback(
-    async (session: SprayingSession, radiusMeters = 15) => {
+    async (session: SprayingSession, radiusMeters = SPRAYING_ASSOCIATION_RADIUS_METERS) => {
       if (!session) return;
 
       setIsLoading(true);
@@ -275,14 +278,14 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
   );
 
   const handleSyncSession = useCallback(
-    async (session: SprayingSession, radiusMeters = 15) => {
+    async (session: SprayingSession, radiusMeters = SPRAYING_ASSOCIATION_RADIUS_METERS) => {
       await syncSession(session, radiusMeters);
     },
     [syncSession],
   );
 
   const handleSyncAndAssociatePlants = useCallback(
-    async (radiusMeters = 15) => {
+    async (radiusMeters = SPRAYING_ASSOCIATION_RADIUS_METERS) => {
       if (!activeSession) return;
       await syncSession(activeSession, radiusMeters);
     },
