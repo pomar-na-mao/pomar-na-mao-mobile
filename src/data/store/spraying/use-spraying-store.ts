@@ -1,3 +1,4 @@
+import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import type { SprayingSession } from '@/domain/models/spraying/spraying.model';
 import { create } from 'zustand';
 
@@ -14,6 +15,15 @@ interface SprayingStore {
   liveRoutePoints: { latitude: number; longitude: number }[];
   setLiveRoutePoints: (points: { latitude: number; longitude: number }[]) => void;
   addLiveRoutePoint: (point: { latitude: number; longitude: number }) => void;
+
+  plantsData: PlantData[];
+  setPlantsData: (plantsData: PlantData[]) => void;
+
+  lastLoadedRegion?: string;
+  setLastLoadedRegion: (region?: string) => void;
+
+  operatorName: string;
+  setOperatorName: (operatorName: string) => void;
 }
 
 export const useSprayingStore = create<SprayingStore>((set) => ({
@@ -29,4 +39,13 @@ export const useSprayingStore = create<SprayingStore>((set) => ({
   liveRoutePoints: [],
   setLiveRoutePoints: (liveRoutePoints) => set(() => ({ liveRoutePoints })),
   addLiveRoutePoint: (point) => set((state) => ({ liveRoutePoints: [...state.liveRoutePoints, point] })),
+
+  plantsData: [],
+  setPlantsData: (plantsData) => set(() => ({ plantsData })),
+
+  lastLoadedRegion: undefined,
+  setLastLoadedRegion: (lastLoadedRegion) => set(() => ({ lastLoadedRegion })),
+
+  operatorName: '',
+  setOperatorName: (operatorName) => set(() => ({ operatorName })),
 }));

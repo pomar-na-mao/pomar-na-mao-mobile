@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
 import type {
   Product,
@@ -349,6 +348,20 @@ export function useSprayingSqliteService() {
     }
   }
 
+  async function hardDeleteSession(sessionId: string): Promise<void> {
+    try {
+      await database.execAsync('BEGIN TRANSACTION');
+      await database.runAsync('DELETE FROM spraying_plants WHERE session_id = ?', [sessionId]);
+      await database.runAsync('DELETE FROM spraying_route_points WHERE session_id = ?', [sessionId]);
+      await database.runAsync('DELETE FROM spraying_products WHERE session_id = ?', [sessionId]);
+      await database.runAsync('DELETE FROM spraying_sessions WHERE id = ?', [sessionId]);
+      await database.execAsync('COMMIT');
+    } catch (error) {
+      await database.execAsync('ROLLBACK');
+      throw error;
+    }
+  }
+
   return {
     // Sessions
     startSession,
@@ -358,6 +371,7 @@ export function useSprayingSqliteService() {
     isSessionSynced,
     markSessionSynced,
     deleteSession,
+    hardDeleteSession,
     // Products
     getActiveProducts,
     saveProducts,

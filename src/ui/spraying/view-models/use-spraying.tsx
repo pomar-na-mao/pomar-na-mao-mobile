@@ -25,6 +25,7 @@ interface SprayingContextProps {
   handleFinishSession(notes?: string, waterVolume?: number): Promise<void>;
   handleStartTracking(): Promise<void>;
   handleStopTracking(): Promise<void>;
+  handleSyncSession(session: SprayingSession, radiusMeters?: number): Promise<void>;
   handleSyncAndAssociatePlants(radiusMeters?: number): Promise<void>;
   loadAssociatedPlants(sessionId: string): Promise<void>;
   handleDeleteSession(sessionId: string): Promise<void>;
@@ -42,6 +43,8 @@ export interface SprayingProductInput {
 export const SprayingProvider = ({ children }: { children: React.ReactNode }) => {
   const { activeSession, setActiveSession, isTracking, setIsTracking, setSessionSynced, setLiveRoutePoints } =
     useSprayingStore((state) => state);
+  const { plantsData, setPlantsData, lastLoadedRegion, setLastLoadedRegion, operatorName, setOperatorName } =
+    useSprayingStore((state) => state);
 
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
@@ -52,9 +55,6 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
   const [sessions, setSessions] = useState<SprayingSession[]>([]);
   const [activeProducts, setActiveProducts] = useState<Product[]>([]);
   const [associatedPlants, setAssociatedPlants] = useState<SprayingPlant[]>([]);
-  const [plantsData, setPlantsData] = useState<PlantData[]>([]);
-  const [lastLoadedRegion, setLastLoadedRegion] = useState<string | undefined>(undefined);
-  const [operatorName, setOperatorName] = useState<string>('');
 
   useEffect(() => {
     loadSessions();
@@ -156,8 +156,10 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
           setIsTracking(false);
         }
         await sprayingService.finishSession(activeSession.id, notes, waterVolume);
-        const updated = await sprayingService.getSession(activeSession.id);
-        setActiveSession(updated);
+        setActiveSession(null);
+        setSessionSynced(false);
+        setAssociatedPlants([]);
+        setLiveRoutePoints([]);
         await loadSessions();
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
@@ -192,9 +194,9 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
     setIsTracking(false);
   }, []);
 
-  const handleSyncAndAssociatePlants = useCallback(
-    async (radiusMeters = 15) => {
-      if (!activeSession) return;
+  const syncSession = useCallback(
+    async (session: SprayingSession, radiusMeters = 15) => {
+      if (!session) return;
 
       setIsLoading(true);
       try {
@@ -207,18 +209,18 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
 
         // 1. Sincroniza sessão
         await sprayingSupabaseService.syncSession({
-          id: activeSession.id,
-          started_at: activeSession.started_at,
-          ended_at: activeSession.ended_at,
-          operator_name: activeSession.operator_name,
-          status: activeSession.status,
-          region: activeSession.region,
-          notes: activeSession.notes,
-          water_volume_liters: activeSession.water_volume_liters,
-          created_at: activeSession.created_at,
+          id: session.id,
+          started_at: session.started_at,
+          ended_at: session.ended_at,
+          operator_name: session.operator_name,
+          status: session.status,
+          region: session.region,
+          notes: session.notes,
+          water_volume_liters: session.water_volume_liters,
+          created_at: session.created_at,
         });
 
-        const sessionProducts = await sprayingService.getSessionProducts(activeSession.id);
+        const sessionProducts = await sprayingService.getSessionProducts(session.id);
         if (sessionProducts.length === 0) {
           setMessage('Associe pelo menos um produto antes de sincronizar a pulverização.');
           setIsVisible(true);
@@ -227,7 +229,7 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
         await sprayingSupabaseService.syncProducts(sessionProducts);
 
         // 2. Sincroniza pontos GPS (necessário para a RPC PostGIS calcular a rota)
-        const routePoints = await sprayingService.getRoutePoints(activeSession.id);
+        const routePoints = await sprayingService.getRoutePoints(session.id);
         if (routePoints.length === 0) {
           setMessage('Nenhum ponto GPS registrado nesta sessão.\nInicie o rastreamento durante a pulverização.');
           setIsVisible(true);
@@ -236,7 +238,7 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
         await sprayingSupabaseService.syncRoutePoints(routePoints);
 
         // 3. Associa plantas via RPC PostGIS
-        const plants = await sprayingSupabaseService.associatePlantsViaRPC(activeSession.id, radiusMeters);
+        const plants = await sprayingSupabaseService.associatePlantsViaRPC(session.id, radiusMeters);
 
         if (plants.length === 0) {
           setMessage('Nenhuma planta encontrada no raio de ' + radiusMeters + ' m da rota percorrida.');
@@ -245,21 +247,19 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
         }
 
         // 4. Salva resultado no SQLite local (dirty=0, synced_at preenchido)
-        await sprayingService.saveAssociatedPlants(activeSession.id, plants);
+        await sprayingService.saveAssociatedPlants(session.id, plants);
 
         // 5. Marca sessão como sincronizada
-        await sprayingService.markSessionSynced(activeSession.id);
-        const updatedSession = await sprayingService.getSession(activeSession.id);
-        setActiveSession(updatedSession);
-        setSessionSynced(true);
-        await loadSessions();
+        await sprayingService.markSessionSynced(session.id);
+        await sprayingService.hardDeleteSession(session.id);
 
-        setActiveSession(null);
-        setSessionSynced(false);
-        setAssociatedPlants([]);
-        setPlantsData([]);
-        setLastLoadedRegion(undefined);
-        setLiveRoutePoints([]);
+        if (activeSession?.id === session.id) {
+          setActiveSession(null);
+          setSessionSynced(false);
+          setAssociatedPlants([]);
+          setLiveRoutePoints([]);
+        }
+        await loadSessions();
 
         setMessage(`${plants.length} planta(s) associada(s) com sucesso.`);
         setIsVisible(true);
@@ -272,6 +272,21 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
       }
     },
     [activeSession],
+  );
+
+  const handleSyncSession = useCallback(
+    async (session: SprayingSession, radiusMeters = 15) => {
+      await syncSession(session, radiusMeters);
+    },
+    [syncSession],
+  );
+
+  const handleSyncAndAssociatePlants = useCallback(
+    async (radiusMeters = 15) => {
+      if (!activeSession) return;
+      await syncSession(activeSession, radiusMeters);
+    },
+    [activeSession, syncSession],
   );
 
   const loadAssociatedPlants = useCallback(async (sessionId: string) => {
@@ -288,13 +303,16 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
   const handleDeleteSession = useCallback(
     async (sessionId: string) => {
       try {
-        await sprayingService.deleteSession(sessionId);
+        await sprayingService.hardDeleteSession(sessionId);
         if (activeSession?.id === sessionId) {
           setActiveSession(null);
           setAssociatedPlants([]);
           setSessionSynced(false);
+          setLiveRoutePoints([]);
         }
         await loadSessions();
+        setMessage('Pulverização excluída localmente.');
+        setIsVisible(true);
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         setMessage('Erro ao excluir sessão.\n' + msg);
@@ -329,6 +347,7 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
         handleFinishSession,
         handleStartTracking,
         handleStopTracking,
+        handleSyncSession,
         handleSyncAndAssociatePlants,
         loadAssociatedPlants,
         handleDeleteSession,
