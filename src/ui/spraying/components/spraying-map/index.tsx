@@ -3,13 +3,17 @@ import type { Region } from '@/domain/models/shared/geolocation.model';
 import { Colors } from '@/shared/constants/theme';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { RoutinePlantsCircles } from '@/ui/routines/components/routine-plants-circles';
-import { SprayingRouteSimulation } from '@/ui/spraying/components/spraying-route-simulation';
+import {
+  type MockRouteCoordinate,
+  type MockRouteSelectionMode,
+  SprayingRouteSimulation,
+} from '@/ui/spraying/components/spraying-route-simulation';
 import { useSpraying } from '@/ui/spraying/view-models/use-spraying';
 import { twoPointsDistance } from '@/utils/geolocation/geolocation-math';
 import * as Location from 'expo-location';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { type MapPressEvent, Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
 
 const CAMERA_ANIMATION_DURATION_MS = 500;
@@ -27,11 +31,13 @@ export const SprayingMap = memo(() => {
 
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
+  const [mockRouteStart, setMockRouteStart] = useState<MockRouteCoordinate | null>(null);
+  const [mockRouteEnd, setMockRouteEnd] = useState<MockRouteCoordinate | null>(null);
+  const [mockRouteSelectionMode, setMockRouteSelectionMode] = useState<MockRouteSelectionMode>(null);
 
   const mapRef = useRef<MapView>(null);
   const lastCameraAnimationAtRef = useRef(0);
   const lastLocationRef = useRef<Location.LocationObject | null>(null);
-  const isMockingLocationRef = useRef(false);
 
   const animateMapToCoordinate = useCallback((coordinate: { latitude: number; longitude: number }) => {
     const now = Date.now();
@@ -70,6 +76,25 @@ export const SprayingMap = memo(() => {
     [animateMapToCoordinate],
   );
 
+  const handleMapPress = useCallback(
+    (event: MapPressEvent) => {
+      if (!__DEV__ || !mockRouteSelectionMode) {
+        return;
+      }
+
+      const coordinate = event.nativeEvent.coordinate;
+
+      if (mockRouteSelectionMode === 'start') {
+        setMockRouteStart(coordinate);
+      } else {
+        setMockRouteEnd(coordinate);
+      }
+
+      setMockRouteSelectionMode(null);
+    },
+    [mockRouteSelectionMode],
+  );
+
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null;
 
@@ -97,7 +122,7 @@ export const SprayingMap = memo(() => {
           timeInterval: 1_000,
         },
         (loc) => {
-          if (__DEV__ && isMockingLocationRef.current) {
+          if (__DEV__ && useSprayingStore.getState().isMockingLocation) {
             return;
           }
 
@@ -129,6 +154,7 @@ export const SprayingMap = memo(() => {
         customMapStyle={theme === 'dark' ? darkMapStyle : []}
         showsUserLocation={false}
         initialRegion={initialRegion}
+        onPress={handleMapPress}
       >
         {userLocation && (
           <Marker
@@ -144,6 +170,24 @@ export const SprayingMap = memo(() => {
         {/* Plantas carregadas da região */}
         <RoutinePlantsCircles plantsData={plantsData} />
 
+        {__DEV__ && mockRouteStart ? (
+          <Marker coordinate={mockRouteStart} anchor={{ x: 0.5, y: 1 }} pinColor="#16A34A" zIndex={101} title="A" />
+        ) : null}
+
+        {__DEV__ && mockRouteEnd ? (
+          <Marker coordinate={mockRouteEnd} anchor={{ x: 0.5, y: 1 }} pinColor="#2563EB" zIndex={101} title="B" />
+        ) : null}
+
+        {__DEV__ && mockRouteStart && mockRouteEnd ? (
+          <Polyline
+            coordinates={[mockRouteStart, mockRouteEnd]}
+            strokeColor={theme === 'dark' ? '#FACC15' : '#CA8A04'}
+            strokeWidth={3}
+            lineDashPattern={[8, 8]}
+            zIndex={98}
+          />
+        ) : null}
+
         {/* Rota do trator (Geração em tempo real) */}
         {liveRoutePoints.length > 1 && (
           <Polyline
@@ -158,11 +202,10 @@ export const SprayingMap = memo(() => {
       <View style={styles.simulationContainer}>
         <SprayingRouteSimulation
           applyLocationUpdate={applyLocationUpdate}
-          onMockingLocationChange={(isMockingLocation) => {
-            isMockingLocationRef.current = isMockingLocation;
-          }}
-          plantsData={plantsData}
-          userLocation={userLocation}
+          endCoordinate={mockRouteEnd}
+          onSelectionModeChange={setMockRouteSelectionMode}
+          selectionMode={mockRouteSelectionMode}
+          startCoordinate={mockRouteStart}
         />
       </View>
     </View>

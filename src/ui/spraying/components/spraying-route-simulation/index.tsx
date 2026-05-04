@@ -1,6 +1,5 @@
 import { useSprayingSqliteService } from '@/data/services/spraying/use-spraying-sqlite-service';
 import { useSprayingStore } from '@/data/store/spraying/use-spraying-store';
-import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import { Colors } from '@/shared/constants/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -9,18 +8,22 @@ import { Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { styles } from './style';
 
 const MOCK_LOCATION_UPDATE_INTERVAL_MS = 500;
-const MOCK_ROUTE_STEPS_BETWEEN_POINTS = 8;
+const MOCK_ROUTE_STEP_DISTANCE_METERS = 2;
+const MAX_MOCK_ROUTE_STEPS = 300;
 
-interface Coordinate {
+export interface MockRouteCoordinate {
   latitude: number;
   longitude: number;
 }
 
+export type MockRouteSelectionMode = 'start' | 'end' | null;
+
 interface SprayingRouteSimulationProps {
   applyLocationUpdate: (location: Location.LocationObject) => void;
-  onMockingLocationChange: (isMockingLocation: boolean) => void;
-  plantsData: PlantData[];
-  userLocation: Location.LocationObject;
+  endCoordinate: MockRouteCoordinate | null;
+  onSelectionModeChange: (mode: MockRouteSelectionMode) => void;
+  selectionMode: MockRouteSelectionMode;
+  startCoordinate: MockRouteCoordinate | null;
 }
 
 const createMockLocation = (latitude: number, longitude: number): Location.LocationObject => ({
@@ -36,43 +39,59 @@ const createMockLocation = (latitude: number, longitude: number): Location.Locat
   timestamp: Date.now(),
 });
 
-const buildMockRoute = (start: Coordinate, targets: Coordinate[]) => {
-  const routeTargets = [start, ...targets.slice(0, 8)];
+const getCoordinateDistanceMeters = (start: MockRouteCoordinate, end: MockRouteCoordinate) => {
+  const earthRadiusMeters = 6_371_000;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const latitudeDelta = toRadians(end.latitude - start.latitude);
+  const longitudeDelta = toRadians(end.longitude - start.longitude);
+  const startLatitude = toRadians(start.latitude);
+  const endLatitude = toRadians(end.latitude);
 
-  return routeTargets.flatMap((target, targetIndex) => {
-    const previousTarget = routeTargets[targetIndex - 1];
+  const a =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(startLatitude) * Math.cos(endLatitude) * Math.sin(longitudeDelta / 2) ** 2;
 
-    if (!previousTarget) {
-      return [target];
-    }
+  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
-    return Array.from({ length: MOCK_ROUTE_STEPS_BETWEEN_POINTS }, (_, stepIndex) => {
-      const progress = (stepIndex + 1) / MOCK_ROUTE_STEPS_BETWEEN_POINTS;
+const buildStraightMockRoute = (start: MockRouteCoordinate, end: MockRouteCoordinate) => {
+  const distanceMeters = getCoordinateDistanceMeters(start, end);
+  const steps = Math.min(
+    MAX_MOCK_ROUTE_STEPS,
+    Math.max(2, Math.ceil(distanceMeters / MOCK_ROUTE_STEP_DISTANCE_METERS)),
+  );
 
-      return {
-        latitude: previousTarget.latitude + (target.latitude - previousTarget.latitude) * progress,
-        longitude: previousTarget.longitude + (target.longitude - previousTarget.longitude) * progress,
-      };
-    });
+  return Array.from({ length: steps + 1 }, (_, stepIndex) => {
+    const progress = stepIndex / steps;
+
+    return {
+      latitude: start.latitude + (end.latitude - start.latitude) * progress,
+      longitude: start.longitude + (end.longitude - start.longitude) * progress,
+    };
   });
 };
 
 export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = ({
   applyLocationUpdate,
-  onMockingLocationChange,
-  plantsData,
-  userLocation,
+  endCoordinate,
+  onSelectionModeChange,
+  selectionMode,
+  startCoordinate,
 }) => {
   const theme = useColorScheme() ?? 'light';
   const sprayingService = useSprayingSqliteService();
   const activeSession = useSprayingStore((state) => state.activeSession);
   const addLiveRoutePoint = useSprayingStore((state) => state.addLiveRoutePoint);
+  const isTracking = useSprayingStore((state) => state.isTracking);
+  const setLiveRoutePoints = useSprayingStore((state) => state.setLiveRoutePoints);
+  const setIsMockingLocation = useSprayingStore((state) => state.setIsMockingLocation);
 
   const mockWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sprayingServiceRef = useRef(sprayingService);
-  const onMockingLocationChangeRef = useRef(onMockingLocationChange);
+  const setIsMockingLocationRef = useRef(setIsMockingLocation);
+  const hasPreparedMockRouteRef = useRef(false);
   sprayingServiceRef.current = sprayingService;
-  onMockingLocationChangeRef.current = onMockingLocationChange;
+  setIsMockingLocationRef.current = setIsMockingLocation;
 
   const recordMockCoordinate = useCallback(
     (latitude: number, longitude: number) => {
@@ -89,45 +108,33 @@ export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = (
     [activeSession, addLiveRoutePoint, applyLocationUpdate],
   );
 
-  const stopMockWalk = useCallback(() => {
+  const stopMockWalk = useCallback(async (disableMockingLocation = true) => {
     if (mockWalkIntervalRef.current) {
       clearInterval(mockWalkIntervalRef.current);
       mockWalkIntervalRef.current = null;
     }
 
-    sprayingServiceRef.current.flushRouteBuffer().catch(console.error);
-    onMockingLocationChangeRef.current(false);
+    await sprayingServiceRef.current.flushRouteBuffer();
+    if (disableMockingLocation) {
+      setIsMockingLocationRef.current(false);
+    }
   }, []);
 
-  const moveToMockCoordinate = useCallback(
-    (latitude: number, longitude: number) => {
-      if (!__DEV__) {
-        return;
-      }
-
-      stopMockWalk();
-      onMockingLocationChange(true);
-      recordMockCoordinate(latitude, longitude);
-      sprayingServiceRef.current.flushRouteBuffer().catch(console.error);
-    },
-    [onMockingLocationChange, recordMockCoordinate, stopMockWalk],
-  );
-
-  const startMockWalk = useCallback(() => {
-    if (!__DEV__ || !activeSession || plantsData.length === 0) {
+  const startMockWalk = useCallback(async () => {
+    if (!__DEV__ || !activeSession || !isTracking || !startCoordinate || !endCoordinate) {
       return;
     }
 
-    stopMockWalk();
-    onMockingLocationChange(true);
+    await stopMockWalk(false);
+    setIsMockingLocation(true);
 
-    const route = buildMockRoute(
-      {
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
-      },
-      plantsData.map((plant) => ({ latitude: plant.latitude, longitude: plant.longitude })),
-    );
+    if (!hasPreparedMockRouteRef.current) {
+      await sprayingServiceRef.current.clearRoutePoints(activeSession.id);
+      setLiveRoutePoints([]);
+      hasPreparedMockRouteRef.current = true;
+    }
+
+    const route = buildStraightMockRoute(startCoordinate, endCoordinate);
 
     let routeIndex = 0;
 
@@ -135,20 +142,53 @@ export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = (
       const nextCoordinate = route[routeIndex];
 
       if (!nextCoordinate) {
-        stopMockWalk();
+        stopMockWalk(false).catch(console.error);
         return;
       }
 
       recordMockCoordinate(nextCoordinate.latitude, nextCoordinate.longitude);
       routeIndex += 1;
     }, MOCK_LOCATION_UPDATE_INTERVAL_MS);
-  }, [activeSession, onMockingLocationChange, plantsData, recordMockCoordinate, stopMockWalk, userLocation]);
+  }, [
+    activeSession,
+    endCoordinate,
+    isTracking,
+    recordMockCoordinate,
+    setIsMockingLocation,
+    setLiveRoutePoints,
+    startCoordinate,
+    stopMockWalk,
+  ]);
 
-  useEffect(() => stopMockWalk, [stopMockWalk]);
+  const selectStartCoordinate = useCallback(() => {
+    stopMockWalk().catch(console.error);
+    setIsMockingLocation(true);
+    hasPreparedMockRouteRef.current = false;
+    onSelectionModeChange('start');
+  }, [onSelectionModeChange, setIsMockingLocation, stopMockWalk]);
 
-  if (!__DEV__ || !activeSession || activeSession.status !== 'in_progress' || plantsData.length === 0) {
+  const selectEndCoordinate = useCallback(() => {
+    stopMockWalk().catch(console.error);
+    setIsMockingLocation(true);
+    hasPreparedMockRouteRef.current = false;
+    onSelectionModeChange('end');
+  }, [onSelectionModeChange, setIsMockingLocation, stopMockWalk]);
+
+  useEffect(() => {
+    if (!activeSession || activeSession.status !== 'in_progress') {
+      hasPreparedMockRouteRef.current = false;
+      stopMockWalk().catch(console.error);
+      onSelectionModeChange(null);
+    }
+  }, [activeSession, onSelectionModeChange, stopMockWalk]);
+
+  useEffect(() => () => void stopMockWalk(), [stopMockWalk]);
+
+  if (!__DEV__ || !activeSession || activeSession.status !== 'in_progress') {
     return null;
   }
+
+  const canStartMockWalk = Boolean(isTracking && startCoordinate && endCoordinate);
 
   return (
     <View
@@ -161,27 +201,54 @@ export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = (
     >
       <TouchableOpacity
         activeOpacity={0.8}
-        style={[styles.mockButtonPrimary, { backgroundColor: Colors[theme].tint }]}
+        disabled={!canStartMockWalk}
+        style={[
+          styles.mockButtonPrimary,
+          { backgroundColor: canStartMockWalk ? Colors[theme].tint : Colors[theme].grey },
+        ]}
         onPress={startMockWalk}
       >
         <MaterialCommunityIcons name="play" size={24} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {plantsData.slice(0, 3).map((plant, index) => (
-        <TouchableOpacity
-          activeOpacity={0.8}
-          key={plant.id}
-          style={[styles.mockButton, { backgroundColor: Colors[theme].background, borderColor: Colors[theme].line }]}
-          onPress={() => moveToMockCoordinate(plant.latitude, plant.longitude)}
-        >
-          <Text style={[styles.mockButtonText, { color: Colors[theme].text }]}>P{index + 1}</Text>
-        </TouchableOpacity>
-      ))}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={[
+          styles.mockButton,
+          {
+            backgroundColor: selectionMode === 'start' ? Colors[theme].tint : Colors[theme].background,
+            borderColor: selectionMode === 'start' ? Colors[theme].tint : Colors[theme].line,
+          },
+        ]}
+        onPress={selectStartCoordinate}
+      >
+        <Text style={[styles.mockButtonText, { color: selectionMode === 'start' ? '#FFFFFF' : Colors[theme].text }]}>
+          A
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={[
+          styles.mockButton,
+          {
+            backgroundColor: selectionMode === 'end' ? Colors[theme].tint : Colors[theme].background,
+            borderColor: selectionMode === 'end' ? Colors[theme].tint : Colors[theme].line,
+          },
+        ]}
+        onPress={selectEndCoordinate}
+      >
+        <Text style={[styles.mockButtonText, { color: selectionMode === 'end' ? '#FFFFFF' : Colors[theme].text }]}>
+          B
+        </Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         activeOpacity={0.8}
         style={[styles.mockIconButton, { backgroundColor: Colors[theme].background, borderColor: Colors[theme].line }]}
-        onPress={stopMockWalk}
+        onPress={() => {
+          stopMockWalk().catch(console.error);
+        }}
       >
         <MaterialCommunityIcons name="stop" size={24} color={Colors[theme].text} />
       </TouchableOpacity>

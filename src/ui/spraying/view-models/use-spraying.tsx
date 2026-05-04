@@ -231,6 +231,8 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
         }
         await sprayingSupabaseService.syncProducts(sessionProducts);
 
+        await sprayingService.flushRouteBuffer();
+
         // 2. Sincroniza pontos GPS (necessário para a RPC PostGIS calcular a rota)
         const routePoints = await sprayingService.getRoutePoints(session.id);
         if (routePoints.length === 0) {
@@ -244,7 +246,12 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
         const plants = await sprayingSupabaseService.associatePlantsViaRPC(session.id, radiusMeters);
 
         if (plants.length === 0) {
-          setMessage('Nenhuma planta encontrada no raio de ' + radiusMeters + ' m da rota percorrida.');
+          setMessage(
+            'Nenhuma planta encontrada no raio de ' +
+              radiusMeters +
+              ' m da rota percorrida.\nPontos sincronizados: ' +
+              routePoints.length,
+          );
           setIsVisible(true);
           return;
         }

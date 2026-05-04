@@ -9,6 +9,9 @@ interface SprayingStore {
   isTracking: boolean;
   setIsTracking: (isTracking: boolean) => void;
 
+  isMockingLocation: boolean;
+  setIsMockingLocation: (isMockingLocation: boolean) => void;
+
   sessionSynced: boolean;
   setSessionSynced: (synced: boolean) => void;
 
@@ -32,6 +35,9 @@ export const useSprayingStore = create<SprayingStore>((set) => ({
 
   isTracking: false,
   setIsTracking: (isTracking) => set(() => ({ isTracking })),
+
+  isMockingLocation: false,
+  setIsMockingLocation: (isMockingLocation) => set(() => ({ isMockingLocation })),
 
   sessionSynced: false,
   setSessionSynced: (sessionSynced) => set(() => ({ sessionSynced })),

@@ -337,6 +337,21 @@ export function useSprayingSqliteService() {
     }
   }
 
+  async function clearRoutePoints(sessionId: string): Promise<void> {
+    routePointFlushPromise = routePointFlushPromise.then(
+      async () => {
+        routePointBuffer = routePointBuffer.filter((point) => point.session_id !== sessionId);
+        await database.runAsync('DELETE FROM spraying_route_points WHERE session_id = ?', [sessionId]);
+      },
+      async () => {
+        routePointBuffer = routePointBuffer.filter((point) => point.session_id !== sessionId);
+        await database.runAsync('DELETE FROM spraying_route_points WHERE session_id = ?', [sessionId]);
+      },
+    );
+
+    return routePointFlushPromise;
+  }
+
   async function getAssociatedPlants(sessionId: string): Promise<SprayingPlant[]> {
     try {
       return await database.getAllAsync<SprayingPlant>(
@@ -393,6 +408,7 @@ export function useSprayingSqliteService() {
     bufferRoutePoint,
     flushRouteBuffer,
     getRoutePoints,
+    clearRoutePoints,
     // Associated plants
     saveAssociatedPlants,
     getAssociatedPlants,

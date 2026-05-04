@@ -27,6 +27,10 @@ export function useSprayingGpsTracker() {
         timeInterval: 1_000,
       },
       (location) => {
+        if (__DEV__ && useSprayingStore.getState().isMockingLocation) {
+          return;
+        }
+
         const point = {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,

@@ -5,7 +5,7 @@ interface AssociatePlantsResult {
   distance_meters: number;
 }
 
-export const SPRAYING_ASSOCIATION_RADIUS_METERS = 6;
+export const SPRAYING_ASSOCIATION_RADIUS_METERS = 9;
 
 class SprayingSupabaseService {
   async getActiveProducts() {
@@ -68,6 +68,12 @@ class SprayingSupabaseService {
       accuracy?: number | null;
     }[],
   ) {
+    const sessionId = points[0]?.session_id;
+
+    if (!sessionId) {
+      return [];
+    }
+
     const routePoints = points.map(({ id, session_id, latitude, longitude, gps_timestamp, accuracy }) => ({
       id,
       session_id,
@@ -76,6 +82,12 @@ class SprayingSupabaseService {
       gps_timestamp,
       accuracy,
     }));
+
+    const { error: deleteError } = await supabase.from('spraying_route_points').delete().eq('session_id', sessionId);
+
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
 
     const { data, error } = await supabase.from('spraying_route_points').upsert(routePoints).select();
 
