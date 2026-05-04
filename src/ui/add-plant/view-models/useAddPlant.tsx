@@ -53,7 +53,7 @@ export const AddPlantProvider = ({ children }: { children: React.ReactNode }) =>
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
+        accuracy: Location.Accuracy.BestForNavigation,
       });
 
       if (!mounted) return;
@@ -70,8 +70,9 @@ export const AddPlantProvider = ({ children }: { children: React.ReactNode }) =>
 
       subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Highest,
-          distanceInterval: 3,
+          accuracy: Location.Accuracy.BestForNavigation,
+          distanceInterval: 1,
+          timeInterval: 1_000,
         },
         (newLocation) => {
           if (!mounted) return;

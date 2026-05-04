@@ -2,11 +2,10 @@ import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { ThemedText } from '@/shared/themes/themed-text';
-import { UserLocationMarker } from '@/ui/shared/components/user-location-marker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
 import { useAddPlant } from '../../view-models/useAddPlant';
 
@@ -78,11 +77,13 @@ export const AddPlant = () => {
           showsUserLocation={false}
           showsMyLocationButton={false}
         >
-          <UserLocationMarker
+          <Marker
             coordinate={{
               latitude: userLocation.coords.latitude,
               longitude: userLocation.coords.longitude,
             }}
+            anchor={{ x: 0.5, y: 1 }}
+            zIndex={99}
           />
         </MapView>
       </View>

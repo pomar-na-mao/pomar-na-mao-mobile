@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
  * React Native Theme Adjustment
  */
 
-const tintColorLight = '#2B4C2C'; // Verde Floresta Principal
+const tintColorLight = '#2b4c2c'; // Verde Floresta Principal
 const tintColorDark = '#97D69B'; // Verde Claro para contraste no Dark Mode
 
 export const Colors = {
@@ -43,7 +43,7 @@ export const Colors = {
     deactiveThumbColor: '#F8F9F8',
     blue: '#0369A1',
     logoBackground: '#D1E2D2',
-    mapRegionStrokeColor: '#2B4C2C',
+    mapRegionStrokeColor: '#2b4c2c',
     mapRegionFillColor: 'rgba(43, 76, 44, 0.2)',
     warning: '#D97706',
     iconBackground: '#E5E8E5',
