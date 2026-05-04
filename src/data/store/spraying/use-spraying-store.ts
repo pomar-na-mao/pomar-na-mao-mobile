@@ -1,3 +1,4 @@
+import type { PlantData } from '@/domain/models/shared/plant-data.model';
 import type { SprayingSession } from '@/domain/models/spraying/spraying.model';
 import { create } from 'zustand';
 
@@ -8,12 +9,24 @@ interface SprayingStore {
   isTracking: boolean;
   setIsTracking: (isTracking: boolean) => void;
 
+  isMockingLocation: boolean;
+  setIsMockingLocation: (isMockingLocation: boolean) => void;
+
   sessionSynced: boolean;
   setSessionSynced: (synced: boolean) => void;
 
   liveRoutePoints: { latitude: number; longitude: number }[];
   setLiveRoutePoints: (points: { latitude: number; longitude: number }[]) => void;
   addLiveRoutePoint: (point: { latitude: number; longitude: number }) => void;
+
+  plantsData: PlantData[];
+  setPlantsData: (plantsData: PlantData[]) => void;
+
+  lastLoadedRegion?: string;
+  setLastLoadedRegion: (region?: string) => void;
+
+  operatorName: string;
+  setOperatorName: (operatorName: string) => void;
 }
 
 export const useSprayingStore = create<SprayingStore>((set) => ({
@@ -23,10 +36,22 @@ export const useSprayingStore = create<SprayingStore>((set) => ({
   isTracking: false,
   setIsTracking: (isTracking) => set(() => ({ isTracking })),
 
+  isMockingLocation: false,
+  setIsMockingLocation: (isMockingLocation) => set(() => ({ isMockingLocation })),
+
   sessionSynced: false,
   setSessionSynced: (sessionSynced) => set(() => ({ sessionSynced })),
 
   liveRoutePoints: [],
   setLiveRoutePoints: (liveRoutePoints) => set(() => ({ liveRoutePoints })),
   addLiveRoutePoint: (point) => set((state) => ({ liveRoutePoints: [...state.liveRoutePoints, point] })),
+
+  plantsData: [],
+  setPlantsData: (plantsData) => set(() => ({ plantsData })),
+
+  lastLoadedRegion: undefined,
+  setLastLoadedRegion: (lastLoadedRegion) => set(() => ({ lastLoadedRegion })),
+
+  operatorName: '',
+  setOperatorName: (operatorName) => set(() => ({ operatorName })),
 }));

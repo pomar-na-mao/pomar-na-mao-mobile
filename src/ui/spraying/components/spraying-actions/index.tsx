@@ -8,9 +8,10 @@ import { StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-
 interface SprayingActionsProps {
   onOpenFilters: () => void;
   onOpenProducts: () => void;
+  onFinishSession?: () => void;
 }
 
-export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters, onOpenProducts }) => {
+export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters, onOpenProducts, onFinishSession }) => {
   const theme = useColorScheme() ?? 'light';
 
   const activeSession = useSprayingStore((state) => state.activeSession);
@@ -86,7 +87,10 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
 
             <TouchableOpacity
               style={[styles.secondaryButton, { borderColor: Colors[theme].line }]}
-              onPress={() => handleFinishSession()}
+              onPress={async () => {
+                await handleFinishSession();
+                onFinishSession?.();
+              }}
             >
               <MaterialIcons name="stop" size={24} color={Colors[theme].danger} />
             </TouchableOpacity>

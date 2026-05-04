@@ -6,7 +6,7 @@ import ThemedInput from '@/ui/shared/components/form/input/ThemedInput';
 import { useRegionOptions } from '@/ui/shared/hooks/use-regions-options';
 import { useSpraying } from '@/ui/spraying/view-models/use-spraying';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -26,10 +26,14 @@ interface SprayingFilterModalProps {
 export const SprayingFilterModal: React.FC<SprayingFilterModalProps> = ({ closeMenu }) => {
   const theme = useColorScheme() ?? 'light';
 
-  const { loadPlantsByRegion, operatorName, setOperatorName } = useSpraying();
+  const { lastLoadedRegion, loadPlantsByRegion, operatorName, setOperatorName } = useSpraying();
   const { data: regions, isLoading: isLoadingRegions } = useRegionOptions();
 
-  const [selectedRegion, setSelectedRegion] = useState<string | undefined>(undefined);
+  const [selectedRegion, setSelectedRegion] = useState<string | undefined>(lastLoadedRegion);
+
+  useEffect(() => {
+    setSelectedRegion(lastLoadedRegion);
+  }, [lastLoadedRegion]);
 
   const canSearch = !!selectedRegion;
 

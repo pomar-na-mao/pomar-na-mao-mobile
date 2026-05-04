@@ -5,6 +5,8 @@ interface AssociatePlantsResult {
   distance_meters: number;
 }
 
+export const SPRAYING_ASSOCIATION_RADIUS_METERS = 9;
+
 class SprayingSupabaseService {
   async getActiveProducts() {
     const { data, error } = await supabase
@@ -20,7 +22,10 @@ class SprayingSupabaseService {
     return data ?? [];
   }
 
-  async associatePlantsViaRPC(sessionId: string, radiusMeters = 15): Promise<AssociatePlantsResult[]> {
+  async associatePlantsViaRPC(
+    sessionId: string,
+    radiusMeters = SPRAYING_ASSOCIATION_RADIUS_METERS,
+  ): Promise<AssociatePlantsResult[]> {
     const { data, error } = await supabase.rpc('associate_plants_to_session', {
       p_session_id: sessionId,
       p_radius_meters: radiusMeters,
@@ -63,6 +68,12 @@ class SprayingSupabaseService {
       accuracy?: number | null;
     }[],
   ) {
+    const sessionId = points[0]?.session_id;
+
+    if (!sessionId) {
+      return [];
+    }
+
     const routePoints = points.map(({ id, session_id, latitude, longitude, gps_timestamp, accuracy }) => ({
       id,
       session_id,
@@ -71,6 +82,12 @@ class SprayingSupabaseService {
       gps_timestamp,
       accuracy,
     }));
+
+    const { error: deleteError } = await supabase.from('spraying_route_points').delete().eq('session_id', sessionId);
+
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
 
     const { data, error } = await supabase.from('spraying_route_points').upsert(routePoints).select();
 
