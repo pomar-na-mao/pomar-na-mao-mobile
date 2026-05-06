@@ -9,6 +9,7 @@ export function useSprayingGpsTracker() {
   const sprayingService = useSprayingSqliteService();
   const addLiveRoutePoint = useSprayingStore((s) => s.addLiveRoutePoint);
   const setLiveRoutePoints = useSprayingStore((s) => s.setLiveRoutePoints);
+  const setTrackingStartedAt = useSprayingStore((s) => s.setTrackingStartedAt);
 
   async function startTracking(sessionId: string): Promise<boolean> {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -19,6 +20,7 @@ export function useSprayingGpsTracker() {
 
     // Limpa pontos anteriores ao iniciar novo rastreamento
     setLiveRoutePoints([]);
+    setTrackingStartedAt(new Date().toISOString());
 
     subscriptionRef.current = await Location.watchPositionAsync(
       {
@@ -65,6 +67,7 @@ export function useSprayingGpsTracker() {
 
     // Garante que nenhum ponto seja perdido
     await sprayingService.flushRouteBuffer();
+    setTrackingStartedAt(null);
   }
 
   return { startTracking, stopTracking };

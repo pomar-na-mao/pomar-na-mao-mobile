@@ -29,7 +29,7 @@ export function useSprayingSqliteService() {
     try {
       await statement.executeAsync({
         $id: id,
-        $startedAt: now,
+        $startedAt: null,
         $status: 'in_progress',
         $operatorName: operatorName ?? null,
         $region: region ?? null,
@@ -61,6 +61,28 @@ export function useSprayingSqliteService() {
       });
     } catch (error) {
       throw error;
+    } finally {
+      await statement.finalizeAsync();
+    }
+  }
+
+  async function setSessionStartedAt(sessionId: string, timestamp: string): Promise<void> {
+    const statement = await database.prepareAsync(
+      'UPDATE spraying_sessions SET started_at = $startedAt, dirty = 1 WHERE id = $id',
+    );
+    try {
+      await statement.executeAsync({ $startedAt: timestamp, $id: sessionId });
+    } finally {
+      await statement.finalizeAsync();
+    }
+  }
+
+  async function setSessionEndedAt(sessionId: string, timestamp: string): Promise<void> {
+    const statement = await database.prepareAsync(
+      'UPDATE spraying_sessions SET ended_at = $endedAt, dirty = 1 WHERE id = $id',
+    );
+    try {
+      await statement.executeAsync({ $endedAt: timestamp, $id: sessionId });
     } finally {
       await statement.finalizeAsync();
     }
@@ -392,6 +414,8 @@ export function useSprayingSqliteService() {
     // Sessions
     startSession,
     finishSession,
+    setSessionStartedAt,
+    setSessionEndedAt,
     getSession,
     getAllSessions,
     isSessionSynced,
