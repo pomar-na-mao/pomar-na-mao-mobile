@@ -3,6 +3,7 @@ import type { Region } from '@/domain/models/shared/geolocation.model';
 import { Colors } from '@/shared/constants/theme';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { RoutinePlantsCircles } from '@/ui/routines/components/routine-plants-circles';
+import { SprayingReviewPlants } from '@/ui/spraying/components/spraying-review-plants';
 import {
   type MockRouteCoordinate,
   type MockRouteSelectionMode,
@@ -26,14 +27,31 @@ const ROUTE_STROKE_COLOR = {
 
 export const SprayingMap = memo(() => {
   const theme = useColorScheme() ?? 'light';
-  const { plantsData } = useSpraying();
-  const { liveRoutePoints } = useSprayingStore();
+  const { plantsData, isReviewMode, reviewPreviewIds, reviewOverrides, handleToggleReviewPlant } = useSpraying();
+  const { liveRoutePoints, activeSession } = useSprayingStore();
+
+  /** Ref to latest plantsData for use inside the press callback without stale closure */
+  const plantsDataRef = useRef(plantsData);
+  plantsDataRef.current = plantsData;
+  const isReviewModeRef = useRef(isReviewMode);
+  isReviewModeRef.current = isReviewMode;
+  const handleToggleReviewPlantRef = useRef(handleToggleReviewPlant);
+  handleToggleReviewPlantRef.current = handleToggleReviewPlant;
 
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
   const [mockRouteStart, setMockRouteStart] = useState<MockRouteCoordinate | null>(null);
   const [mockRouteEnd, setMockRouteEnd] = useState<MockRouteCoordinate | null>(null);
   const [mockRouteSelectionMode, setMockRouteSelectionMode] = useState<MockRouteSelectionMode>(null);
+
+  // Quando a sessão é removida (delete), limpa os pontos A e B da simulação
+  useEffect(() => {
+    if (!activeSession) {
+      setMockRouteStart(null);
+      setMockRouteEnd(null);
+      setMockRouteSelectionMode(null);
+    }
+  }, [activeSession]);
 
   const mapRef = useRef<MapView>(null);
   const lastCameraAnimationAtRef = useRef(0);
@@ -71,18 +89,54 @@ export const SprayingMap = memo(() => {
 
       lastLocationRef.current = newLocation;
       setUserLocation(newLocation);
-      animateMapToCoordinate(coordinate);
+
+      // During review mode the user is manually navigating the map to tap plants,
+      // so we skip the camera follow to avoid interrupting their zoom/pan.
+      if (!isReviewModeRef.current) {
+        animateMapToCoordinate(coordinate);
+      }
     },
     [animateMapToCoordinate],
   );
 
+  /**
+   * Tap radius in meters for plant selection in review mode.
+   * Larger than the GPS association radius so it's easy to tap.
+   */
+  const REVIEW_TAP_RADIUS_METERS = 15;
+
   const handleMapPress = useCallback(
     (event: MapPressEvent) => {
-      if (!__DEV__ || !mockRouteSelectionMode) {
+      const coordinate = event.nativeEvent.coordinate;
+
+      // ── Review mode: find nearest plant within tap radius ──
+      if (isReviewModeRef.current) {
+        const plants = plantsDataRef.current;
+        let nearestId: string | null = null;
+        let nearestDist = Infinity;
+
+        for (const plant of plants) {
+          if (plant.latitude == null || plant.longitude == null) continue;
+          const dist = twoPointsDistance(
+            { latitude: coordinate.latitude, longitude: coordinate.longitude },
+            { latitude: plant.latitude, longitude: plant.longitude },
+          );
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearestId = plant.id;
+          }
+        }
+
+        if (nearestId !== null && nearestDist <= REVIEW_TAP_RADIUS_METERS) {
+          handleToggleReviewPlantRef.current(nearestId);
+        }
         return;
       }
 
-      const coordinate = event.nativeEvent.coordinate;
+      // ── Dev mode: mock route selection ──
+      if (!__DEV__ || !mockRouteSelectionMode) {
+        return;
+      }
 
       if (mockRouteSelectionMode === 'start') {
         setMockRouteStart(coordinate);
@@ -168,7 +222,16 @@ export const SprayingMap = memo(() => {
         )}
 
         {/* Plantas carregadas da região */}
-        <RoutinePlantsCircles plantsData={plantsData} />
+        {isReviewMode ? (
+          <SprayingReviewPlants
+            key="review-overlay"
+            plantsData={plantsData}
+            reviewPreviewIds={reviewPreviewIds}
+            reviewOverrides={reviewOverrides}
+          />
+        ) : (
+          <RoutinePlantsCircles key="normal-overlay" plantsData={plantsData} />
+        )}
 
         {__DEV__ && mockRouteStart ? (
           <Marker coordinate={mockRouteStart} anchor={{ x: 0.5, y: 1 }} pinColor="#16A34A" zIndex={101} title="A" />

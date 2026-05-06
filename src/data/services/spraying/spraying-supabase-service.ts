@@ -1,6 +1,6 @@
 import { supabase } from '../supabase/supabase-connection';
 
-interface AssociatePlantsResult {
+export interface AssociatePlantsResult {
   plant_id: string;
   distance_meters: number;
 }
@@ -25,8 +25,28 @@ class SprayingSupabaseService {
   async associatePlantsViaRPC(
     sessionId: string,
     radiusMeters = SPRAYING_ASSOCIATION_RADIUS_METERS,
+    includeIds: string[] = [],
+    excludeIds: string[] = [],
   ): Promise<AssociatePlantsResult[]> {
     const { data, error } = await supabase.rpc('associate_plants_to_session', {
+      p_session_id: sessionId,
+      p_radius_meters: radiusMeters,
+      p_include_ids: includeIds,
+      p_exclude_ids: excludeIds,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return (data ?? []) as AssociatePlantsResult[];
+  }
+
+  async previewPlantsForSession(
+    sessionId: string,
+    radiusMeters = SPRAYING_ASSOCIATION_RADIUS_METERS,
+  ): Promise<AssociatePlantsResult[]> {
+    const { data, error } = await supabase.rpc('preview_plants_for_session', {
       p_session_id: sessionId,
       p_radius_meters: radiusMeters,
     });
