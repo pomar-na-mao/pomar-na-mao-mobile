@@ -1,5 +1,7 @@
 import { useSprayingStore } from '@/data/store/spraying/use-spraying-store';
 import { Colors } from '@/shared/constants/theme';
+import { SprayingReviewLegend } from '@/ui/spraying/components/spraying-review-legend';
+import { useSpraying } from '@/ui/spraying/view-models/use-spraying';
 import React, { useEffect, useState } from 'react';
 import { Modal, StyleSheet, View, useColorScheme } from 'react-native';
 import { SprayingActions } from '../spraying-actions';
@@ -15,6 +17,8 @@ export function SprayingScreen() {
   const [isProductsVisible, setIsProductsVisible] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
 
+  const { isReviewMode, reviewPreviewIds, reviewFinalIds } = useSpraying();
+
   useEffect(() => {
     if (activeSession?.status === 'in_progress') {
       setIsRegistering(true);
@@ -29,6 +33,11 @@ export function SprayingScreen() {
     <View style={[styles.container, { backgroundColor: Colors[theme].background }]}>
       {/* Mapa como fundo principal */}
       <SprayingMap />
+
+      {/* Legenda flutuante no modo revisão */}
+      {isReviewMode && (
+        <SprayingReviewLegend preSelectedCount={reviewPreviewIds.size} finalCount={reviewFinalIds.size} />
+      )}
 
       {/* Barra de ações flutuante */}
       <SprayingActions

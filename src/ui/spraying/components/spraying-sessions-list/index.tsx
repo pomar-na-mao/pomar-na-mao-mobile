@@ -41,7 +41,7 @@ function formatDuration(session: SprayingSession) {
 
 export const SprayingSessionsList: React.FC<SprayingSessionsListProps> = ({ onStartNewSession }) => {
   const theme = useColorScheme() ?? 'light';
-  const { sessions, handleDeleteSession, handleSyncSession } = useSpraying();
+  const { sessions, handleDeleteSession, handleResumeSession, handleEnterReviewMode } = useSpraying();
 
   const completedSessions = useMemo(() => sessions.filter((session) => session.status === 'completed'), [sessions]);
 
@@ -63,7 +63,10 @@ export const SprayingSessionsList: React.FC<SprayingSessionsListProps> = ({ onSt
       style={[styles.swipeAction, styles.syncAction]}
       onPress={() => {
         swipeable.close();
-        handleSyncSession(session);
+        handleResumeSession(session);
+        onStartNewSession();
+        // Enter review mode after a tick so the map has time to mount
+        setTimeout(() => handleEnterReviewMode(), 300);
       }}
     >
       <MaterialIcons name="sync" size={26} color="#FFF" />

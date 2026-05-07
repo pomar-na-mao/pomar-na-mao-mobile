@@ -9,6 +9,9 @@ interface SprayingStore {
   isTracking: boolean;
   setIsTracking: (isTracking: boolean) => void;
 
+  trackingStartedAt: string | null;
+  setTrackingStartedAt: (ts: string | null) => void;
+
   isMockingLocation: boolean;
   setIsMockingLocation: (isMockingLocation: boolean) => void;
 
@@ -35,6 +38,9 @@ export const useSprayingStore = create<SprayingStore>((set) => ({
 
   isTracking: false,
   setIsTracking: (isTracking) => set(() => ({ isTracking })),
+
+  trackingStartedAt: null,
+  setTrackingStartedAt: (trackingStartedAt) => set(() => ({ trackingStartedAt })),
 
   isMockingLocation: false,
   setIsMockingLocation: (isMockingLocation) => set(() => ({ isMockingLocation })),
