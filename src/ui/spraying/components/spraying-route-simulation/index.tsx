@@ -1,20 +1,23 @@
 import { useSprayingSqliteService } from '@/data/services/spraying/use-spraying-sqlite-service';
 import { useSprayingStore } from '@/data/store/spraying/use-spraying-store';
+import { SPRAYING_MOCK_ROUTE_CONFIG_KEY } from '@/shared/constants/spraying-background-location';
 import { Colors } from '@/shared/constants/theme';
+import {
+  buildStraightMockRoute,
+  createMockLocation,
+  getMockRoutePointId,
+  type MockRouteCoordinate,
+  MOCK_LOCATION_UPDATE_INTERVAL_MS,
+  type SprayingMockRouteConfig,
+} from '@/shared/utils/spraying-mock-route';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { styles } from './style';
 
-const MOCK_LOCATION_UPDATE_INTERVAL_MS = 500;
-const MOCK_ROUTE_STEP_DISTANCE_METERS = 2;
-const MAX_MOCK_ROUTE_STEPS = 300;
-
-export interface MockRouteCoordinate {
-  latitude: number;
-  longitude: number;
-}
+export type { MockRouteCoordinate } from '@/shared/utils/spraying-mock-route';
 
 export type MockRouteSelectionMode = 'start' | 'end' | null;
 
@@ -25,51 +28,6 @@ interface SprayingRouteSimulationProps {
   selectionMode: MockRouteSelectionMode;
   startCoordinate: MockRouteCoordinate | null;
 }
-
-const createMockLocation = (latitude: number, longitude: number): Location.LocationObject => ({
-  coords: {
-    latitude,
-    longitude,
-    altitude: 0,
-    accuracy: 1,
-    altitudeAccuracy: 1,
-    heading: 0,
-    speed: 0,
-  },
-  timestamp: Date.now(),
-});
-
-const getCoordinateDistanceMeters = (start: MockRouteCoordinate, end: MockRouteCoordinate) => {
-  const earthRadiusMeters = 6_371_000;
-  const toRadians = (value: number) => (value * Math.PI) / 180;
-  const latitudeDelta = toRadians(end.latitude - start.latitude);
-  const longitudeDelta = toRadians(end.longitude - start.longitude);
-  const startLatitude = toRadians(start.latitude);
-  const endLatitude = toRadians(end.latitude);
-
-  const a =
-    Math.sin(latitudeDelta / 2) ** 2 +
-    Math.cos(startLatitude) * Math.cos(endLatitude) * Math.sin(longitudeDelta / 2) ** 2;
-
-  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
-
-const buildStraightMockRoute = (start: MockRouteCoordinate, end: MockRouteCoordinate) => {
-  const distanceMeters = getCoordinateDistanceMeters(start, end);
-  const steps = Math.min(
-    MAX_MOCK_ROUTE_STEPS,
-    Math.max(2, Math.ceil(distanceMeters / MOCK_ROUTE_STEP_DISTANCE_METERS)),
-  );
-
-  return Array.from({ length: steps + 1 }, (_, stepIndex) => {
-    const progress = stepIndex / steps;
-
-    return {
-      latitude: start.latitude + (end.latitude - start.latitude) * progress,
-      longitude: start.longitude + (end.longitude - start.longitude) * progress,
-    };
-  });
-};
 
 export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = ({
   applyLocationUpdate,
@@ -94,14 +52,19 @@ export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = (
   setIsMockingLocationRef.current = setIsMockingLocation;
 
   const recordMockCoordinate = useCallback(
-    (latitude: number, longitude: number) => {
+    (latitude: number, longitude: number, routeIndex: number, timestamp: number) => {
       if (!activeSession) {
         return;
       }
 
       const point = { latitude, longitude };
 
-      sprayingServiceRef.current.bufferRoutePoint(activeSession.id, { ...point, accuracy: 1 });
+      sprayingServiceRef.current.bufferRoutePoint(activeSession.id, {
+        ...point,
+        accuracy: 1,
+        gpsTimestamp: timestamp,
+        id: getMockRoutePointId(activeSession.id, routeIndex),
+      });
       addLiveRoutePoint(point);
       applyLocationUpdate(createMockLocation(latitude, longitude));
     },
@@ -115,6 +78,7 @@ export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = (
     }
 
     await sprayingServiceRef.current.flushRouteBuffer();
+    await AsyncStorage.removeItem(SPRAYING_MOCK_ROUTE_CONFIG_KEY);
     if (disableMockingLocation) {
       setIsMockingLocationRef.current(false);
     }
@@ -127,6 +91,7 @@ export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = (
 
     await stopMockWalk(false);
     setIsMockingLocation(true);
+    const startedAt = Date.now();
 
     if (!hasPreparedMockRouteRef.current) {
       await sprayingServiceRef.current.clearRoutePoints(activeSession.id);
@@ -135,6 +100,14 @@ export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = (
     }
 
     const route = buildStraightMockRoute(startCoordinate, endCoordinate);
+    const config: SprayingMockRouteConfig = {
+      endCoordinate,
+      sessionId: activeSession.id,
+      startCoordinate,
+      startedAt,
+    };
+
+    await AsyncStorage.setItem(SPRAYING_MOCK_ROUTE_CONFIG_KEY, JSON.stringify(config));
 
     let routeIndex = 0;
 
@@ -146,7 +119,12 @@ export const SprayingRouteSimulation: React.FC<SprayingRouteSimulationProps> = (
         return;
       }
 
-      recordMockCoordinate(nextCoordinate.latitude, nextCoordinate.longitude);
+      recordMockCoordinate(
+        nextCoordinate.latitude,
+        nextCoordinate.longitude,
+        routeIndex,
+        startedAt + routeIndex * MOCK_LOCATION_UPDATE_INTERVAL_MS,
+      );
       routeIndex += 1;
     }, MOCK_LOCATION_UPDATE_INTERVAL_MS);
   }, [

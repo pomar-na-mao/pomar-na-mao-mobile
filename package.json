@@ -1,7 +1,7 @@
 {
   "name": "pomar-na-mao-mobile",
   "main": "expo-router/entry",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -32,6 +32,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-sqlite": "~16.0.9",
     "expo-status-bar": "~3.0.9",
+    "expo-task-manager": "~14.0.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.70.0",

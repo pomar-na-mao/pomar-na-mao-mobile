@@ -249,14 +249,14 @@ export function useSprayingSqliteService() {
 
   function bufferRoutePoint(
     sessionId: string,
-    coords: { latitude: number; longitude: number; accuracy?: number },
+    coords: { latitude: number; longitude: number; accuracy?: number; gpsTimestamp?: number; id?: string },
   ): void {
     const point: SprayingRoutePoint = {
-      id: randomUUID(),
+      id: coords.id ?? randomUUID(),
       session_id: sessionId,
       latitude: coords.latitude,
       longitude: coords.longitude,
-      gps_timestamp: Date.now(),
+      gps_timestamp: coords.gpsTimestamp ?? Date.now(),
       accuracy: coords.accuracy ?? null,
       synced_at: null,
     };
