@@ -328,9 +328,13 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
   const handleEnterReviewMode = useCallback(
     async (radiusMeters = SPRAYING_ASSOCIATION_RADIUS_METERS) => {
       if (!activeSession) return;
+      if (useLoadingStore.getState().isLoading) return;
 
       setIsLoading(true);
       try {
+        // Wait 500ms to ensure any background location tasks have fully flushed to SQLite
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         const networkState = await Network.getNetworkStateAsync();
         if (!networkState.isConnected) {
           setMessage('Sem conexão com a internet. Conecte-se e tente novamente.');
@@ -361,15 +365,19 @@ export const SprayingProvider = ({ children }: { children: React.ReactNode }) =>
 
         await sprayingService.flushRouteBuffer();
         const routePoints = await sprayingService.getRoutePoints(activeSession.id);
+        console.log(`[Review Mode] Pontos extraídos do SQLite local: ${routePoints.length}`);
+
         if (routePoints.length === 0) {
           setMessage('Nenhum ponto GPS registrado nesta sessão.\nInicie o rastreamento durante a pulverização.');
           setIsVisible(true);
           return;
         }
-        await sprayingSupabaseService.syncRoutePoints(routePoints);
+        const syncedPoints = await sprayingSupabaseService.syncRoutePoints(routePoints);
+        console.log(`[Review Mode] Pontos efetivamente criados via Upsert no Supabase: ${syncedPoints.length}`);
 
         // Preview: busca plantas sem persistir
         const previewed = await sprayingSupabaseService.previewPlantsForSession(activeSession.id, radiusMeters);
+        console.log(`[Review Mode] Plantas retornadas pelo RPC: ${previewed.length}`);
 
         if (previewed.length === 0) {
           setMessage(
