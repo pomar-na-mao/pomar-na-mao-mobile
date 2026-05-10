@@ -1,4 +1,5 @@
 import { initializeDatabases } from '@/data/services/sqlite/initialize-sqlite-database';
+import '@/shared/tasks/spraying-background-location-task';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme';
 
 import { AlertBox } from '@/ui/shared/components/alert-box';

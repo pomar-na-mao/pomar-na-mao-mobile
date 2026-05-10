@@ -4,7 +4,7 @@ export default {
   expo: {
     name: 'Pomar na mão',
     slug: 'pomar-na-mao-mobile',
-    version: '1.4.0',
+    version: '1.4.1',
     orientation: 'portrait',
     icon: './src/assets/images/icon.png',
     scheme: 'pomarnamaomobile',
@@ -40,6 +40,17 @@ export default {
       'expo-router',
       'expo-sqlite',
       'expo-font',
+      [
+        'expo-location',
+        {
+          isAndroidBackgroundLocationEnabled: true,
+          isAndroidForegroundServiceEnabled: true,
+          isIosBackgroundLocationEnabled: true,
+          locationAlwaysAndWhenInUsePermission:
+            'Permita que o Pomar na mão registre a rota da pulverização mesmo com o celular bloqueado.',
+          locationWhenInUsePermission: 'Permita que o Pomar na mão use sua localização durante a pulverização.',
+        },
+      ],
       '@react-native-community/datetimepicker',
       [
         'expo-splash-screen',
