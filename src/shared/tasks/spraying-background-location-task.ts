@@ -74,7 +74,7 @@ async function saveMockRouteProgress(sessionId: string, config: SprayingMockRout
   const elapsedMs = Math.max(Date.now() - config.startedAt, 0);
   const lastRouteIndex = Math.min(route.length - 1, Math.floor(elapsedMs / MOCK_LOCATION_UPDATE_INTERVAL_MS));
 
-  const database = await openDatabaseAsync('pomar-na-mao.db');
+  const database = await openDatabaseAsync('pomar-na-mao.db', { useNewConnection: true });
   await initializeDatabases(database);
 
   const statement = await database.prepareAsync(
@@ -117,7 +117,7 @@ async function saveBackgroundLocations(sessionId: string, locations: Location.Lo
     return;
   }
 
-  const database = await openDatabaseAsync('pomar-na-mao.db');
+  const database = await openDatabaseAsync('pomar-na-mao.db', { useNewConnection: true });
   await initializeDatabases(database);
 
   let lastAcceptedLocation = await getLastAcceptedLocation(database, sessionId);

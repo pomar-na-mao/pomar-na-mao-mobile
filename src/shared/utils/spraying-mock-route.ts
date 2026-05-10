@@ -29,8 +29,26 @@ export const createMockLocation = (latitude: number, longitude: number): Locatio
   timestamp: Date.now(),
 });
 
+const getStableHexHash = (value: string): string => {
+  let hash = 0x811c9dc5;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return (hash >>> 0).toString(16).padStart(8, '0');
+};
+
 export const getMockRoutePointId = (sessionId: string, routeIndex: number): string => {
-  return `${sessionId}:mock:${routeIndex}`;
+  const seed = `${sessionId}:mock:${routeIndex}`;
+  const hex =
+    getStableHexHash(`${seed}:0`) +
+    getStableHexHash(`${seed}:1`) +
+    getStableHexHash(`${seed}:2`) +
+    getStableHexHash(`${seed}:3`);
+
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 };
 
 const getCoordinateDistanceMeters = (start: MockRouteCoordinate, end: MockRouteCoordinate) => {

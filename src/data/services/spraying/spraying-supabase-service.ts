@@ -7,6 +7,35 @@ export interface AssociatePlantsResult {
 
 export const SPRAYING_ASSOCIATION_RADIUS_METERS = 9;
 
+const isUuid = (value: string): boolean => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+};
+
+const getStableHexHash = (value: string): string => {
+  let hash = 0x811c9dc5;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return (hash >>> 0).toString(16).padStart(8, '0');
+};
+
+const getStableUuid = (value: string): string => {
+  if (isUuid(value)) {
+    return value;
+  }
+
+  const hex =
+    getStableHexHash(`${value}:0`) +
+    getStableHexHash(`${value}:1`) +
+    getStableHexHash(`${value}:2`) +
+    getStableHexHash(`${value}:3`);
+
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+};
+
 class SprayingSupabaseService {
   async getActiveProducts() {
     const { data, error } = await supabase
@@ -95,7 +124,7 @@ class SprayingSupabaseService {
     }
 
     const routePoints = points.map(({ id, session_id, latitude, longitude, gps_timestamp, accuracy }) => ({
-      id,
+      id: getStableUuid(id),
       session_id,
       latitude,
       longitude,
