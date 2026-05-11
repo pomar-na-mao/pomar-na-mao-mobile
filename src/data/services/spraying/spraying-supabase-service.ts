@@ -138,13 +138,23 @@ class SprayingSupabaseService {
       throw new Error(deleteError.message);
     }
 
-    const { data, error } = await supabase.from('spraying_route_points').upsert(routePoints).select();
+    const CHUNK_SIZE = 500;
+    const insertedData: any[] = [];
 
-    if (error) {
-      throw new Error(error.message);
+    for (let i = 0; i < routePoints.length; i += CHUNK_SIZE) {
+      const chunk = routePoints.slice(i, i + CHUNK_SIZE);
+      const { data, error } = await supabase.from('spraying_route_points').upsert(chunk).select();
+
+      if (error) {
+        throw new Error(`Error syncing route points chunk: ${error.message}`);
+      }
+      
+      if (data) {
+        insertedData.push(...data);
+      }
     }
 
-    return data;
+    return insertedData;
   }
 
   async syncProducts(
