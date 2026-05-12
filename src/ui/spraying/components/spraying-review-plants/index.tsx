@@ -14,7 +14,7 @@ interface SprayingReviewPlantsProps {
 const REVIEW_COLORS = {
   preSelected: '#F97316',
   manuallyAdded: '#22C55E',
-  manuallyRemoved: '#711ca1ff',
+  manuallyRemoved: '#6B7280',
   unsprayed: {
     light: '#3B82F6',
     dark: '#60A5FA',

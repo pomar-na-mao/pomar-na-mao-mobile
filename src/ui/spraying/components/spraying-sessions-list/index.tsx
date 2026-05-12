@@ -43,7 +43,20 @@ export const SprayingSessionsList: React.FC<SprayingSessionsListProps> = ({ onSt
   const theme = useColorScheme() ?? 'light';
   const { sessions, handleDeleteSession, handleResumeSession, handleEnterReviewMode } = useSpraying();
 
-  const completedSessions = useMemo(() => sessions.filter((session) => session.status === 'completed'), [sessions]);
+  const visibleSessions = useMemo(() => sessions, [sessions]);
+
+  const isFinishedSession = (session: SprayingSession) => session.status === 'completed' && Boolean(session.ended_at);
+
+  const goToSession = (session: SprayingSession) => {
+    handleResumeSession(session);
+    onStartNewSession();
+  };
+
+  const syncSession = (session: SprayingSession) => {
+    goToSession(session);
+    // Enter review mode after a tick so the map has time to mount
+    setTimeout(() => handleEnterReviewMode(), 300);
+  };
 
   const renderLeftActions = (session: SprayingSession, swipeable: SwipeableMethods) => (
     <RectButton
@@ -63,10 +76,7 @@ export const SprayingSessionsList: React.FC<SprayingSessionsListProps> = ({ onSt
       style={[styles.swipeAction, styles.syncAction]}
       onPress={() => {
         swipeable.close();
-        handleResumeSession(session);
-        onStartNewSession();
-        // Enter review mode after a tick so the map has time to mount
-        setTimeout(() => handleEnterReviewMode(), 300);
+        syncSession(session);
       }}
     >
       <MaterialIcons name="sync" size={26} color="#FFF" />
@@ -76,13 +86,14 @@ export const SprayingSessionsList: React.FC<SprayingSessionsListProps> = ({ onSt
 
   const renderSession = ({ item }: { item: SprayingSession }) => {
     const isSynced = item.dirty === 0;
+    const isFinished = isFinishedSession(item);
 
     return (
       <ReanimatedSwipeable
         friction={2}
         enableTrackpadTwoFingerGesture
         renderLeftActions={(_, __, swipeable) => renderLeftActions(item, swipeable)}
-        renderRightActions={(_, __, swipeable) => renderRightActions(item, swipeable)}
+        renderRightActions={isFinished ? (_, __, swipeable) => renderRightActions(item, swipeable) : undefined}
       >
         <View
           style={[
@@ -114,7 +125,7 @@ export const SprayingSessionsList: React.FC<SprayingSessionsListProps> = ({ onSt
               ]}
             >
               <Text style={[styles.statusText, { color: isSynced ? Colors[theme].tint : Colors[theme].disabledText }]}>
-                {isSynced ? 'Sincronizada' : 'Local'}
+                {!isFinished ? 'Em andamento' : isSynced ? 'Sincronizada' : 'Local'}
               </Text>
             </View>
           </View>
@@ -134,6 +145,26 @@ export const SprayingSessionsList: React.FC<SprayingSessionsListProps> = ({ onSt
               </Text>
             </View>
           </View>
+
+          <Pressable
+            style={[
+              styles.actionButton,
+              {
+                backgroundColor: isFinished ? Colors[theme].confirmationButtonBackground : Colors[theme].tint,
+              },
+            ]}
+            onPress={() => {
+              if (isFinished) {
+                syncSession(item);
+                return;
+              }
+
+              goToSession(item);
+            }}
+          >
+            <MaterialIcons name={isFinished ? 'sync' : 'arrow-forward'} size={18} color="#FFF" />
+            <Text style={styles.actionButtonText}>{isFinished ? 'Sincronizar' : 'Ir para sessão'}</Text>
+          </Pressable>
         </View>
       </ReanimatedSwipeable>
     );
@@ -142,14 +173,14 @@ export const SprayingSessionsList: React.FC<SprayingSessionsListProps> = ({ onSt
   return (
     <View style={[styles.container, { backgroundColor: Colors[theme].background }]}>
       <FlatList
-        data={completedSessions}
+        data={visibleSessions}
         keyExtractor={(item) => item.id}
         renderItem={renderSession}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <EmptyList
-            title="Nenhuma pulverização finalizada"
+            title="Nenhuma pulverização registrada"
             subtitle="Toque no botão de adicionar para registrar uma nova pulverização."
           />
         }
@@ -221,6 +252,20 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
+  },
+  actionButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: 8,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  actionButtonText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   swipeAction: {
     alignItems: 'center',

@@ -1,5 +1,6 @@
 import { useSprayingStore } from '@/data/store/spraying/use-spraying-store';
 import { Colors } from '@/shared/constants/theme';
+import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { useTrackingTimer } from '@/shared/hooks/use-tracking-timer';
 import { useSpraying } from '@/ui/spraying/view-models/use-spraying';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -31,6 +32,7 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
 
   const hasPlantsLoaded = plantsData.length > 0;
   const trackingTimer = useTrackingTimer();
+  const { isLoading } = useLoadingStore();
 
   return (
     <View style={styles.dockContainer}>
@@ -52,8 +54,9 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
         {/* Botão de Configuração/Filtros – escondido no modo revisão */}
         {!isReviewMode && (
           <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: Colors[theme].line }]}
+            style={[styles.secondaryButton, { borderColor: Colors[theme].line }, isLoading && { opacity: 0.5 }]}
             onPress={onOpenFilters}
+            disabled={isLoading}
           >
             <MaterialIcons name="settings" size={24} color={Colors[theme].tint} />
           </TouchableOpacity>
@@ -63,8 +66,9 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
         {!activeSession ? (
           hasPlantsLoaded ? (
             <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: Colors[theme].tint }]}
+              style={[styles.primaryButton, { backgroundColor: Colors[theme].tint }, isLoading && { opacity: 0.5 }]}
               onPress={onOpenProducts}
+              disabled={isLoading}
             >
               <MaterialIcons name="play-arrow" size={24} color="#FFF" />
               <Text style={styles.primaryButtonText}>Iniciar Sessão</Text>
@@ -78,16 +82,18 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
           <>
             {!isTracking ? (
               <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: Colors[theme].tint }]}
+                style={[styles.primaryButton, { backgroundColor: Colors[theme].tint }, isLoading && { opacity: 0.5 }]}
                 onPress={handleStartTracking}
+                disabled={isLoading}
               >
                 <MaterialIcons name="gps-fixed" size={24} color="#FFF" />
                 <Text style={styles.primaryButtonText}>Gravar Rota</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: Colors[theme].danger }]}
+                style={[styles.primaryButton, { backgroundColor: Colors[theme].danger }, isLoading && { opacity: 0.5 }]}
                 onPress={handleStopTracking}
+                disabled={isLoading}
               >
                 <MaterialIcons name="gps-off" size={24} color="#FFF" />
                 <Text style={styles.primaryButtonText}>Parar Gravação</Text>
@@ -96,18 +102,20 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
 
             {/* Botão de Reset (Excluir) */}
             <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: Colors[theme].line }]}
+              style={[styles.secondaryButton, { borderColor: Colors[theme].line }, isLoading && { opacity: 0.5 }]}
               onPress={() => handleDeleteSession(activeSession.id)}
+              disabled={isLoading}
             >
               <MaterialIcons name="delete-outline" size={24} color={Colors[theme].danger} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: Colors[theme].line }]}
+              style={[styles.secondaryButton, { borderColor: Colors[theme].line }, isLoading && { opacity: 0.5 }]}
               onPress={async () => {
                 await handleFinishSession();
                 onFinishSession?.();
               }}
+              disabled={isLoading}
             >
               <MaterialIcons name="stop" size={24} color={Colors[theme].danger} />
             </TouchableOpacity>
@@ -117,8 +125,9 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
           <>
             {/* Cancelar revisão */}
             <TouchableOpacity
-              style={[styles.secondaryWideButton, { borderColor: Colors[theme].danger }]}
+              style={[styles.secondaryWideButton, { borderColor: Colors[theme].danger }, isLoading && { opacity: 0.5 }]}
               onPress={handleCancelReview}
+              disabled={isLoading}
             >
               <MaterialIcons name="close" size={22} color={Colors[theme].danger} />
               <Text style={[styles.secondaryButtonText, { color: Colors[theme].danger }]}>Cancelar</Text>
@@ -126,8 +135,13 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
 
             {/* Confirmar e sincronizar */}
             <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: Colors[theme].confirmationButtonBackground }]}
+              style={[
+                styles.primaryButton,
+                { backgroundColor: Colors[theme].confirmationButtonBackground },
+                isLoading && { opacity: 0.5 },
+              ]}
               onPress={() => handleConfirmReview()}
+              disabled={isLoading}
             >
               <MaterialIcons name="check-circle" size={24} color="#FFF" />
               <Text style={styles.primaryButtonText}>Confirmar</Text>
@@ -138,16 +152,22 @@ export const SprayingActions: React.FC<SprayingActionsProps> = ({ onOpenFilters,
           <>
             {/* Entrar em modo de revisão */}
             <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: Colors[theme].confirmationButtonBackground }]}
+              style={[
+                styles.primaryButton,
+                { backgroundColor: Colors[theme].confirmationButtonBackground },
+                isLoading && { opacity: 0.5 },
+              ]}
               onPress={() => handleEnterReviewMode()}
+              disabled={isLoading}
             >
               <MaterialIcons name="sync" size={24} color="#FFF" />
               <Text style={styles.primaryButtonText}>Sincronizar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: Colors[theme].line }]}
+              style={[styles.secondaryButton, { borderColor: Colors[theme].line }, isLoading && { opacity: 0.5 }]}
               onPress={() => handleDeleteSession(activeSession.id)}
+              disabled={isLoading}
             >
               <MaterialIcons name="delete-outline" size={24} color={Colors[theme].danger} />
             </TouchableOpacity>
