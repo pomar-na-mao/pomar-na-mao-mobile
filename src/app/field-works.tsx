@@ -47,13 +47,13 @@ const cards: CardItem[] = [
     route: '/spraying' as ExpoRouterPath,
     icon: 'water-drop',
   },
-  {
+  /*   {
     id: 'harvest',
     title: 'Colheita (Em breve)',
     subtitle: 'Registre sua rota durante a colheita para registrar!',
     route: null,
     icon: 'shopping-basket',
-  },
+  }, */
 ];
 
 export default function FieldWorks() {
