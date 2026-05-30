@@ -1,19 +1,17 @@
 import { supabase } from '@/data/services/supabase/supabase-connection';
-import type { FarmRegion } from '@/domain/models/shared/farm-regions.model';
-import { generateListOfFarmRegions } from '@/utils/transformation/array';
 import { useQuery } from '@tanstack/react-query';
 
 const fetchRegions = async () => {
-  const { data, error } = await supabase.from('regions').select('*').order('region', { ascending: true });
+  const { data, error } = await supabase.from('zones').select('id,name').order('name', { ascending: true });
 
   if (error) throw new Error(error.message);
 
-  return generateListOfFarmRegions(data as FarmRegion[]) || [];
+  return data?.map((zone) => ({ label: zone.name, value: zone.id })) || [];
 };
 
 export const useRegionOptions = () => {
   return useQuery({
-    queryKey: ['region-options'],
+    queryKey: ['zone-options'],
     queryFn: fetchRegions,
     staleTime: 1000 * 60 * 60, // 60 minutos
     gcTime: 1000 * 60 * 120, // 120 minutos

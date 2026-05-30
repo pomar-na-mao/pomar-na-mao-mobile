@@ -1,154 +1,8 @@
 import { type SQLiteDatabase } from 'expo-sqlite';
 
-export async function dropDatabases(database: SQLiteDatabase) {
-  await database.execAsync(`DROP TABLE IF EXISTS inspect_routines;`);
-  await database.execAsync(`DROP TABLE IF EXISTS annotations;`);
-  await database.execAsync(`DROP TABLE IF EXISTS new_plants;`);
-  await database.execAsync(`DROP TABLE IF EXISTS routine_plants;`);
-}
+export async function dropDatabases(database: SQLiteDatabase) {}
 
 export async function initializeDatabases(database: SQLiteDatabase) {
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS inspect_routines (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      date TEXT NOT NULL,
-      region TEXT NOT NULL,
-      plant_data TEXT NOT NULL,
-      is_done INTEGER NOT NULL DEFAULT 0
-      );
-    `,
-  );
-
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS annotations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      latitude REAL,
-      longitude REAL,
-      information TEXT NOT NULL,
-      occurrences TEXT NOT NULL,
-      created_at TEXT NOT NULL
-      );
-    `,
-  );
-
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS new_plants (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      latitude REAL,
-      longitude REAL,
-      gps_timestamp INTEGER,
-      created_at TEXT NOT NULL,
-      region TEXT NOT NULL
-      );
-    `,
-  );
-
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS routine_plants (
-      id TEXT PRIMARY KEY NOT NULL,
-      plant_data TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-      );
-    `,
-  );
-
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS products (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      active_ingredient TEXT,
-      category TEXT,
-      concentration REAL,
-      unit TEXT DEFAULT 'ml/L',
-      manufacturer TEXT,
-      notes TEXT,
-      is_active INTEGER DEFAULT 1,
-      created_at TEXT,
-      synced_at TEXT,
-      dirty INTEGER DEFAULT 0,
-      deleted INTEGER DEFAULT 0
-      );
-    `,
-  );
-
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS spraying_sessions (
-      id TEXT PRIMARY KEY,
-      started_at TEXT,
-      ended_at TEXT,
-      operator_name TEXT,
-      status TEXT DEFAULT 'in_progress',
-      region TEXT,
-      notes TEXT,
-      water_volume_liters REAL,
-      created_at TEXT,
-      synced_at TEXT,
-      dirty INTEGER DEFAULT 1,
-      deleted INTEGER DEFAULT 0
-      );
-    `,
-  );
-
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS spraying_products (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      product_id TEXT NOT NULL,
-      dose REAL NOT NULL,
-      dose_unit TEXT DEFAULT 'ml/L',
-      synced_at TEXT,
-      dirty INTEGER DEFAULT 1,
-      deleted INTEGER DEFAULT 0,
-      UNIQUE(session_id, product_id)
-      );
-    `,
-  );
-
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS spraying_route_points (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      latitude REAL NOT NULL,
-      longitude REAL NOT NULL,
-      gps_timestamp INTEGER,
-      accuracy REAL,
-      synced_at TEXT
-      );
-    `,
-  );
-
-  await database.execAsync(
-    `
-     CREATE TABLE IF NOT EXISTS spraying_plants (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      plant_id TEXT NOT NULL,
-      distance_meters REAL,
-      association_method TEXT DEFAULT 'auto',
-      synced_at TEXT,
-      dirty INTEGER DEFAULT 1,
-      deleted INTEGER DEFAULT 0,
-      UNIQUE(session_id, plant_id)
-      );
-    `,
-  );
-
-  await database.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_route_session ON spraying_route_points(session_id);
-  `);
-
-  await database.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_spraying_plants_session ON spraying_plants(session_id);
-  `);
-
   await database.execAsync(
     `
      CREATE TABLE IF NOT EXISTS local_varieties (
@@ -361,4 +215,113 @@ export async function initializeDatabases(database: SQLiteDatabase) {
       );
     `,
   );
+
+  await database.execAsync(
+    `
+     CREATE TABLE IF NOT EXISTS local_inspections (
+      id TEXT PRIMARY KEY,
+      zone_id TEXT,
+      zone_name TEXT,
+      occurrence_type_id TEXT,
+      occurrence_code TEXT,
+      occurrence_name TEXT,
+      status TEXT NOT NULL DEFAULT 'in_progress',
+      sync_status TEXT NOT NULL DEFAULT 'pending',
+      started_at TEXT NOT NULL,
+      finished_at TEXT,
+      plants_loaded_count INTEGER NOT NULL DEFAULT 0,
+      plants_changed_count INTEGER NOT NULL DEFAULT 0,
+      current_latitude REAL,
+      current_longitude REAL,
+      nearest_plant_id TEXT,
+      nearest_distance_meters REAL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      remote_field_operation_id TEXT,
+      synced_at TEXT,
+      sync_error TEXT
+      );
+    `,
+  );
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_inspections_status ON local_inspections(status);
+  `);
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_inspections_sync_status ON local_inspections(sync_status);
+  `);
+
+  await database.execAsync(
+    `
+     CREATE TABLE IF NOT EXISTS local_inspection_loaded_plants (
+      id TEXT PRIMARY KEY,
+      inspection_local_id TEXT NOT NULL,
+      plant_id TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      zone_id TEXT,
+      zone_name TEXT,
+      variety_id INTEGER,
+      variety_name TEXT,
+      occurrences_json TEXT NOT NULL DEFAULT '[]',
+      is_nearest INTEGER NOT NULL DEFAULT 0,
+      is_changed INTEGER NOT NULL DEFAULT 0,
+      distance_meters REAL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+      );
+    `,
+  );
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_inspection_loaded_plants_inspection
+    ON local_inspection_loaded_plants(inspection_local_id);
+  `);
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_inspection_loaded_plants_plant
+    ON local_inspection_loaded_plants(plant_id);
+  `);
+
+  await database.execAsync(
+    `
+     CREATE TABLE IF NOT EXISTS local_inspection_changes (
+      id TEXT PRIMARY KEY,
+      inspection_local_id TEXT NOT NULL,
+      plant_id TEXT NOT NULL,
+      change_type TEXT NOT NULL,
+      occurrence_type_id TEXT NOT NULL,
+      occurrence_code TEXT NOT NULL,
+      occurrence_name TEXT NOT NULL,
+      previous_value_json TEXT,
+      new_value_json TEXT,
+      severity TEXT,
+      notes TEXT,
+      latitude REAL,
+      longitude REAL,
+      gps_accuracy_m REAL,
+      distance_to_plant_meters REAL,
+      changed_at TEXT NOT NULL,
+      sync_status TEXT NOT NULL DEFAULT 'pending',
+      remote_occurrence_id TEXT,
+      sync_error TEXT
+      );
+    `,
+  );
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_inspection_changes_inspection
+    ON local_inspection_changes(inspection_local_id);
+  `);
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_inspection_changes_plant
+    ON local_inspection_changes(plant_id);
+  `);
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_inspection_changes_sync_status
+    ON local_inspection_changes(sync_status);
+  `);
 }

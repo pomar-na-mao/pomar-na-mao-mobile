@@ -1,17 +1,35 @@
-import type { InspectRoutineFilter } from '@/domain/models/inspect-routines/inspect-routines-search.schema';
+import type { PlantFilter } from '@/domain/models/shared/plant-filter.model';
 import type { PlantData } from '@/domain/models/shared/plant-data.model';
-import type { PostgrestSingleResponse } from '@supabase/supabase-js';
+import type { PostgrestError, PostgrestSingleResponse } from '@supabase/supabase-js';
 import { supabase } from '../supabase/supabase-connection';
 
+const isUuid = (value: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 class PlantsService {
-  async findAll(filters: InspectRoutineFilter | null): Promise<PostgrestSingleResponse<PlantData[]>> {
+  async findAll(filters: PlantFilter | null): Promise<{ data: PlantData[] | null; error: PostgrestError | null }> {
     let query = supabase.from('plants').select('*').order('created_at', { ascending: false });
 
     if (filters) {
-      const { region, occurrence } = filters;
+      const { region, zoneId, occurrence } = filters;
+      let resolvedZoneId = zoneId ?? null;
 
-      if (region) {
-        query = query.eq('region', region);
+      if (!resolvedZoneId && region) {
+        if (isUuid(region)) {
+          resolvedZoneId = region;
+        } else {
+          const { data: zone, error } = await supabase.from('zones').select('id').eq('name', region).maybeSingle();
+
+          if (error) {
+            return { data: null, error };
+          }
+
+          resolvedZoneId = zone?.id ?? null;
+        }
+      }
+
+      if (resolvedZoneId) {
+        query = query.eq('zone_id', resolvedZoneId);
       }
 
       if (occurrence) {

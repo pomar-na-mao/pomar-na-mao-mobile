@@ -1,5 +1,4 @@
 import { initializeDatabases } from '@/data/services/sqlite/initialize-sqlite-database';
-import '@/shared/tasks/spraying-background-location-task';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme';
 
 import { AlertBox } from '@/ui/shared/components/alert-box';
@@ -22,11 +21,7 @@ function MainLayout() {
       <Stack screenOptions={{ animation: 'fade' }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="field-works" options={{ headerShown: false }} />
-
-        <Stack.Screen name="annotation" options={{ title: 'Anotação' }} />
-        <Stack.Screen name="routine" options={{ title: 'Rotina' }} />
-        <Stack.Screen name="add-plant" options={{ title: 'Nova planta' }} />
-        <Stack.Screen name="spraying" options={{ title: 'Pulverização' }} />
+        <Stack.Screen name="inspection" options={{ title: 'Inspecao' }} />
       </Stack>
       <StatusBar style="auto" />
     </>

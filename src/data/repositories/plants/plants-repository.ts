@@ -1,9 +1,9 @@
 import { plantsService } from '@/data/services/plants/plants-service';
-import type { InspectRoutineFilter } from '@/domain/models/inspect-routines/inspect-routines-search.schema';
+import type { PlantFilter } from '@/domain/models/shared/plant-filter.model';
 import type { PlantData } from '@/domain/models/shared/plant-data.model';
 
 class PlantsRepository {
-  async findAll(filters: InspectRoutineFilter | null) {
+  async findAll(filters: PlantFilter | null) {
     const { data, error } = await plantsService.findAll(filters);
 
     return { data, error };
