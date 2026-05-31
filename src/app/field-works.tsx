@@ -20,39 +20,11 @@ interface CardItem {
 
 const cards: CardItem[] = [
   {
-    id: 'routine',
-    title: 'Rotina',
-    subtitle: 'Inicie uma rotina para avaliação de ocorrências!',
-    route: '/routine' as ExpoRouterPath,
-    icon: 'work',
-  },
-  {
-    id: 'annotation',
-    title: 'Anotação',
-    subtitle: 'Registre ocorrências identificadas em campo!',
-    route: '/annotation' as ExpoRouterPath,
-    icon: 'event-note',
-  },
-  {
-    id: 'add-plant',
-    title: 'Nova planta',
-    subtitle: 'Adicione uma nova planta na base!',
-    route: '/add-plant' as ExpoRouterPath,
-    icon: 'local-florist',
-  },
-  {
-    id: 'spraying',
-    title: 'Pulverização',
-    subtitle: 'Registre uma pulverização para associar plantas!',
-    route: '/spraying' as ExpoRouterPath,
-    icon: 'water-drop',
-  },
-  {
-    id: 'harvest',
-    title: 'Colheita (Em breve)',
-    subtitle: 'Registre sua rota durante a colheita para registrar!',
-    route: null,
-    icon: 'shopping-basket',
+    id: 'inspection',
+    title: 'Inspecao',
+    subtitle: 'Inicie uma inspecao em campo para avaliar ocorrencias!',
+    route: '/inspection' as ExpoRouterPath,
+    icon: 'fact-check',
   },
 ];
 
@@ -98,44 +70,21 @@ export default function FieldWorks() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    width: '100%',
-    marginBottom: 18,
-  },
-  header: {
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    marginTop: 18,
-    width: '100%',
-  },
-  topEmptySpace: {
-    height: 12,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 24,
-    gap: 16,
-  },
   card: {
-    width: '100%',
-    minHeight: 120,
-    flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'transparent',
     borderRadius: 16,
     borderWidth: 1,
+    flexDirection: 'row',
+    minHeight: 120,
+    padding: 20,
     position: 'relative',
+    width: '100%',
   },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 20,
+  cardSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+    opacity: 0.7,
   },
   cardTextContainer: {
     flex: 1,
@@ -145,9 +94,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  cardSubtitle: {
-    fontSize: 14,
-    marginTop: 4,
-    opacity: 0.7,
+  contentContainer: {
+    gap: 16,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    borderRadius: 32,
+    height: 64,
+    justifyContent: 'center',
+    marginRight: 20,
+    width: 64,
+  },
+  topEmptySpace: {
+    height: 12,
   },
 });
