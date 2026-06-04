@@ -13,6 +13,7 @@ import {
   inspectionPlant,
   inspectionListItem,
   localInspection,
+  localInspectionChange,
   secondInspectionPlant,
   syncManualInspectionResult,
 } from '@/test/inspection/fixtures';
@@ -133,7 +134,7 @@ function InspectionConsumer() {
         testID="save-change"
         onPress={() =>
           void inspection.saveOccurrenceChange({
-            changeType: 'update_occurrence',
+            changeType: 'add_occurrence',
             notes: 'nota',
             occurrence: inspectionFilterOptions.occurrenceTypes[0],
             severity: 'alta',
@@ -141,6 +142,30 @@ function InspectionConsumer() {
         }
       >
         <Text>save change</Text>
+      </Pressable>
+      <Pressable
+        testID="save-add"
+        onPress={() =>
+          void inspection.saveOccurrenceChange({
+            changeType: 'add_occurrence',
+            notes: 'nova',
+            occurrence: inspectionFilterOptions.occurrenceTypes[0],
+            severity: 'media',
+          })
+        }
+      >
+        <Text>save add</Text>
+      </Pressable>
+      <Pressable
+        testID="save-remove"
+        onPress={() =>
+          void inspection.saveOccurrenceChange({
+            changeType: 'remove_occurrence',
+            occurrence: inspectionFilterOptions.occurrenceTypes[0],
+          })
+        }
+      >
+        <Text>save remove</Text>
       </Pressable>
       <Pressable testID="finish" onPress={() => void inspection.finishActiveInspection()}>
         <Text>finish</Text>
@@ -309,7 +334,7 @@ describe('InspectionProvider', () => {
     expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Nenhuma planta'));
   });
 
-  it('saves occurrence changes for the nearest active plant and refreshes local state', async () => {
+  it('saves add occurrence changes for the nearest active plant and refreshes local state', async () => {
     const service = await renderProvider(
       createSqliteService({
         getLatestPendingInspection: jest.fn().mockResolvedValue(localInspection),
@@ -328,14 +353,91 @@ describe('InspectionProvider', () => {
     await waitFor(() =>
       expect(service.addInspectionChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          changeType: 'update_occurrence',
+          changeType: 'add_occurrence',
           inspectionId: localInspection.id,
           occurrenceTypeId: inspectionOccurrence.occurrenceTypeId,
           previousValue: inspectionOccurrence,
+          newValue: expect.objectContaining({ status: 'open' }),
         }),
       ),
     );
     expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('salva localmente'));
+  });
+
+  it('saves removal for an occurrence added earlier in the same offline inspection', async () => {
+    const plantWithoutOccurrences = {
+      ...inspectionPlant,
+      occurrences: [],
+    };
+    const getChanges = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          ...localInspectionChange,
+          change_type: 'add_occurrence',
+          occurrence_code: inspectionOccurrence.code,
+          occurrence_name: inspectionOccurrence.name,
+          occurrence_type_id: inspectionOccurrence.occurrenceTypeId,
+          plant_id: inspectionPlant.plantId,
+          severity: 'media',
+        },
+      ]);
+    const service = await renderProvider(
+      createSqliteService({
+        getChanges,
+        getLatestPendingInspection: jest.fn().mockResolvedValue(localInspection),
+        getLoadedPlants: jest.fn().mockResolvedValue([plantWithoutOccurrences, secondInspectionPlant]),
+      }),
+    );
+    await waitFor(() => expect(screen.getByText('active:inspection-1')).toBeOnTheScreen());
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('location'));
+    });
+    await waitFor(() => expect(screen.getByText('nearest:plant-1')).toBeOnTheScreen());
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('save-add'));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('save-remove'));
+    });
+
+    expect(service.addInspectionChange).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        changeType: 'remove_occurrence',
+        newValue: expect.objectContaining({
+          status: 'removed',
+        }),
+        previousValue: expect.objectContaining({
+          occurrenceTypeId: inspectionOccurrence.occurrenceTypeId,
+          status: 'open',
+        }),
+      }),
+    );
+  });
+
+  it('blocks removal when the occurrence is absent from loaded and local offline state', async () => {
+    const service = await renderProvider(
+      createSqliteService({
+        getChanges: jest.fn().mockResolvedValue([]),
+        getLatestPendingInspection: jest.fn().mockResolvedValue(localInspection),
+        getLoadedPlants: jest.fn().mockResolvedValue([{ ...inspectionPlant, occurrences: [] }, secondInspectionPlant]),
+      }),
+    );
+    await waitFor(() => expect(screen.getByText('active:inspection-1')).toBeOnTheScreen());
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('location'));
+    });
+    await waitFor(() => expect(screen.getByText('nearest:plant-1')).toBeOnTheScreen());
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('save-remove'));
+    });
+
+    expect(service.addInspectionChange).not.toHaveBeenCalled();
+    expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Selecione uma ocorr'));
   });
 
   it('validates occurrence saving and finishing when there is no active inspection', async () => {
@@ -405,6 +507,10 @@ describe('InspectionProvider', () => {
           .mockResolvedValueOnce({ deviceId: 'device-1', plantsChanged: [{ changes: [], plantId: 'plant-1' }] }),
         createInspection: jest.fn().mockResolvedValue(nextInspection),
         getLatestPendingInspection: jest.fn().mockResolvedValue(localInspection),
+        getLoadedPlants: jest
+          .fn()
+          .mockResolvedValueOnce([inspectionPlant, secondInspectionPlant])
+          .mockResolvedValueOnce([{ ...inspectionPlant, occurrences: [] }, secondInspectionPlant]),
       }),
     );
 
@@ -441,6 +547,7 @@ describe('InspectionProvider', () => {
       expect.arrayContaining([
         expect.objectContaining({
           distanceMeters: null,
+          occurrences: [],
           isChanged: false,
           isNearest: false,
           plantId: inspectionPlant.plantId,
@@ -448,5 +555,6 @@ describe('InspectionProvider', () => {
       ]),
     );
     expect(screen.getByText('active:inspection-2')).toBeOnTheScreen();
+    expect(screen.getByText('loaded:2')).toBeOnTheScreen();
   });
 });

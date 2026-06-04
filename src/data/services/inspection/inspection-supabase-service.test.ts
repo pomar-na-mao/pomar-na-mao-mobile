@@ -1,4 +1,4 @@
-import { inspectionFilter, syncInspectionPayload } from '@/test/inspection/fixtures';
+import { inspectionFilter, inspectionOccurrence, syncInspectionPayload } from '@/test/inspection/fixtures';
 
 import { supabase } from '../supabase/supabase-connection';
 import { inspectionSupabaseService } from './inspection-supabase-service';
@@ -88,6 +88,32 @@ describe('inspectionSupabaseService', () => {
 
     expect(mockSupabase.rpc).toHaveBeenCalledWith('sync_manual_inspection', {
       p_payload: syncInspectionPayload,
+    });
+  });
+
+  it('passes remove occurrence changes through to sync_manual_inspection', async () => {
+    const removePayload = {
+      ...syncInspectionPayload,
+      plantsChanged: [
+        {
+          plantId: 'plant-1',
+          changes: [
+            {
+              ...syncInspectionPayload.plantsChanged[0].changes[0],
+              changeType: 'remove_occurrence' as const,
+              newValue: undefined,
+              previousValue: inspectionOccurrence,
+            },
+          ],
+        },
+      ],
+    };
+    mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
+
+    await inspectionSupabaseService.syncManualInspection(removePayload);
+
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('sync_manual_inspection', {
+      p_payload: removePayload,
     });
   });
 });

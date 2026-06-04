@@ -1,8 +1,11 @@
 # inspection-occurrence-editing Specification
 
 ## Purpose
+
 TBD - created by archiving change implement-inspection-routine. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Nearest plant details modal
 
 The app SHALL provide a details modal for the current nearest plant.
@@ -14,12 +17,37 @@ The app SHALL provide a details modal for the current nearest plant.
 
 ### Requirement: Occurrence edit actions
 
-The nearest plant modal SHALL support adding, updating, removing, resolving, and confirming occurrences.
+The nearest plant modal SHALL support only adding and removing occurrences, and SHALL validate remove actions against the effective offline occurrence state for the nearest plant.
 
 #### Scenario: User submits occurrence edit
 
-- **WHEN** the user submits an occurrence edit action
+- **WHEN** the user submits an add or remove occurrence action
 - **THEN** the app SHALL validate the selected occurrence type and save the edit as a local inspection change
+
+#### Scenario: User selects occurrence action
+
+- **WHEN** the nearest plant modal renders the action dropdown
+- **THEN** the dropdown SHALL expose only `add_occurrence` and `remove_occurrence` actions
+
+#### Scenario: Unsupported occurrence action is unavailable
+
+- **WHEN** the nearest plant modal is used during inspection
+- **THEN** the user SHALL NOT be able to select update or resolve occurrence actions
+
+#### Scenario: User removes occurrence added offline
+
+- **WHEN** the user adds an occurrence to the nearest plant during an active offline inspection and then submits a remove action for the same occurrence type before synchronizing
+- **THEN** the app SHALL save the remove action as a local inspection change without requiring the occurrence to exist in the original loaded plant occurrence snapshot
+
+#### Scenario: User removes occurrence from pending local state
+
+- **WHEN** the user submits a remove action for an occurrence type represented by pending local changes on the nearest plant
+- **THEN** the app SHALL use the locally projected occurrence state as the previous occurrence value for the new local change
+
+#### Scenario: User removes occurrence that does not exist locally
+
+- **WHEN** the user submits a remove action for an occurrence type that is absent from both the loaded occurrence snapshot and pending local changes for the nearest plant
+- **THEN** the app SHALL show the existing validation message and SHALL NOT save a local inspection change
 
 ### Requirement: Edit location metadata
 
@@ -47,4 +75,3 @@ The app SHALL build changed plant arrays only from plants with `local_inspection
 
 - **WHEN** the app creates a sync payload
 - **THEN** unchanged loaded plants SHALL be excluded from `plantsChanged`
-
