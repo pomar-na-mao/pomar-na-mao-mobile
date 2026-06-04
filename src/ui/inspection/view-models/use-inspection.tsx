@@ -1,13 +1,15 @@
 import { inspectionRepository } from '@/data/repositories/inspection/inspection-repository';
 import { useInspectionSqliteService } from '@/data/services/inspection/use-inspection-sqlite-service';
-import type {
-  InspectionChangeType,
-  InspectionFilter,
-  InspectionFilterOptions,
-  InspectionListItem,
-  InspectionPlant,
-  LocalInspection,
-  OccurrenceTypeOption,
+import {
+  localInspectionChangeToOccurrenceProjection,
+  projectInspectionPlantOccurrences,
+  type InspectionChangeType,
+  type InspectionFilter,
+  type InspectionFilterOptions,
+  type InspectionListItem,
+  type InspectionPlant,
+  type LocalInspection,
+  type OccurrenceTypeOption,
 } from '@/domain/models/inspection';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
@@ -403,7 +405,14 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      const existingOccurrence = nearestPlant.occurrences.find(
+      const localPlantChanges = await sqliteService.getChanges(activeInspection.id);
+      const projectedOccurrences = projectInspectionPlantOccurrences(
+        nearestPlant.occurrences,
+        localPlantChanges
+          .filter((change) => change.plant_id === nearestPlant.plantId)
+          .map(localInspectionChangeToOccurrenceProjection),
+      );
+      const existingOccurrence = projectedOccurrences.find(
         (item) => item.occurrenceTypeId === occurrence.id && item.status === 'open',
       );
 
@@ -422,6 +431,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
             nearestPlant,
           )
         : nearestPlant.distanceMeters;
+      const newOccurrenceStatus = changeType === 'remove_occurrence' ? 'removed' : 'open';
 
       await sqliteService.addInspectionChange({
         inspectionId: activeInspection.id,
@@ -437,6 +447,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
           name: occurrence.name,
           severity: severity ?? null,
           notes: notes ?? null,
+          status: newOccurrenceStatus,
         },
         severity: severity ?? null,
         notes: notes ?? null,
@@ -539,12 +550,6 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
           setNearestPlant(null);
           setMessage('Inspeção sincronizada com sucesso. Nova inspeção iniciada com as plantas carregadas.');
         } else {
-          activeInspectionRef.current = null;
-          loadedPlantsRef.current = resetPlants;
-          nearestPlantRef.current = null;
-          setActiveInspection(null);
-          setLoadedPlants(resetPlants);
-          setNearestPlant(null);
           setMessage('Inspeção sincronizada com sucesso.');
         }
 
