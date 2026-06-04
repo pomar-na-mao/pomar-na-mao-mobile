@@ -350,6 +350,27 @@ describe('InspectionProvider', () => {
     expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Nenhuma inspe'));
   });
 
+  it('blocks occurrence saving when a nearest plant exists but there is no active inspection', async () => {
+    await renderProvider(
+      createSqliteService({
+        getLatestInspection: jest.fn().mockResolvedValue({ ...localInspection, status: 'finished' }),
+        getLatestPendingInspection: jest.fn().mockResolvedValue(null),
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByText('active:none')).toBeOnTheScreen());
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('location'));
+    });
+    await waitFor(() => expect(screen.getByText('nearest:plant-1')).toBeOnTheScreen());
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('save-change'));
+    });
+
+    expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Nenhuma inspeção ativa'));
+  });
+
   it('finishes active inspections through the SQLite service', async () => {
     const service = await renderProvider(
       createSqliteService({
@@ -367,6 +388,14 @@ describe('InspectionProvider', () => {
   });
 
   it('handles empty sync payloads, sync errors, and successful sync state reset', async () => {
+    const nextInspection = {
+      ...localInspection,
+      id: 'inspection-2',
+      finished_at: null,
+      plants_changed_count: 0,
+      status: 'in_progress' as const,
+      sync_status: 'pending' as const,
+    };
     const service = await renderProvider(
       createSqliteService({
         buildSyncPayload: jest
@@ -374,6 +403,7 @@ describe('InspectionProvider', () => {
           .mockResolvedValueOnce({ deviceId: 'device-1', plantsChanged: [] })
           .mockResolvedValueOnce({ deviceId: 'device-1', plantsChanged: [{ changes: [], plantId: 'plant-1' }] })
           .mockResolvedValueOnce({ deviceId: 'device-1', plantsChanged: [{ changes: [], plantId: 'plant-1' }] }),
+        createInspection: jest.fn().mockResolvedValue(nextInspection),
         getLatestPendingInspection: jest.fn().mockResolvedValue(localInspection),
       }),
     );
@@ -400,6 +430,23 @@ describe('InspectionProvider', () => {
     expect(service.markInspectionSyncing).toHaveBeenCalledWith(localInspection.id);
     expect(service.markInspectionSynced).toHaveBeenCalledWith(localInspection.id, syncManualInspectionResult);
     expect(service.clearLoadedPlantsChangedState).toHaveBeenCalledWith(localInspection.id);
-    expect(screen.getByText('active:none')).toBeOnTheScreen();
+    expect(service.createInspection).toHaveBeenCalledWith(
+      {
+        occurrenceCode: localInspection.occurrence_code,
+        occurrenceName: localInspection.occurrence_name,
+        occurrenceTypeId: localInspection.occurrence_type_id,
+        zoneId: localInspection.zone_id,
+        zoneName: localInspection.zone_name,
+      },
+      expect.arrayContaining([
+        expect.objectContaining({
+          distanceMeters: null,
+          isChanged: false,
+          isNearest: false,
+          plantId: inspectionPlant.plantId,
+        }),
+      ]),
+    );
+    expect(screen.getByText('active:inspection-2')).toBeOnTheScreen();
   });
 });
