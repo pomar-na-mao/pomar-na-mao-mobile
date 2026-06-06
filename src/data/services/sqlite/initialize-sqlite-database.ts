@@ -2,6 +2,75 @@ import { type SQLiteDatabase } from 'expo-sqlite';
 
 export async function dropDatabases(database: SQLiteDatabase) {}
 
+async function ensureColumn(database: SQLiteDatabase, tableName: string, columnName: string, definition: string) {
+  const columns = await database.getAllAsync<{ name: string }>(`PRAGMA table_info(${tableName})`);
+
+  if (columns.some((column) => column.name === columnName)) {
+    return;
+  }
+
+  await database.execAsync(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+}
+
+async function ensureLocalOccurrencePlantIdNullable(database: SQLiteDatabase) {
+  const columns = await database.getAllAsync<{ name: string; notnull: number }>(
+    'PRAGMA table_info(local_plant_occurrences)',
+  );
+  const plantIdColumn = columns.find((column) => column.name === 'plant_id');
+
+  if (!plantIdColumn || plantIdColumn.notnull === 0) {
+    return;
+  }
+
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS local_plant_occurrences_next (
+      id TEXT PRIMARY KEY,
+      local_id TEXT,
+      plant_id TEXT,
+      occurrence_type_id TEXT NOT NULL,
+      occurrence_code TEXT,
+      occurrence_name TEXT,
+      field_operation_id TEXT,
+      observed_at TEXT NOT NULL,
+      severity TEXT,
+      status TEXT NOT NULL DEFAULT 'open',
+      notes TEXT,
+      annotation_latitude REAL,
+      annotation_longitude REAL,
+      gps_accuracy_m REAL,
+      assigned_distance_meters REAL,
+      assignment_method TEXT,
+      assignment_status TEXT,
+      resolved_at TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT NOT NULL DEFAULT 'synced',
+      device_id TEXT,
+      remote_occurrence_id TEXT,
+      synced_at TEXT,
+      sync_error TEXT
+    );
+
+    INSERT OR REPLACE INTO local_plant_occurrences_next (
+      id, local_id, plant_id, occurrence_type_id, occurrence_code, occurrence_name,
+      field_operation_id, observed_at, severity, status, notes, annotation_latitude,
+      annotation_longitude, gps_accuracy_m, assigned_distance_meters, assignment_method,
+      assignment_status, resolved_at, created_at, updated_at, sync_status, device_id,
+      remote_occurrence_id, synced_at, sync_error
+    )
+    SELECT
+      id, local_id, plant_id, occurrence_type_id, occurrence_code, occurrence_name,
+      field_operation_id, observed_at, severity, status, notes, annotation_latitude,
+      annotation_longitude, gps_accuracy_m, assigned_distance_meters, assignment_method,
+      assignment_status, resolved_at, created_at, updated_at, sync_status, device_id,
+      remote_occurrence_id, synced_at, sync_error
+    FROM local_plant_occurrences;
+
+    DROP TABLE local_plant_occurrences;
+    ALTER TABLE local_plant_occurrences_next RENAME TO local_plant_occurrences;
+  `);
+}
+
 export async function initializeDatabases(database: SQLiteDatabase) {
   await database.execAsync(
     `
@@ -100,8 +169,10 @@ export async function initializeDatabases(database: SQLiteDatabase) {
      CREATE TABLE IF NOT EXISTS local_plant_occurrences (
       id TEXT PRIMARY KEY,
       local_id TEXT,
-      plant_id TEXT NOT NULL,
+      plant_id TEXT,
       occurrence_type_id TEXT NOT NULL,
+      occurrence_code TEXT,
+      occurrence_name TEXT,
       field_operation_id TEXT,
       observed_at TEXT NOT NULL,
       severity TEXT,
@@ -118,10 +189,26 @@ export async function initializeDatabases(database: SQLiteDatabase) {
       updated_at TEXT,
       sync_status TEXT NOT NULL DEFAULT 'synced',
       device_id TEXT,
+      remote_occurrence_id TEXT,
+      synced_at TEXT,
       sync_error TEXT
       );
     `,
   );
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_occurrences_plant ON local_plant_occurrences(plant_id);
+  `);
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_occurrences_type ON local_plant_occurrences(occurrence_type_id);
+  `);
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_occurrences_status ON local_plant_occurrences(status);
+  `);
+
+  await ensureLocalOccurrencePlantIdNullable(database);
 
   await database.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_local_occurrences_plant ON local_plant_occurrences(plant_id);
@@ -157,10 +244,19 @@ export async function initializeDatabases(database: SQLiteDatabase) {
       updated_at TEXT,
       sync_status TEXT NOT NULL DEFAULT 'synced',
       device_id TEXT,
+      remote_field_operation_id TEXT,
+      synced_at TEXT,
       sync_error TEXT
       );
     `,
   );
+
+  await ensureColumn(database, 'local_plant_occurrences', 'occurrence_code', 'TEXT');
+  await ensureColumn(database, 'local_plant_occurrences', 'occurrence_name', 'TEXT');
+  await ensureColumn(database, 'local_plant_occurrences', 'remote_occurrence_id', 'TEXT');
+  await ensureColumn(database, 'local_plant_occurrences', 'synced_at', 'TEXT');
+  await ensureColumn(database, 'local_field_operations', 'remote_field_operation_id', 'TEXT');
+  await ensureColumn(database, 'local_field_operations', 'synced_at', 'TEXT');
 
   await database.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_local_operations_type ON local_field_operations(operation_type_code);
