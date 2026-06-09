@@ -33,6 +33,13 @@ const cards: CardItem[] = [
     route: '/annotation' as ExpoRouterPath,
     icon: 'edit-location-alt',
   },
+  {
+    id: 'spraying',
+    title: 'Pulverização',
+    subtitle: 'Registre a rota e revise as plantas tratadas',
+    route: '/spraying' as ExpoRouterPath,
+    icon: 'agriculture',
+  },
 ];
 
 export default function FieldWorks() {
