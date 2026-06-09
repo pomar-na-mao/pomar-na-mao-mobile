@@ -49,6 +49,8 @@ yarn-error.*
 
 app-example
 
+database.md
+
 # generated native folders
 /ios
 /android

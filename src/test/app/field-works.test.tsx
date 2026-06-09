@@ -19,15 +19,15 @@ describe('FieldWorks', () => {
     jest.clearAllMocks();
   });
 
-  it('exposes inspection and annotation while retired routes stay hidden', () => {
+  it('exposes inspection, annotation and spraying while add-plant stays hidden', () => {
     render(<FieldWorks />);
 
     expect(screen.getByText('Inspeção')).toBeOnTheScreen();
     expect(screen.getByText('Anotação')).toBeOnTheScreen();
-    expect(screen.queryByText(/Pulver/)).toBeNull();
+    expect(screen.getByText('Pulverização')).toBeOnTheScreen();
     expect(screen.queryByText(/Adicionar planta/)).toBeNull();
 
-    fireEvent.press(screen.getByText('Anotação'));
-    expect(mockPush).toHaveBeenCalledWith('/annotation');
+    fireEvent.press(screen.getByText('Pulverização'));
+    expect(mockPush).toHaveBeenCalledWith('/spraying');
   });
 });

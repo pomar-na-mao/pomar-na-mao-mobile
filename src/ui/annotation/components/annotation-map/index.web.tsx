@@ -17,7 +17,7 @@ export const AnnotationMap = () => {
         <ThemedText style={styles.text}>
           {currentLocation
             ? `${currentLocation.coords.latitude.toFixed(5)}, ${currentLocation.coords.longitude.toFixed(5)}`
-            : 'Obtendo localizacao...'}
+            : 'Obtendo localização...'}
         </ThemedText>
         <ThemedText style={styles.text}>A planta mais proxima sera resolvida ao sincronizar.</ThemedText>
       </View>

@@ -17,7 +17,7 @@ export const AnnotationMap = () => {
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={Colors[theme].tint} />
         <ThemedText style={styles.loadingText} type="subtitle">
-          Obtendo localizacao...
+          Obtendo localização...
         </ThemedText>
       </View>
     );
