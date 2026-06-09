@@ -63,7 +63,12 @@ describe('NearestPlantModal', () => {
     expect(screen.getByText('Talhao 1')).toBeOnTheScreen();
     expect(screen.getAllByText('Praga').length).toBeGreaterThan(0);
 
-    fireEvent.press(screen.getByTestId(/A.*update_occurrence/));
+    expect(screen.getByTestId(/A.*add_occurrence/)).toBeOnTheScreen();
+    expect(screen.getByTestId(/A.*remove_occurrence/)).toBeOnTheScreen();
+    expect(screen.queryByTestId(/A.*update_occurrence/)).toBeNull();
+    expect(screen.queryByTestId(/A.*resolve_occurrence/)).toBeNull();
+
+    fireEvent.press(screen.getByTestId(/A.*remove_occurrence/));
     fireEvent.press(screen.getByTestId(/Ocorr.*occurrence-1/));
     fireEvent.changeText(screen.getByPlaceholderText('Severidade'), 'media');
     fireEvent.changeText(screen.getByPlaceholderText(/Observa/), 'observada no campo');
@@ -72,7 +77,7 @@ describe('NearestPlantModal', () => {
     });
 
     expect(mockSaveOccurrenceChange).toHaveBeenCalledWith({
-      changeType: 'update_occurrence',
+      changeType: 'remove_occurrence',
       notes: 'observada no campo',
       occurrence: inspectionFilterOptions.occurrenceTypes[0],
       severity: 'media',

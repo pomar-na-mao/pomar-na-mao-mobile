@@ -1,6 +1,6 @@
 # Development Build
 
-Use uma development build para testar recursos nativos que nao funcionam corretamente no Expo Go, como localizacao em background com o celular bloqueado.
+Use uma development build para testar recursos nativos que nao funcionam corretamente no Expo Go, como localização em background com o celular bloqueado.
 
 ## Android
 

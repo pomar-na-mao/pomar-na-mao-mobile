@@ -1,14 +1,15 @@
-import type {
-  InspectionChangeType,
-  InspectionFilter,
-  InspectionFilterOptions,
-  InspectionListItem,
-  InspectionPlant,
-  LocalInspection,
-  LocalInspectionChange,
-  LocalInspectionLoadedPlant,
-  SyncInspectionPayload,
-  SyncManualInspectionResult,
+import {
+  projectInspectionPlantOccurrences,
+  type InspectionChangeType,
+  type InspectionFilter,
+  type InspectionFilterOptions,
+  type InspectionListItem,
+  type InspectionPlant,
+  type LocalInspection,
+  type LocalInspectionChange,
+  type LocalInspectionLoadedPlant,
+  type SyncInspectionPayload,
+  type SyncManualInspectionResult,
 } from '@/domain/models/inspection';
 import { randomUUID } from 'expo-crypto';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -271,6 +272,16 @@ export function useInspectionSqliteService() {
     distanceToPlantMeters?: number | null;
   }): Promise<LocalInspectionChange> {
     const timestamp = nowIso();
+    const projectedOccurrences = projectInspectionPlantOccurrences(params.plant.occurrences, [
+      {
+        changedAt: timestamp,
+        changeType: params.changeType,
+        occurrenceCode: params.occurrenceCode,
+        occurrenceName: params.occurrenceName,
+        occurrenceTypeId: params.occurrenceTypeId,
+        severity: params.severity ?? null,
+      },
+    ]);
     const change: LocalInspectionChange = {
       id: randomUUID(),
       inspection_local_id: params.inspectionId,
@@ -325,9 +336,9 @@ export function useInspectionSqliteService() {
       );
       await database.runAsync(
         `UPDATE local_inspection_loaded_plants
-         SET is_changed = 1, updated_at = ?
+         SET occurrences_json = ?, is_changed = 1, updated_at = ?
          WHERE inspection_local_id = ? AND plant_id = ?`,
-        [timestamp, params.inspectionId, params.plant.plantId],
+        [JSON.stringify(projectedOccurrences), timestamp, params.inspectionId, params.plant.plantId],
       );
       await refreshChangedPlantsCount(params.inspectionId);
     });

@@ -1,0 +1,96 @@
+import type {
+  LocalSprayingOperation,
+  LocalSprayingTrackPoint,
+  SprayingAggregate,
+  SprayingPlant,
+} from '@/domain/models/spraying';
+
+export const sprayingOperationFixture: LocalSprayingOperation = {
+  id: 'operation-1',
+  local_id: 'operation-1',
+  operation_type_code: 'spraying',
+  zone_id: 'zone-1',
+  zone_name: 'Talhao 1',
+  title: 'Pulverização Talhao 1',
+  source: 'gps_track',
+  started_at: '2026-06-07T12:00:00.000Z',
+  finished_at: null,
+  operator_name: 'Operador',
+  machine_name: 'Pulverizador 01',
+  tractor_identifier: 'Trator 01',
+  notes: null,
+  lifecycle_status: 'draft',
+  review_status: 'pending_review',
+  min_distance_meters: 3.5,
+  max_distance_meters: 9,
+  candidate_plants_count: 0,
+  confirmed_plants_count: 0,
+  device_id: 'device-1',
+  sync_status: 'pending_create',
+  remote_field_operation_id: null,
+  synced_at: null,
+  sync_error: null,
+  created_at: '2026-06-07T12:00:00.000Z',
+  updated_at: '2026-06-07T12:00:00.000Z',
+};
+
+export const sprayingTrackPointsFixture: LocalSprayingTrackPoint[] = [
+  {
+    id: 'point-1',
+    local_id: 'point-1',
+    field_operation_local_id: 'operation-1',
+    recorded_at: '2026-06-07T12:00:00.000Z',
+    latitude: -23,
+    longitude: -49,
+    speed_mps: 1,
+    accuracy_m: 2,
+    device_id: 'device-1',
+    sync_status: 'pending_create',
+    remote_track_point_id: null,
+    sync_error: null,
+    created_at: '2026-06-07T12:00:00.000Z',
+  },
+  {
+    id: 'point-2',
+    local_id: 'point-2',
+    field_operation_local_id: 'operation-1',
+    recorded_at: '2026-06-07T12:00:10.000Z',
+    latitude: -23,
+    longitude: -48.9999,
+    speed_mps: 1,
+    accuracy_m: 2,
+    device_id: 'device-1',
+    sync_status: 'pending_create',
+    remote_track_point_id: null,
+    sync_error: null,
+    created_at: '2026-06-07T12:00:10.000Z',
+  },
+];
+
+export const sprayingPlantsFixture: SprayingPlant[] = [
+  {
+    plantId: 'plant-1',
+    latitude: -22.999966,
+    longitude: -48.99995,
+    zoneId: 'zone-1',
+    zoneName: 'Talhao 1',
+    varietyId: 1,
+    varietyName: 'Variedade A',
+  },
+];
+
+export const sprayingAggregateFixture: SprayingAggregate = {
+  operation: sprayingOperationFixture,
+  trackPoints: sprayingTrackPointsFixture,
+  route: null,
+  inputs: [],
+  plants: sprayingPlantsFixture,
+  candidates: [],
+  confirmedPlants: [],
+  summary: {
+    trackPoints: 2,
+    routeDistanceMeters: 0,
+    candidatePlants: 0,
+    confirmedPlants: 0,
+  },
+};

@@ -9,8 +9,6 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 
 const changeOptions: { label: string; value: InspectionChangeType }[] = [
   { label: 'Adicionar ocorrência', value: 'add_occurrence' },
-  { label: 'Atualizar ocorrência', value: 'update_occurrence' },
-  { label: 'Resolver ocorrência', value: 'resolve_occurrence' },
   { label: 'Remover ocorrência', value: 'remove_occurrence' },
 ];
 

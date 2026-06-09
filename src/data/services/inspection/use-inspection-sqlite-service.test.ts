@@ -5,6 +5,7 @@ import { createMockSQLiteDatabase, type MockSQLiteDatabase } from '@/test/inspec
 import {
   inspectionFilter,
   inspectionFilterOptions,
+  inspectionOccurrence,
   inspectionPlant,
   localInspection,
   localInspectionChange,
@@ -153,6 +154,39 @@ describe('useInspectionSqliteService', () => {
     expect(sqlCalls.some((sql) => sql.includes("SET status = 'finished'"))).toBe(true);
   });
 
+  it('projects occurrence JSON when local add and remove changes are saved', async () => {
+    database.getFirstAsync.mockResolvedValue({ count: 1 });
+    const service = renderService(database);
+
+    await service.addInspectionChange({
+      changeType: 'add_occurrence',
+      inspectionId: localInspection.id,
+      occurrenceCode: 'PST',
+      occurrenceName: 'Praga',
+      occurrenceTypeId: 'occurrence-1',
+      plant: { ...inspectionPlant, occurrences: [] },
+      severity: 'media',
+    });
+
+    let updateCall = database.runAsync.mock.calls.find((call) => String(call[0]).includes('occurrences_json'));
+    expect(JSON.parse(String(updateCall?.[1][0]))).toEqual([
+      expect.objectContaining({ occurrenceTypeId: 'occurrence-1', severity: 'media', status: 'open' }),
+    ]);
+
+    database.runAsync.mockClear();
+    await service.addInspectionChange({
+      changeType: 'remove_occurrence',
+      inspectionId: localInspection.id,
+      occurrenceCode: 'PST',
+      occurrenceName: 'Praga',
+      occurrenceTypeId: 'occurrence-1',
+      plant: inspectionPlant,
+    });
+
+    updateCall = database.runAsync.mock.calls.find((call) => String(call[0]).includes('occurrences_json'));
+    expect(JSON.parse(String(updateCall?.[1][0]))).toEqual([]);
+  });
+
   it('builds a sync payload grouped by plant and parses JSON values', async () => {
     database.getFirstAsync.mockResolvedValue(localInspection);
     database.getAllAsync.mockResolvedValue([
@@ -175,6 +209,38 @@ describe('useInspectionSqliteService', () => {
     expect(payload.plantsChanged[0].changes[0].newValue).toEqual({ name: 'Praga' });
     expect(payload.plantsChanged[1].changes[0].previousValue).toEqual({ old: true });
     expect(payload.plantsChanged[1].changes[0].newValue).toBeUndefined();
+  });
+
+  it('preserves add then remove occurrence order and values in sync payloads', async () => {
+    database.getFirstAsync.mockResolvedValue(localInspection);
+    database.getAllAsync.mockResolvedValue([
+      {
+        ...localInspectionChange,
+        change_type: 'add_occurrence',
+        changed_at: '2026-05-30T12:03:00.000Z',
+        new_value_json: JSON.stringify(inspectionOccurrence),
+        previous_value_json: null,
+      },
+      {
+        ...localInspectionChange,
+        change_type: 'remove_occurrence',
+        changed_at: '2026-05-30T12:04:00.000Z',
+        id: 'change-2',
+        new_value_json: null,
+        previous_value_json: JSON.stringify(inspectionOccurrence),
+      },
+    ]);
+    const service = renderService(database);
+
+    const payload = await service.buildSyncPayload(localInspection.id, 'device-1');
+
+    expect(payload.plantsChanged).toHaveLength(1);
+    expect(payload.plantsChanged[0].changes.map((change) => change.changeType)).toEqual([
+      'add_occurrence',
+      'remove_occurrence',
+    ]);
+    expect(payload.plantsChanged[0].changes[1].previousValue).toEqual(inspectionOccurrence);
+    expect(payload.plantsChanged[0].changes[1].newValue).toBeUndefined();
   });
 
   it('throws when building a sync payload for a missing inspection', async () => {
