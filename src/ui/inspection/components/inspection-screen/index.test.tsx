@@ -1,6 +1,6 @@
-import React from 'react';
+import { inspectionPlant, localInspection } from '@/test/inspection/fixtures';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { localInspection, inspectionPlant } from '@/test/inspection/fixtures';
+import React from 'react';
 import { InspectionScreen } from './index';
 
 const mockUseInspection = jest.fn();
@@ -45,7 +45,7 @@ describe('InspectionScreen', () => {
     expect(screen.getByText(/Inspe/)).toBeOnTheScreen();
     expect(screen.getByText('Vazio')).toBeOnTheScreen();
     expect(screen.getAllByText('0')).toHaveLength(2);
-    expect(screen.getByText('Filtrar')).toBeOnTheScreen();
+    expect(screen.getByText('Carregar Plantas')).toBeOnTheScreen();
     expect(screen.getByText('Finalizar')).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText(/Abrir filtro/));

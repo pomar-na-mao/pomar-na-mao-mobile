@@ -4,7 +4,7 @@ export default {
   expo: {
     name: 'Pomar na mão',
     slug: 'pomar-na-mao-mobile',
-    version: '2.0.0',
+    version: '2.0.1',
     orientation: 'portrait',
     icon: './src/assets/images/icon.png',
     scheme: 'pomarnamaomobile',
@@ -52,6 +52,7 @@ export default {
         },
       ],
       '@react-native-community/datetimepicker',
+      'expo-video',
       [
         'expo-splash-screen',
         {

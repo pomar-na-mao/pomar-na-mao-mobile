@@ -21,6 +21,7 @@ const AFFECTED_PLANT_MARKER_COLORS = {
   border: '#92400E',
   fill: '#F59E0B',
 } as const;
+const SIMULATION_POINT_MARKER_COLOR = '#DC2626';
 
 export function SprayingMap() {
   const theme = useColorScheme() ?? 'light';
@@ -161,14 +162,16 @@ export function SprayingMap() {
   useEffect(() => stopSimulation, [stopSimulation]);
 
   useEffect(() => {
-    if (visibleLocation) {
-      mapRef.current?.animateCamera({
-        center: {
-          latitude: visibleLocation.coords.latitude,
-          longitude: visibleLocation.coords.longitude,
-        },
-      });
+    if (__DEV__ || !visibleLocation) {
+      return;
     }
+
+    mapRef.current?.animateCamera({
+      center: {
+        latitude: visibleLocation.coords.latitude,
+        longitude: visibleLocation.coords.longitude,
+      },
+    });
   }, [visibleLocation]);
 
   if (!center) {
@@ -237,7 +240,8 @@ export function SprayingMap() {
                   coordinate={point}
                   identifier={`spraying-simulation-point-${index}`}
                   key={`spraying-simulation-point-${index}`}
-                  pinColor={index === 0 ? '#16A34A' : '#F97316'}
+                  pinColor={SIMULATION_POINT_MARKER_COLOR}
+                  testID={`spraying-simulation-point-${index}`}
                   title={`P${index + 1}`}
                 />
               ) : null,

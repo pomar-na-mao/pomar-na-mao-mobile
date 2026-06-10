@@ -610,7 +610,7 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
   async function refreshReviewCounts(operationId: string) {
     const candidateCount = await database.getFirstAsync<{ count: number }>(
       `SELECT COUNT(*) AS count FROM local_spraying_candidate_plants
-       WHERE field_operation_local_id = ? AND review_status != 'removed'`,
+       WHERE field_operation_local_id = ? AND match_source = 'auto_matched'`,
       [operationId],
     );
     const confirmedCount = await database.getFirstAsync<{ count: number }>(

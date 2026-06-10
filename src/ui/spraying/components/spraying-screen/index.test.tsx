@@ -76,10 +76,10 @@ describe('SprayingScreen', () => {
   it('starts by asking the user to configure a zone', () => {
     render(<SprayingScreen />);
 
-    expect(screen.getByText('Filtrar')).toBeOnTheScreen();
+    expect(screen.getByText('Carregar Plantas')).toBeOnTheScreen();
     expect(screen.getByTestId('spraying-action-bar')).toHaveStyle({ backgroundColor: 'transparent' });
     expect(screen.getByText('Carregue as plantas de uma zona')).toBeOnTheScreen();
-    fireEvent.press(screen.getByText('Filtrar'));
+    fireEvent.press(screen.getByText('Carregar Plantas'));
     expect(mockOpenZoneSelection).toHaveBeenCalled();
     expect(mockOpenSetup).not.toHaveBeenCalled();
   });
