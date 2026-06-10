@@ -1,0 +1,276 @@
+import { Colors } from '@/shared/constants/theme';
+import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
+import { createSimulationLocation, SIMULATION_LOCATION_INTERVAL_MS } from '@/ui/inspection/helpers/simulation-route';
+import { PlantMapMarkers, type PlantMapMarkerData } from '@/ui/shared/components/plant-map-markers';
+import { UserMarkerLocation } from '@/ui/shared/components/user-marker-location';
+import { SprayingRouteSimulation } from '@/ui/spraying/components/spraying-route-simulation';
+import {
+  buildSprayingSimulationRoute,
+  EMPTY_SPRAYING_SIMULATION_POINTS,
+  type SprayingSimulationPointIndex,
+  type SprayingSimulationPoints,
+} from '@/ui/spraying/helpers/spraying-route-simulation';
+import { useSpraying } from '@/ui/spraying/view-models/use-spraying';
+import type * as Location from 'expo-location';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, type LatLng } from 'react-native-maps';
+import { darkMapStyle } from '../../../../../mapStyle';
+
+const AFFECTED_PLANT_MARKER_COLORS = {
+  border: '#92400E',
+  fill: '#F59E0B',
+} as const;
+
+export function SprayingMap() {
+  const theme = useColorScheme() ?? 'light';
+  const {
+    aggregate,
+    currentLocation,
+    prepareRouteSimulation,
+    recordSimulatedLocation,
+    selectedZonePlants,
+    togglePlant,
+  } = useSpraying();
+  const plants = aggregate?.plants ?? selectedZonePlants;
+  const simulationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mapRef = useRef<MapView | null>(null);
+  const [simulationPoints, setSimulationPoints] = useState<SprayingSimulationPoints>(EMPTY_SPRAYING_SIMULATION_POINTS);
+  const [selectedSimulationPointIndex, setSelectedSimulationPointIndex] = useState<SprayingSimulationPointIndex | null>(
+    null,
+  );
+  const [isSimulationRunning, setIsSimulationRunning] = useState(false);
+  const [simulatedLocation, setSimulatedLocation] = useState<Location.LocationObject | null>(null);
+  const routeCoordinates = useMemo(
+    () =>
+      aggregate?.trackPoints.map((point) => ({
+        latitude: point.latitude,
+        longitude: point.longitude,
+      })) ?? [],
+    [aggregate?.trackPoints],
+  );
+  const simulationRoutePreview = useMemo(() => buildSprayingSimulationRoute(simulationPoints), [simulationPoints]);
+  const visibleLocation = isSimulationRunning ? (simulatedLocation ?? currentLocation) : currentLocation;
+  const center = visibleLocation?.coords ?? plants[0] ?? null;
+  const canUseSimulation = aggregate?.operation.lifecycle_status === 'tracking';
+  const plantMarkers = useMemo<PlantMapMarkerData[]>(
+    () =>
+      plants.map((plant) => {
+        const isAffected = ['candidate', 'confirmed', 'manually_added'].includes(plant.reviewStatus ?? '');
+
+        return {
+          id: plant.plantId,
+          plantId: plant.plantId,
+          latitude: plant.latitude,
+          longitude: plant.longitude,
+          ...(isAffected
+            ? {
+                markerBorderColor: AFFECTED_PLANT_MARKER_COLORS.border,
+                markerFillColor: AFFECTED_PLANT_MARKER_COLORS.fill,
+              }
+            : {}),
+        };
+      }),
+    [plants],
+  );
+
+  const stopSimulation = useCallback(() => {
+    if (simulationIntervalRef.current) {
+      clearInterval(simulationIntervalRef.current);
+      simulationIntervalRef.current = null;
+    }
+
+    setIsSimulationRunning(false);
+  }, []);
+
+  const clearSimulation = useCallback(() => {
+    stopSimulation();
+    setSimulationPoints(EMPTY_SPRAYING_SIMULATION_POINTS);
+    setSelectedSimulationPointIndex(null);
+  }, [stopSimulation]);
+
+  const startSimulation = useCallback(async () => {
+    if (!__DEV__ || !canUseSimulation || simulationRoutePreview.length === 0) {
+      return;
+    }
+
+    stopSimulation();
+    if (!(await prepareRouteSimulation())) {
+      return;
+    }
+
+    setIsSimulationRunning(true);
+
+    let routeIndex = 0;
+    const startedAt = Date.now();
+    const emitNextLocation = () => {
+      const coordinate = simulationRoutePreview[routeIndex];
+
+      if (!coordinate) {
+        stopSimulation();
+        return;
+      }
+
+      const nextCoordinate = simulationRoutePreview[routeIndex + 1] ?? coordinate;
+      const nextLocation = createSimulationLocation(
+        coordinate,
+        nextCoordinate,
+        startedAt + routeIndex * SIMULATION_LOCATION_INTERVAL_MS,
+      );
+      setSimulatedLocation(nextLocation);
+      void recordSimulatedLocation(nextLocation);
+      routeIndex += 1;
+    };
+
+    emitNextLocation();
+    simulationIntervalRef.current = setInterval(emitNextLocation, SIMULATION_LOCATION_INTERVAL_MS);
+  }, [canUseSimulation, prepareRouteSimulation, recordSimulatedLocation, simulationRoutePreview, stopSimulation]);
+
+  const handleSelectSimulationPoint = useCallback(
+    (pointIndex: SprayingSimulationPointIndex) => {
+      if (!canUseSimulation || isSimulationRunning) {
+        return;
+      }
+
+      if (pointIndex === 0) {
+        void prepareRouteSimulation();
+      }
+
+      setSelectedSimulationPointIndex(pointIndex);
+    },
+    [canUseSimulation, isSimulationRunning, prepareRouteSimulation],
+  );
+
+  const handleMapPress = useCallback(
+    (event: { nativeEvent: { coordinate: LatLng } }) => {
+      if (!__DEV__ || selectedSimulationPointIndex === null || isSimulationRunning || !canUseSimulation) {
+        return;
+      }
+
+      const coordinate = event.nativeEvent.coordinate;
+      setSimulationPoints((currentPoints) => {
+        const nextPoints = [...currentPoints] as SprayingSimulationPoints;
+        nextPoints[selectedSimulationPointIndex] = coordinate;
+        return nextPoints;
+      });
+      setSelectedSimulationPointIndex(null);
+    },
+    [canUseSimulation, isSimulationRunning, selectedSimulationPointIndex],
+  );
+
+  useEffect(() => stopSimulation, [stopSimulation]);
+
+  useEffect(() => {
+    if (visibleLocation) {
+      mapRef.current?.animateCamera({
+        center: {
+          latitude: visibleLocation.coords.latitude,
+          longitude: visibleLocation.coords.longitude,
+        },
+      });
+    }
+  }, [visibleLocation]);
+
+  if (!center) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={Colors[theme].tint} size="large" />
+        <Text style={[styles.loadingText, { color: Colors[theme].text }]}>Obtendo localização...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.mapContainer}>
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        customMapStyle={theme === 'dark' ? darkMapStyle : []}
+        initialRegion={{
+          latitude: center.latitude,
+          longitude: center.longitude,
+          latitudeDelta: 0.003,
+          longitudeDelta: 0.003,
+        }}
+        onLongPress={handleMapPress}
+        onPress={handleMapPress}
+        showsMyLocationButton={false}
+        showsUserLocation={false}
+        style={StyleSheet.absoluteFillObject}
+        testID="spraying-map"
+      >
+        {visibleLocation ? (
+          <UserMarkerLocation
+            coordinate={{
+              latitude: visibleLocation.coords.latitude,
+              longitude: visibleLocation.coords.longitude,
+            }}
+            coordinateTimestamp={visibleLocation.timestamp}
+            headingDegrees={visibleLocation.coords.heading ?? null}
+            speedMetersPerSecond={visibleLocation.coords.speed ?? null}
+          />
+        ) : null}
+
+        <PlantMapMarkers
+          plantsData={plantMarkers}
+          onPlantPress={(marker) => {
+            const plant = plants.find((candidate) => candidate.plantId === marker.plantId);
+
+            if (plant && aggregate?.operation.lifecycle_status === 'simulated') {
+              void togglePlant(plant);
+            }
+          }}
+        />
+
+        {__DEV__ && simulationRoutePreview.length >= 2 ? (
+          <Polyline coordinates={simulationRoutePreview} strokeColor="#2563EB" strokeWidth={3} />
+        ) : null}
+
+        {routeCoordinates.length >= 2 ? (
+          <Polyline coordinates={routeCoordinates} strokeColor="#315C2B" strokeWidth={5} />
+        ) : null}
+
+        {__DEV__
+          ? simulationPoints.map((point, index) =>
+              point ? (
+                <Marker
+                  coordinate={point}
+                  identifier={`spraying-simulation-point-${index}`}
+                  key={`spraying-simulation-point-${index}`}
+                  pinColor={index === 0 ? '#16A34A' : '#F97316'}
+                  title={`P${index + 1}`}
+                />
+              ) : null,
+            )
+          : null}
+      </MapView>
+
+      <SprayingRouteSimulation
+        canUseSimulation={canUseSimulation}
+        isRunning={isSimulationRunning}
+        onClear={clearSimulation}
+        onSelectPoint={handleSelectSimulationPoint}
+        onStart={() => void startSimulation()}
+        onStop={stopSimulation}
+        points={simulationPoints}
+        selectedPointIndex={selectedSimulationPointIndex}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  loading: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  mapContainer: {
+    flex: 1,
+  },
+});

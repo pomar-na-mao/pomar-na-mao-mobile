@@ -21,10 +21,24 @@ interface CardItem {
 const cards: CardItem[] = [
   {
     id: 'inspection',
-    title: 'Inspecao',
-    subtitle: 'Inicie uma inspecao em campo para avaliar ocorrencias!',
+    title: 'Inspeção',
+    subtitle: 'Inspeção em campo para avaliar ocorrências',
     route: '/inspection' as ExpoRouterPath,
     icon: 'fact-check',
+  },
+  {
+    id: 'annotation',
+    title: 'Anotação',
+    subtitle: 'Registre ocorrências em campo para uma planta',
+    route: '/annotation' as ExpoRouterPath,
+    icon: 'edit-location-alt',
+  },
+  {
+    id: 'spraying',
+    title: 'Pulverização',
+    subtitle: 'Registre a rota e revise as plantas tratadas',
+    route: '/spraying' as ExpoRouterPath,
+    icon: 'agriculture',
   },
 ];
 

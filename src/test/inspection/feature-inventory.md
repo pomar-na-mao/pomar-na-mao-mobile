@@ -1,5 +1,8 @@
 # Inspection Feature Test Inventory
 
+Active field-work routes are `/inspection`, `/annotation`, and `/spraying`; `/add-plant` remains retired.
+The spraying feature has its own SQLite aggregate, background GPS task, local simulation/review, and reviewed sync RPC.
+
 Runtime files covered by this change:
 
 - `src/ui/inspection/helpers/device.ts`

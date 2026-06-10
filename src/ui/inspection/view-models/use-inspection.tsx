@@ -1,13 +1,15 @@
 import { inspectionRepository } from '@/data/repositories/inspection/inspection-repository';
 import { useInspectionSqliteService } from '@/data/services/inspection/use-inspection-sqlite-service';
-import type {
-  InspectionChangeType,
-  InspectionFilter,
-  InspectionFilterOptions,
-  InspectionListItem,
-  InspectionPlant,
-  LocalInspection,
-  OccurrenceTypeOption,
+import {
+  localInspectionChangeToOccurrenceProjection,
+  projectInspectionPlantOccurrences,
+  type InspectionChangeType,
+  type InspectionFilter,
+  type InspectionFilterOptions,
+  type InspectionListItem,
+  type InspectionPlant,
+  type LocalInspection,
+  type OccurrenceTypeOption,
 } from '@/domain/models/inspection';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
@@ -391,13 +393,26 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
 
   const saveOccurrenceChange = useCallback(
     async ({ changeType, occurrence, severity, notes }: SaveOccurrenceChangeParams) => {
-      if (!activeInspection || !nearestPlant) {
+      if (!nearestPlant) {
         setMessage('Nenhuma planta próxima selecionada para editar.');
         setIsVisible(true);
         return;
       }
 
-      const existingOccurrence = nearestPlant.occurrences.find(
+      if (!activeInspection) {
+        setMessage('Nenhuma inspeção ativa. Aplique um filtro para iniciar uma nova inspeção.');
+        setIsVisible(true);
+        return;
+      }
+
+      const localPlantChanges = await sqliteService.getChanges(activeInspection.id);
+      const projectedOccurrences = projectInspectionPlantOccurrences(
+        nearestPlant.occurrences,
+        localPlantChanges
+          .filter((change) => change.plant_id === nearestPlant.plantId)
+          .map(localInspectionChangeToOccurrenceProjection),
+      );
+      const existingOccurrence = projectedOccurrences.find(
         (item) => item.occurrenceTypeId === occurrence.id && item.status === 'open',
       );
 
@@ -416,6 +431,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
             nearestPlant,
           )
         : nearestPlant.distanceMeters;
+      const newOccurrenceStatus = changeType === 'remove_occurrence' ? 'removed' : 'open';
 
       await sqliteService.addInspectionChange({
         inspectionId: activeInspection.id,
@@ -431,6 +447,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
           name: occurrence.name,
           severity: severity ?? null,
           notes: notes ?? null,
+          status: newOccurrenceStatus,
         },
         severity: severity ?? null,
         notes: notes ?? null,
@@ -481,6 +498,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
       setIsLoading(true);
 
       try {
+        const activeInspectionSnapshot = activeInspectionRef.current;
         const payload = await sqliteService.buildSyncPayload(inspectionId, getInspectionDeviceId());
 
         if (payload.plantsChanged.length === 0) {
@@ -505,14 +523,37 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
         await sqliteService.markInspectionSynced(inspectionId, data);
         await sqliteService.clearLoadedPlantsChangedState(inspectionId);
         const syncedPlants = await sqliteService.getLoadedPlants(inspectionId);
-        activeInspectionRef.current = null;
-        loadedPlantsRef.current = syncedPlants.map((plant) => ({ ...plant, isChanged: false, isNearest: false }));
-        nearestPlantRef.current = null;
-        setActiveInspection(null);
-        setLoadedPlants(loadedPlantsRef.current);
-        setNearestPlant(null);
+        const resetPlants = syncedPlants.map((plant) => ({
+          ...plant,
+          isChanged: false,
+          isNearest: false,
+          distanceMeters: null,
+        }));
+
+        if (activeInspectionSnapshot?.id === inspectionId) {
+          const nextInspection = await sqliteService.createInspection(
+            {
+              zoneId: activeInspectionSnapshot.zone_id ?? null,
+              zoneName: activeInspectionSnapshot.zone_name ?? null,
+              occurrenceTypeId: activeInspectionSnapshot.occurrence_type_id ?? null,
+              occurrenceCode: activeInspectionSnapshot.occurrence_code ?? null,
+              occurrenceName: activeInspectionSnapshot.occurrence_name ?? null,
+            },
+            resetPlants,
+          );
+
+          activeInspectionRef.current = nextInspection;
+          loadedPlantsRef.current = resetPlants;
+          nearestPlantRef.current = null;
+          setActiveInspection(nextInspection);
+          setLoadedPlants(resetPlants);
+          setNearestPlant(null);
+          setMessage('Inspeção sincronizada com sucesso. Nova inspeção iniciada com as plantas carregadas.');
+        } else {
+          setMessage('Inspeção sincronizada com sucesso.');
+        }
+
         lastPersistedNearestRef.current = null;
-        setMessage('Inspeção sincronizada com sucesso.');
         setIsVisible(true);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

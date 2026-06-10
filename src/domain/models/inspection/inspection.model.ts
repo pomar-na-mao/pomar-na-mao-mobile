@@ -2,7 +2,7 @@ import type { LocationObject } from 'expo-location';
 
 export type InspectionStatus = 'in_progress' | 'finished' | 'synced' | 'sync_error';
 export type InspectionSyncStatus = 'pending' | 'syncing' | 'synced' | 'error';
-export type InspectionChangeType = 'add_occurrence' | 'remove_occurrence' | 'update_occurrence' | 'resolve_occurrence';
+export type InspectionChangeType = 'add_occurrence' | 'remove_occurrence';
 
 export interface ZoneOption {
   id: string;

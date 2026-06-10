@@ -51,7 +51,7 @@ export function createSimulationLocation(
   };
 }
 
-function buildRouteSegment(start: LatLng, end: LatLng) {
+export function buildSimulationRouteSegment(start: LatLng, end: LatLng) {
   const distanceMeters = twoPointsDistance(start, end);
   const steps = Math.min(
     MAX_SIMULATION_ROUTE_STEPS,
@@ -75,5 +75,8 @@ export function buildSimulationRoute(points: InspectionSimulationPoints) {
     return [];
   }
 
-  return [...buildRouteSegment(firstPoint, secondPoint), ...buildRouteSegment(secondPoint, thirdPoint).slice(1)];
+  return [
+    ...buildSimulationRouteSegment(firstPoint, secondPoint),
+    ...buildSimulationRouteSegment(secondPoint, thirdPoint).slice(1),
+  ];
 }

@@ -18,3 +18,11 @@ schema: spec-driven
 #       - Always include a "Non-goals" section
 #     tasks:
 #       - Break tasks into chunks of max 2 hours
+
+rules:
+  proposal:
+    - When a change creates or edits any Supabase table, RPC, function, trigger, policy, or permission, it must include updates to database.md and describe the implementation details that changed.
+  design:
+    - When a design affects any Supabase table, RPC, function, trigger, policy, or permission, document the database contract, migration impact, implementation details, and database.md updates.
+  tasks:
+    - Add an explicit documentation task for every Supabase table, RPC, function, trigger, policy, or permission change; update database.md and the relevant implementation details.
