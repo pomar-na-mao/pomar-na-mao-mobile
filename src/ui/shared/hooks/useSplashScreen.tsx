@@ -22,9 +22,9 @@ export const SplashScreenProvider = ({ children }: { children: React.ReactNode }
 
   const splashVideo = isDark ? splashVideoDark : splashVideoLight;
 
-  const player = useVideoPlayer(splashVideo, (p) => {
-    p.loop = false;
-    p.play();
+  const player = useVideoPlayer(splashVideo, (videoPlayer) => {
+    videoPlayer.loop = false;
+    videoPlayer.play();
   });
 
   /**
