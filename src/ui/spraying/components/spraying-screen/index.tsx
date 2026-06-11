@@ -43,7 +43,7 @@ export function SprayingScreen() {
 
   const mainAction =
     !aggregate && !selectedZone
-      ? { label: 'Filtrar', icon: 'filter-alt' as const, action: openZoneSelection }
+      ? { label: 'Carregar Plantas', icon: 'filter-alt' as const, action: openZoneSelection }
       : !aggregate
         ? { label: 'Iniciar', icon: 'play-arrow' as const, action: openSetup }
         : status === 'draft' || (status === 'tracking' && trackingState === 'recovery_required')

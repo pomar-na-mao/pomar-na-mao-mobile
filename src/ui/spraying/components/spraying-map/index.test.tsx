@@ -157,6 +157,10 @@ describe('SprayingMap', () => {
     fireEvent(screen.getByTestId('spraying-map'), 'press', {
       nativeEvent: { coordinate: { latitude: -23.00001, longitude: -49.00001 } },
     });
+
+    expect(screen.getByTestId('spraying-simulation-point-0')).toHaveProp('pinColor', '#DC2626');
+    expect(screen.getByTestId('spraying-simulation-point-1')).toHaveProp('pinColor', '#DC2626');
+
     fireEvent.press(screen.getByLabelText('Iniciar simulacao de rota'));
 
     expect(mockPrepareRouteSimulation).toHaveBeenCalled();
