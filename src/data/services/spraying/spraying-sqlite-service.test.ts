@@ -123,6 +123,36 @@ describe('spraying sqlite service', () => {
     );
   });
 
+  it('keeps automatic candidates counted when one is removed from confirmation', async () => {
+    const database = createMockSprayingSQLiteDatabase();
+    database.getFirstAsync
+      .mockResolvedValueOnce({
+        id: 'candidate-1',
+        field_operation_local_id: sprayingOperationFixture.id,
+        plant_id: 'plant-1',
+        match_source: 'auto_matched',
+        review_status: 'confirmed',
+      })
+      .mockResolvedValueOnce({ count: 20 })
+      .mockResolvedValueOnce({ count: 19 });
+    const service = createSprayingSqliteService(database as unknown as SQLiteDatabase);
+
+    await service.setPlantConfirmed({
+      operationId: sprayingOperationFixture.id,
+      plantId: 'plant-1',
+      confirmed: false,
+      deviceId: 'device-1',
+    });
+
+    expect(database.getFirstAsync).toHaveBeenCalledWith(expect.stringContaining("match_source = 'auto_matched'"), [
+      sprayingOperationFixture.id,
+    ]);
+    expect(database.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining('SET candidate_plants_count = ?, confirmed_plants_count = ?'),
+      [20, 19, expect.any(String), sprayingOperationFixture.id],
+    );
+  });
+
   it('gates sync payload creation to reviewed operations', async () => {
     const database = createMockSprayingSQLiteDatabase();
     database.getFirstAsync.mockResolvedValue(sprayingOperationFixture);

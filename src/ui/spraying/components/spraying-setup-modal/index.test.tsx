@@ -35,6 +35,14 @@ describe('SprayingSetupModal', () => {
     expect(screen.getByText('Alcance máximo da pulverização (m)')).toBeOnTheScreen();
   });
 
+  it('allows the form to scroll while the keyboard is open', () => {
+    render(<SprayingSetupModal />);
+
+    expect(screen.getByTestId('spraying-setup-keyboard-avoiding-view')).toBeOnTheScreen();
+    expect(screen.getByTestId('spraying-setup-scroll')).toHaveProp('keyboardShouldPersistTaps', 'handled');
+    expect(screen.getByTestId('spraying-setup-scroll')).toHaveProp('keyboardDismissMode', 'on-drag');
+  });
+
   it('submits a valid operation with optional machine and the default treatment band', () => {
     render(<SprayingSetupModal />);
 
