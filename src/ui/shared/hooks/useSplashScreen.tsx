@@ -1,9 +1,10 @@
+import { useColorScheme } from '@/shared/hooks/use-color-scheme';
 import { useEventListener } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-
-const splashVideo = require('@/assets/videos/splash.mp4');
+const splashVideoLight = require('@/assets/videos/splash.mp4');
+const splashVideoDark = require('@/assets/videos/splash_dark.mp4');
 
 interface SplashScreenContextProps {
   appIsReady: boolean;
@@ -12,9 +13,14 @@ interface SplashScreenContextProps {
 const SplashScreenContext = createContext({} as SplashScreenContextProps);
 
 export const SplashScreenProvider = ({ children }: { children: React.ReactNode }) => {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   const [appIsReady, setAppIsReady] = useState(false);
   const [videoFinished, setVideoFinished] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const splashVideo = isDark ? splashVideoDark : splashVideoLight;
 
   const player = useVideoPlayer(splashVideo, (p) => {
     p.loop = false;
@@ -58,13 +64,18 @@ export const SplashScreenProvider = ({ children }: { children: React.ReactNode }
     return () => clearTimeout(timeout);
   }, [appIsReady]);
 
+  const overlayStyle = useMemo(
+    () => [styles.overlay, { backgroundColor: isDark ? '#121212' : '#000', opacity: fadeAnim }],
+    [isDark, fadeAnim],
+  );
+
   return (
     <SplashScreenContext.Provider value={{ appIsReady }}>
       {children}
 
       {/* Video splash overlay — sits on top of everything until finished */}
       {!appIsReady && (
-        <Animated.View pointerEvents="none" style={[styles.overlay, { opacity: fadeAnim }]}>
+        <Animated.View pointerEvents="none" style={overlayStyle}>
           <VideoView player={player} contentFit="cover" nativeControls={false} style={StyleSheet.absoluteFill} />
         </Animated.View>
       )}
@@ -78,6 +89,5 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,
-    backgroundColor: '#000',
   },
 });
