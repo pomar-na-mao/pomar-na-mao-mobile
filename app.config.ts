@@ -53,18 +53,6 @@ export default {
       ],
       '@react-native-community/datetimepicker',
       'expo-video',
-      [
-        'expo-splash-screen',
-        {
-          image: './src/assets/images/splash-icon.png',
-          imageWidth: 200,
-          resizeMode: 'contain',
-          backgroundColor: '#F8F9F8',
-          dark: {
-            backgroundColor: '#1C1D1C',
-          },
-        },
-      ],
     ],
     experiments: {
       typedRoutes: true,

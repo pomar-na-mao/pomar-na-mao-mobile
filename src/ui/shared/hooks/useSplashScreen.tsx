@@ -1,11 +1,7 @@
 import { useEventListener } from 'expo';
-import * as SplashScreen from 'expo-splash-screen';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-
-// Prevent the native splash from auto-hiding — we control it manually.
-SplashScreen.preventAutoHideAsync();
 
 const splashVideo = require('@/assets/videos/splash.mp4');
 
@@ -34,18 +30,6 @@ export const SplashScreenProvider = ({ children }: { children: React.ReactNode }
   });
 
   /**
-   * Called when the VideoView renders the first frame.
-   * At this point we hide the native splash so the video is visible.
-   */
-  const handleFirstFrameRender = useCallback(async () => {
-    try {
-      await SplashScreen.hideAsync();
-    } catch {
-      // Already hidden — safe to ignore.
-    }
-  }, []);
-
-  /**
    * Once the video finishes, fade out the overlay then mark app as ready.
    */
   useEffect(() => {
@@ -61,17 +45,12 @@ export const SplashScreenProvider = ({ children }: { children: React.ReactNode }
   }, [videoFinished, fadeAnim]);
 
   /**
-   * Safety-net: if the video somehow doesn't fire onFirstFrameRender within 8 s,
-   * hide the native splash and skip the animation.
+   * Safety-net: if the video somehow doesn't play within 8 s,
+   * skip the animation and show the app.
    */
   useEffect(() => {
-    const timeout = setTimeout(async () => {
+    const timeout = setTimeout(() => {
       if (!appIsReady) {
-        try {
-          await SplashScreen.hideAsync();
-        } catch {
-          // ignore
-        }
         setVideoFinished(true);
       }
     }, 8000);
@@ -86,13 +65,7 @@ export const SplashScreenProvider = ({ children }: { children: React.ReactNode }
       {/* Video splash overlay — sits on top of everything until finished */}
       {!appIsReady && (
         <Animated.View pointerEvents="none" style={[styles.overlay, { opacity: fadeAnim }]}>
-          <VideoView
-            player={player}
-            contentFit="cover"
-            nativeControls={false}
-            onFirstFrameRender={handleFirstFrameRender}
-            style={StyleSheet.absoluteFill}
-          />
+          <VideoView player={player} contentFit="cover" nativeControls={false} style={StyleSheet.absoluteFill} />
         </Animated.View>
       )}
     </SplashScreenContext.Provider>
