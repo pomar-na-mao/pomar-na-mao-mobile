@@ -1,12 +1,13 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
-import { createSimulationLocation, SIMULATION_LOCATION_INTERVAL_MS } from '@/ui/inspection/helpers/simulation-route';
 import { PlantMapMarkers, type PlantMapMarkerData } from '@/ui/shared/components/plant-map-markers';
 import { UserMarkerLocation } from '@/ui/shared/components/user-marker-location';
 import { SprayingRouteSimulation } from '@/ui/spraying/components/spraying-route-simulation';
 import {
   buildSprayingSimulationRoute,
+  createSprayingSimulationLocation,
   EMPTY_SPRAYING_SIMULATION_POINTS,
+  SPRAYING_SIMULATION_LOCATION_INTERVAL_MS,
   type SprayingSimulationPointIndex,
   type SprayingSimulationPoints,
 } from '@/ui/spraying/helpers/spraying-route-simulation';
@@ -113,10 +114,10 @@ export function SprayingMap() {
       }
 
       const nextCoordinate = simulationRoutePreview[routeIndex + 1] ?? coordinate;
-      const nextLocation = createSimulationLocation(
+      const nextLocation = createSprayingSimulationLocation(
         coordinate,
         nextCoordinate,
-        startedAt + routeIndex * SIMULATION_LOCATION_INTERVAL_MS,
+        startedAt + routeIndex * SPRAYING_SIMULATION_LOCATION_INTERVAL_MS,
       );
       setSimulatedLocation(nextLocation);
       void recordSimulatedLocation(nextLocation);
@@ -124,7 +125,7 @@ export function SprayingMap() {
     };
 
     emitNextLocation();
-    simulationIntervalRef.current = setInterval(emitNextLocation, SIMULATION_LOCATION_INTERVAL_MS);
+    simulationIntervalRef.current = setInterval(emitNextLocation, SPRAYING_SIMULATION_LOCATION_INTERVAL_MS);
   }, [canUseSimulation, prepareRouteSimulation, recordSimulatedLocation, simulationRoutePreview, stopSimulation]);
 
   const handleSelectSimulationPoint = useCallback(

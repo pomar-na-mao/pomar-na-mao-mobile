@@ -2,20 +2,13 @@ import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { InspectionNearestPlantSimulation } from '@/ui/inspection/components/inspection-nearest-plant-simulation';
-import {
-  buildSimulationRoute,
-  createSimulationLocation,
-  EMPTY_SIMULATION_POINTS,
-  type InspectionSimulationPoints,
-  SIMULATION_LOCATION_INTERVAL_MS,
-  type SimulationPointIndex,
-} from '@/ui/inspection/helpers/simulation-route';
+import { createSimulationLocation } from '@/ui/inspection/helpers/simulation-location';
 import { useInspection } from '@/ui/inspection/view-models/use-inspection';
 import { PlantMapMarkers } from '@/ui/shared/components/plant-map-markers';
 import { UserMarkerLocation } from '@/ui/shared/components/user-marker-location';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, type LatLng } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, type LatLng } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
 
 export const InspectionMap = () => {
@@ -28,91 +21,36 @@ export const InspectionMap = () => {
     nearestPlant,
     setLocationSimulationActive,
   } = useInspection();
-  const [simulationPoints, setSimulationPoints] = useState<InspectionSimulationPoints>(EMPTY_SIMULATION_POINTS);
-  const [selectedSimulationPointIndex, setSelectedSimulationPointIndex] = useState<SimulationPointIndex | null>(null);
-  const [isSimulationRunning, setIsSimulationRunning] = useState(false);
-  const mapRef = useRef<MapView | null>(null);
-  const simulationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const simulationRoutePreview = useMemo(() => simulationPoints.filter(Boolean) as LatLng[], [simulationPoints]);
-
-  const stopSimulation = useCallback(() => {
-    if (simulationIntervalRef.current) {
-      clearInterval(simulationIntervalRef.current);
-      simulationIntervalRef.current = null;
-    }
-
-    setIsSimulationRunning(false);
-    setLocationSimulationActive(false);
-  }, [setLocationSimulationActive]);
+  const [simulationPoint, setSimulationPoint] = useState<LatLng | null>(null);
+  const [isSelectingSimulationPoint, setIsSelectingSimulationPoint] = useState(false);
 
   const clearSimulation = useCallback(() => {
-    stopSimulation();
-    setSimulationPoints(EMPTY_SIMULATION_POINTS);
-    setSelectedSimulationPointIndex(null);
-  }, [stopSimulation]);
-
-  const startSimulation = useCallback(() => {
-    if (!__DEV__) {
-      return;
-    }
-
-    const route = buildSimulationRoute(simulationPoints);
-
-    if (route.length === 0) {
-      return;
-    }
-
-    stopSimulation();
-    setLocationSimulationActive(true);
-    setIsSimulationRunning(true);
-
-    let routeIndex = 0;
-    const startedAt = Date.now();
-    const emitNextLocation = () => {
-      const coordinate = route[routeIndex];
-
-      if (!coordinate) {
-        stopSimulation();
-        return;
-      }
-
-      const nextCoordinate = route[routeIndex + 1] ?? coordinate;
-      applyLocationUpdate(
-        createSimulationLocation(coordinate, nextCoordinate, startedAt + routeIndex * SIMULATION_LOCATION_INTERVAL_MS),
-        { source: 'simulation' },
-      );
-      mapRef.current?.animateCamera(
-        {
-          center: coordinate,
-        },
-        { duration: SIMULATION_LOCATION_INTERVAL_MS },
-      );
-      routeIndex += 1;
-    };
-
-    emitNextLocation();
-    simulationIntervalRef.current = setInterval(emitNextLocation, SIMULATION_LOCATION_INTERVAL_MS);
-  }, [applyLocationUpdate, setLocationSimulationActive, simulationPoints, stopSimulation]);
+    setLocationSimulationActive(false);
+    setSimulationPoint(null);
+    setIsSelectingSimulationPoint(false);
+  }, [setLocationSimulationActive]);
 
   const handleMapPress = useCallback(
     (event: { nativeEvent: { coordinate: LatLng } }) => {
-      if (!__DEV__ || selectedSimulationPointIndex === null || isSimulationRunning) {
+      if (!__DEV__ || !isSelectingSimulationPoint) {
         return;
       }
 
       const coordinate = event.nativeEvent.coordinate;
-      setSimulationPoints((currentPoints) => {
-        const nextPoints = [...currentPoints] as InspectionSimulationPoints;
-        nextPoints[selectedSimulationPointIndex] = coordinate;
-        return nextPoints;
-      });
-      setSelectedSimulationPointIndex(null);
+      setLocationSimulationActive(true);
+      setSimulationPoint(coordinate);
+      setIsSelectingSimulationPoint(false);
+      applyLocationUpdate(createSimulationLocation(coordinate, Date.now()), { source: 'simulation' });
     },
-    [isSimulationRunning, selectedSimulationPointIndex],
+    [applyLocationUpdate, isSelectingSimulationPoint, setLocationSimulationActive],
   );
 
-  useEffect(() => stopSimulation, [stopSimulation]);
+  useEffect(
+    () => () => {
+      setLocationSimulationActive(false);
+    },
+    [setLocationSimulationActive],
+  );
 
   if (!initialRegion || !currentLocation) {
     return (
@@ -128,7 +66,7 @@ export const InspectionMap = () => {
   return (
     <View style={styles.mapContainer}>
       <MapView
-        ref={mapRef}
+        testID="inspection-map"
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
         customMapStyle={theme === 'dark' ? darkMapStyle : []}
@@ -154,33 +92,22 @@ export const InspectionMap = () => {
         />
         <PlantMapMarkers plantsData={loadedPlants} nearestPlantId={nearestPlant?.plantId ?? null} />
 
-        {__DEV__ && simulationRoutePreview.length >= 2 ? (
-          <Polyline coordinates={simulationRoutePreview} strokeColor="#2563EB" strokeWidth={3} />
+        {__DEV__ && simulationPoint ? (
+          <Marker
+            coordinate={simulationPoint}
+            identifier="inspection-simulation-point"
+            pinColor="#2563EB"
+            testID="inspection-simulation-marker"
+            title="Localização DEV"
+          />
         ) : null}
-
-        {__DEV__
-          ? simulationPoints.map((point, index) =>
-              point ? (
-                <Marker
-                  coordinate={point}
-                  identifier={`inspection-simulation-point-${index}`}
-                  key={`inspection-simulation-point-${index}`}
-                  pinColor={index === 0 ? '#16A34A' : index === 1 ? '#F97316' : '#2563EB'}
-                  title={`P${index + 1}`}
-                />
-              ) : null,
-            )
-          : null}
       </MapView>
 
       <InspectionNearestPlantSimulation
-        isRunning={isSimulationRunning}
+        hasPoint={simulationPoint !== null}
+        isSelectingPoint={isSelectingSimulationPoint}
         onClear={clearSimulation}
-        onSelectPoint={setSelectedSimulationPointIndex}
-        onStart={startSimulation}
-        onStop={stopSimulation}
-        points={simulationPoints}
-        selectedPointIndex={selectedSimulationPointIndex}
+        onSelectPoint={() => setIsSelectingSimulationPoint(true)}
       />
     </View>
   );

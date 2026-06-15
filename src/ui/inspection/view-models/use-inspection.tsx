@@ -86,6 +86,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
   const activeInspectionRef = useRef<LocalInspection | null>(null);
   const isFilterModalVisibleRef = useRef(false);
   const isLocationSimulationActiveRef = useRef(false);
+  const latestDeviceLocationRef = useRef<Location.LocationObject | null>(null);
   const loadedPlantsRef = useRef<InspectionPlant[]>([]);
   const lastPersistedNearestRef = useRef<{ plantId: string; distance: number } | null>(null);
   const nearestPlantRef = useRef<InspectionPlant | null>(null);
@@ -274,7 +275,13 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
 
   const applyLocationUpdate = useCallback(
     (location: Location.LocationObject, options?: LocationUpdateOptions) => {
-      if (__DEV__ && isLocationSimulationActiveRef.current && options?.source !== 'simulation') {
+      const source = options?.source ?? 'device';
+
+      if (source === 'device') {
+        latestDeviceLocationRef.current = location;
+      }
+
+      if (__DEV__ && isLocationSimulationActiveRef.current && source !== 'simulation') {
         return;
       }
 
@@ -284,11 +291,21 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
     [evaluateNearestPlantFromLocation],
   );
 
-  const setLocationSimulationActive = useCallback((isActive: boolean) => {
-    if (__DEV__) {
+  const setLocationSimulationActive = useCallback(
+    (isActive: boolean) => {
+      if (!__DEV__) {
+        return;
+      }
+
+      const wasActive = isLocationSimulationActiveRef.current;
       isLocationSimulationActiveRef.current = isActive;
-    }
-  }, []);
+
+      if (wasActive && !isActive && latestDeviceLocationRef.current) {
+        applyLocationUpdate(latestDeviceLocationRef.current);
+      }
+    },
+    [applyLocationUpdate],
+  );
 
   useEffect(() => {
     let mounted = true;
