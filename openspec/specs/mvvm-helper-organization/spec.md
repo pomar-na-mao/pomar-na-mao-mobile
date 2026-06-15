@@ -2,16 +2,18 @@
 
 ## Purpose
 Defines how reusable or pure helper logic from UI components and view-models is separated into responsibility-specific files while preserving MVVM boundaries.
-
 ## Requirements
 ### Requirement: Feature helpers are separated from components
+
 Components SHALL NOT define reusable pure helpers, mappers, factories, or calculation functions when those helpers can be represented as typed functions in a responsibility-specific feature helper file.
 
-#### Scenario: Inspection map simulation route helpers are reviewed
+#### Scenario: Inspection map simulated location helpers are reviewed
+
 - **WHEN** the `InspectionMap` component is inspected after implementation
-- **THEN** simulation route construction helpers such as `buildSimulationRoute`, route segment construction, bearing calculation, and simulation location creation SHALL be imported from a separate inspection helper module rather than declared inside the component file
+- **THEN** synthetic inspection `LocationObject` construction SHALL be imported from a separate inspection helper module rather than declared inside the component file
 
 #### Scenario: Component event handlers need local state
+
 - **WHEN** a component callback depends on component state, refs, or lifecycle behavior
 - **THEN** the callback MAY remain inside the component while pure calculations used by that callback SHALL be delegated to helper functions
 
@@ -38,12 +40,16 @@ Helpers SHALL be placed under shared utility paths only when they are used by mo
 - **THEN** it SHALL be moved to an existing shared utility area such as `src/utils/geolocation` or `src/shared` and both features SHALL import the shared implementation
 
 ### Requirement: Extracted helpers preserve behavior
-Extracting helper functions SHALL preserve existing runtime behavior and public UI flows.
 
-#### Scenario: Dev simulation route is extracted
-- **WHEN** the inspection nearest-plant simulation is started in development mode after extraction
-- **THEN** it SHALL still produce the same route shape, timestamps, headings, and location update flow as before extraction
+Extracting helper functions SHALL preserve existing runtime behavior and public UI flows except where an approved capability change explicitly replaces that behavior.
+
+#### Scenario: DEV simulated inspection point is applied
+
+- **WHEN** the developer selects a simulated inspection location after helper extraction
+- **THEN** the helper SHALL produce a valid stationary location value at the selected coordinate for the standard inspection location update flow
 
 #### Scenario: Helper extraction is verified
+
 - **WHEN** helper extraction is complete
 - **THEN** the codebase SHALL pass TypeScript validation and linting for the touched files
+
