@@ -4,7 +4,7 @@ export default {
   expo: {
     name: 'Pomar na mão',
     slug: 'pomar-na-mao-mobile',
-    version: '2.0.1',
+    version: '2.0.2',
     orientation: 'portrait',
     icon: './src/assets/images/icon.png',
     scheme: 'pomarnamaomobile',

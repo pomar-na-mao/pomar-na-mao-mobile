@@ -8,7 +8,7 @@ Runtime files covered by this change:
 - `src/ui/inspection/helpers/device.ts`
 - `src/ui/inspection/helpers/inspection-list-formatters.ts`
 - `src/ui/inspection/helpers/nearest-plant.ts`
-- `src/ui/inspection/helpers/simulation-route.ts`
+- `src/ui/inspection/helpers/simulation-location.ts`
 - `src/ui/inspection/view-models/use-inspection.tsx`
 - `src/ui/inspection/components/inspection-filter-modal/index.tsx`
 - `src/ui/inspection/components/inspection-list/index.tsx`

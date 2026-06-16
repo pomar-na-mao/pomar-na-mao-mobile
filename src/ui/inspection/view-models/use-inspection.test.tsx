@@ -64,6 +64,24 @@ jest.mock('expo-location', () => ({
 const mockedRepository = jest.mocked(inspectionRepository);
 const mockedUseInspectionSqliteService = jest.mocked(useInspectionSqliteService);
 const mockedLocation = jest.mocked(Location);
+const simulatedInspectionLocation: Location.LocationObject = {
+  ...inspectionLocation,
+  coords: {
+    ...inspectionLocation.coords,
+    latitude: secondInspectionPlant.latitude,
+    longitude: secondInspectionPlant.longitude,
+  },
+  timestamp: inspectionLocation.timestamp + 100,
+};
+const latestDeviceInspectionLocation: Location.LocationObject = {
+  ...inspectionLocation,
+  coords: {
+    ...inspectionLocation.coords,
+    latitude: inspectionPlant.latitude,
+    longitude: inspectionPlant.longitude,
+  },
+  timestamp: inspectionLocation.timestamp + 200,
+};
 
 function createSqliteService(overrides: Partial<ReturnType<typeof useInspectionSqliteService>> = {}) {
   return {
@@ -100,6 +118,7 @@ function InspectionConsumer() {
       <Text>filter-modal:{String(inspection.isFilterModalVisible)}</Text>
       <Text>nearest-modal:{String(inspection.isNearestPlantModalVisible)}</Text>
       <Text>initial:{inspection.initialRegion ? 'ready' : 'none'}</Text>
+      <Text>location:{inspection.currentLocation?.timestamp ?? 'none'}</Text>
       <Pressable testID="open-filter" onPress={inspection.openFilterModal}>
         <Text>open filter</Text>
       </Pressable>
@@ -115,20 +134,23 @@ function InspectionConsumer() {
       <Pressable testID="location" onPress={() => inspection.applyLocationUpdate(inspectionLocation)}>
         <Text>location</Text>
       </Pressable>
-      <Pressable
-        testID="device-location"
-        onPress={() => {
-          inspection.setLocationSimulationActive(true);
-          inspection.applyLocationUpdate({ ...inspectionLocation, timestamp: inspectionLocation.timestamp + 1 });
-        }}
-      >
-        <Text>device location</Text>
+      <Pressable testID="activate-simulation" onPress={() => inspection.setLocationSimulationActive(true)}>
+        <Text>activate simulation</Text>
       </Pressable>
       <Pressable
         testID="simulation-location"
-        onPress={() => inspection.applyLocationUpdate(inspectionLocation, { source: 'simulation' })}
+        onPress={() => inspection.applyLocationUpdate(simulatedInspectionLocation, { source: 'simulation' })}
       >
         <Text>simulation location</Text>
+      </Pressable>
+      <Pressable
+        testID="device-location"
+        onPress={() => inspection.applyLocationUpdate(latestDeviceInspectionLocation)}
+      >
+        <Text>device location</Text>
+      </Pressable>
+      <Pressable testID="deactivate-simulation" onPress={() => inspection.setLocationSimulationActive(false)}>
+        <Text>deactivate simulation</Text>
       </Pressable>
       <Pressable
         testID="save-change"
@@ -293,7 +315,7 @@ describe('InspectionProvider', () => {
     expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Nenhuma planta encontrada'));
   });
 
-  it('evaluates nearest plants, persists changes, and gates device updates during simulation', async () => {
+  it('keeps the simulated location effective and restores the latest device location when cleared', async () => {
     const service = await renderProvider(
       createSqliteService({
         getLatestPendingInspection: jest.fn().mockResolvedValue(localInspection),
@@ -310,14 +332,23 @@ describe('InspectionProvider', () => {
     );
 
     await act(async () => {
-      fireEvent.press(screen.getByTestId('device-location'));
-    });
-    expect(screen.getByText('nearest:plant-1')).toBeOnTheScreen();
-
-    await act(async () => {
+      fireEvent.press(screen.getByTestId('activate-simulation'));
       fireEvent.press(screen.getByTestId('simulation-location'));
     });
-    expect(screen.getByText('nearest:plant-1')).toBeOnTheScreen();
+    await waitFor(() => expect(screen.getByText('nearest:plant-2')).toBeOnTheScreen());
+    expect(screen.getByText(`location:${simulatedInspectionLocation.timestamp}`)).toBeOnTheScreen();
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('device-location'));
+    });
+    expect(screen.getByText('nearest:plant-2')).toBeOnTheScreen();
+    expect(screen.getByText(`location:${simulatedInspectionLocation.timestamp}`)).toBeOnTheScreen();
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('deactivate-simulation'));
+    });
+    await waitFor(() => expect(screen.getByText('nearest:plant-1')).toBeOnTheScreen());
+    expect(screen.getByText(`location:${latestDeviceInspectionLocation.timestamp}`)).toBeOnTheScreen();
   });
 
   it('opens modals through public actions and validates nearest plant availability', async () => {

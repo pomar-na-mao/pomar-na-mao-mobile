@@ -49,8 +49,6 @@ yarn-error.*
 
 app-example
 
-database.md
-
 # generated native folders
 /ios
 /android
@@ -58,3 +56,6 @@ database.md
 # IA Files
 .rtk/
 PLANNING.md
+CODE_OF_CONDUCT.md
+design_system.md
+database.md

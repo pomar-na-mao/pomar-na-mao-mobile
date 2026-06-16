@@ -57,6 +57,9 @@ describe('NearestPlantModal', () => {
   it('renders nearest plant details, occurrences, and saves selected changes', async () => {
     render(<NearestPlantModal />);
 
+    expect(screen.getByTestId('nearest-plant-keyboard-avoiding-view')).toBeOnTheScreen();
+    expect(screen.getByTestId('nearest-plant-scroll')).toHaveProp('keyboardShouldPersistTaps', 'handled');
+    expect(screen.getByTestId('nearest-plant-scroll')).toHaveProp('keyboardDismissMode', 'on-drag');
     expect(screen.getByText(/Planta mais/)).toBeOnTheScreen();
     expect(screen.getByText('plant-1')).toBeOnTheScreen();
     expect(screen.getByText('2.4 m')).toBeOnTheScreen();
@@ -67,6 +70,8 @@ describe('NearestPlantModal', () => {
     expect(screen.getByTestId(/A.*remove_occurrence/)).toBeOnTheScreen();
     expect(screen.queryByTestId(/A.*update_occurrence/)).toBeNull();
     expect(screen.queryByTestId(/A.*resolve_occurrence/)).toBeNull();
+    expect(screen.getByText('Fechar')).toBeOnTheScreen();
+    expect(screen.getByText('Salvar')).toBeOnTheScreen();
 
     fireEvent.press(screen.getByTestId(/A.*remove_occurrence/));
     fireEvent.press(screen.getByTestId(/Ocorr.*occurrence-1/));

@@ -1,5 +1,10 @@
 import { createSprayingRepository } from '@/data/repositories/spraying/spraying-repository';
 import {
+  clearLoadedSprayingZone,
+  getLoadedSprayingZone,
+  saveLoadedSprayingZone,
+} from '@/data/services/spraying/spraying-loaded-zone-service';
+import {
   reconcileSprayingLocationUpdates,
   startSprayingLocationUpdates,
   stopSprayingLocationUpdates,
@@ -96,10 +101,32 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     [repository],
   );
 
+  const restoreLoadedZone = useCallback(async () => {
+    const loadedZone = await getLoadedSprayingZone();
+    if (!loadedZone) {
+      setSelectedZone(null);
+      setSelectedZonePlants([]);
+      return;
+    }
+
+    const plants = await repository.local.getZonePlants(loadedZone.id);
+    if (plants.length === 0) {
+      await clearLoadedSprayingZone();
+      setSelectedZone(null);
+      setSelectedZonePlants([]);
+      return;
+    }
+
+    setSelectedZone(loadedZone);
+    setSelectedZonePlants(plants);
+  }, [repository]);
+
   const refresh = useCallback(async () => {
     const recoverable = await repository.local.getRecoverableOperation();
     if (!recoverable) {
+      activeOperationIdRef.current = null;
       setAggregate(null);
+      await restoreLoadedZone();
       setTrackingState(await reconcileSprayingLocationUpdates(null));
       return;
     }
@@ -110,7 +137,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     } else {
       setTrackingState('inactive');
     }
-  }, [refreshOperation, repository]);
+  }, [refreshOperation, repository, restoreLoadedZone]);
 
   useEffect(() => {
     let mounted = true;
@@ -194,11 +221,19 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
         const cachedPlants = await repository.local.getZonePlants(zone.id);
         setSelectedZone(zone);
         setSelectedZonePlants(cachedPlants);
+        if (cachedPlants.length > 0) {
+          await saveLoadedSprayingZone(zone);
+        }
 
         const { data, error } = await repository.getZonePlants(zone.id);
         if (data) {
           await repository.local.cacheZonePlants(zone.id, zone.name, data);
           setSelectedZonePlants(data);
+          if (data.length > 0) {
+            await saveLoadedSprayingZone(zone);
+          } else {
+            await clearLoadedSprayingZone();
+          }
         } else if (error && cachedPlants.length === 0) {
           throw new Error(`Erro ao carregar da zona.\n${error.message}`);
         }
@@ -274,23 +309,27 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
   }, [aggregate, refreshOperation, repository, setIsLoading, setIsVisible, setMessage, trackingState]);
 
   const deleteActiveOperation = useCallback(async () => {
-    if (!aggregate) {
+    if (!aggregate && selectedZonePlants.length === 0) {
       return;
     }
 
     setIsLoading(true);
     try {
-      if (aggregate.operation.lifecycle_status === 'tracking') {
+      if (aggregate?.operation.lifecycle_status === 'tracking') {
         await stopSprayingLocationUpdates();
       }
-      await repository.local.deleteOperation(aggregate.operation.id);
+      if (aggregate) {
+        await repository.local.deleteOperation(aggregate.operation.id);
+      }
+      await clearLoadedSprayingZone();
       activeOperationIdRef.current = null;
       setAggregate(null);
-      setSelectedZonePlants((currentPlants) => clearSprayingReviewState(currentPlants));
+      setSelectedZone(null);
+      setSelectedZonePlants([]);
       setTrackingState('inactive');
       setIsReviewVisible(false);
       setIsSetupVisible(false);
-      setMessage('Pulverização local excluida.');
+      setMessage(aggregate ? 'Pulverização local excluida.' : 'Plantas carregadas removidas.');
       setIsVisible(true);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
@@ -298,7 +337,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [aggregate, repository, setIsLoading, setIsVisible, setMessage]);
+  }, [aggregate, repository, selectedZonePlants.length, setIsLoading, setIsVisible, setMessage]);
 
   const prepareRouteSimulation = useCallback(async () => {
     if (!__DEV__) {

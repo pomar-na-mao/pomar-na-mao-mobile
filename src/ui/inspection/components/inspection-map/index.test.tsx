@@ -38,7 +38,7 @@ describe('InspectionMap', () => {
     expect(screen.getByText(/Obtendo localiza/)).toBeOnTheScreen();
   });
 
-  it('renders simulation controls when location is available', () => {
+  it('selects, replaces, and deletes one simulated location point', () => {
     mockUseInspection.mockReturnValue({
       applyLocationUpdate: mockApplyLocationUpdate,
       currentLocation: inspectionLocation,
@@ -50,8 +50,53 @@ describe('InspectionMap', () => {
 
     render(<InspectionMap />);
 
-    expect(screen.getByText('Selecione P1, P2 ou P3')).toBeOnTheScreen();
-    fireEvent.press(screen.getByText('P1'));
-    expect(screen.getByText('Toque no mapa para marcar P1')).toBeOnTheScreen();
+    const firstPoint = { latitude: -23.1002, longitude: -46.1002 };
+    const secondPoint = { latitude: -23.1003, longitude: -46.1003 };
+
+    fireEvent.press(screen.getByLabelText('Marcar localização DEV'));
+    fireEvent(screen.getByTestId('inspection-map'), 'press', {
+      nativeEvent: { coordinate: firstPoint },
+    });
+
+    expect(mockSetLocationSimulationActive).toHaveBeenCalledWith(true);
+    expect(mockApplyLocationUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        coords: expect.objectContaining(firstPoint),
+      }),
+      { source: 'simulation' },
+    );
+    expect(screen.getByTestId('inspection-simulation-marker')).toHaveProp('coordinate', firstPoint);
+
+    fireEvent.press(screen.getByLabelText('Alterar localização DEV'));
+    fireEvent(screen.getByTestId('inspection-map'), 'press', {
+      nativeEvent: { coordinate: secondPoint },
+    });
+
+    expect(screen.getAllByTestId('inspection-simulation-marker')).toHaveLength(1);
+    expect(screen.getByTestId('inspection-simulation-marker')).toHaveProp('coordinate', secondPoint);
+
+    fireEvent.press(screen.getByLabelText('Excluir localização DEV'));
+
+    expect(mockSetLocationSimulationActive).toHaveBeenLastCalledWith(false);
+    expect(screen.queryByTestId('inspection-simulation-marker')).not.toBeOnTheScreen();
+  });
+
+  it('does not change location when the map is pressed before selection is armed', () => {
+    mockUseInspection.mockReturnValue({
+      applyLocationUpdate: mockApplyLocationUpdate,
+      currentLocation: inspectionLocation,
+      initialRegion: inspectionLocation.coords,
+      loadedPlants: [inspectionPlant],
+      nearestPlant: inspectionPlant,
+      setLocationSimulationActive: mockSetLocationSimulationActive,
+    });
+
+    render(<InspectionMap />);
+
+    fireEvent(screen.getByTestId('inspection-map'), 'press', {
+      nativeEvent: { coordinate: { latitude: -23.2, longitude: -46.2 } },
+    });
+
+    expect(mockApplyLocationUpdate).not.toHaveBeenCalled();
   });
 });
