@@ -39,7 +39,8 @@ export function SprayingScreen() {
   } = useSpraying();
   const [isDeleteConfirmationVisible, setIsDeleteConfirmationVisible] = useState(false);
   const status = aggregate?.operation.lifecycle_status;
-  const canDeleteActiveOperation = Boolean(aggregate && status !== 'synced');
+  const hasIdleLoadedPlants = !aggregate && selectedZonePlants.length > 0;
+  const canDeleteLocalSprayingState = Boolean((aggregate && status !== 'synced') || hasIdleLoadedPlants);
 
   const mainAction =
     !aggregate && !selectedZone
@@ -119,12 +120,12 @@ export function SprayingScreen() {
         </View>
       </View>
 
-      {mainAction || canDeleteActiveOperation ? (
+      {mainAction || canDeleteLocalSprayingState ? (
         <View pointerEvents="box-none" style={styles.bottomPanel}>
           <View testID="spraying-action-bar" style={styles.actionBar}>
-            {canDeleteActiveOperation ? (
+            {canDeleteLocalSprayingState ? (
               <Pressable
-                accessibilityLabel="Excluir pulverização ativa"
+                accessibilityLabel="Excluir estado local de pulverização"
                 accessibilityRole="button"
                 onPress={() => setIsDeleteConfirmationVisible(true)}
                 style={[styles.iconButton, { backgroundColor: colors.background, borderColor: colors.danger }]}
@@ -150,7 +151,11 @@ export function SprayingScreen() {
       <ConfirmationModal
         visible={isDeleteConfirmationVisible}
         title="Excluir Pulverização"
-        message="Deseja apagar a operacao ativa e todos os pontos, rota, insumos e revisoes locais?"
+        message={
+          aggregate
+            ? 'Deseja apagar a operacao ativa e todos os pontos, rota, insumos e revisoes locais?'
+            : 'Deseja remover as plantas carregadas desta Pulverização?'
+        }
         onCancel={() => setIsDeleteConfirmationVisible(false)}
         onConfirm={() => {
           setIsDeleteConfirmationVisible(false);

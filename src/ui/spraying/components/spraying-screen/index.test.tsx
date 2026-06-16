@@ -91,9 +91,23 @@ describe('SprayingScreen', () => {
     render(<SprayingScreen />);
 
     expect(screen.getByText('Iniciar')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Excluir estado local de pulverização')).toBeOnTheScreen();
     expect(screen.getByText(/Talhao 1 - .* plantas carregadas/)).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Iniciar'));
     expect(mockOpenSetup).toHaveBeenCalled();
+  });
+
+  it('requires confirmation before deleting idle loaded plants', () => {
+    mockState.selectedZone = { id: 'zone-1', name: 'Talhao 1' };
+    mockState.selectedZonePlants = sprayingAggregateFixture.plants;
+
+    render(<SprayingScreen />);
+
+    fireEvent.press(screen.getByLabelText('Excluir estado local de pulverização'));
+    expect(mockDeleteActiveOperation).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByTestId('confirm-delete'));
+    expect(mockDeleteActiveOperation).toHaveBeenCalled();
   });
 
   it.each([
@@ -149,7 +163,7 @@ describe('SprayingScreen', () => {
 
     render(<SprayingScreen />);
 
-    fireEvent.press(screen.getByLabelText('Excluir pulverização ativa'));
+    fireEvent.press(screen.getByLabelText('Excluir estado local de pulverização'));
     expect(mockDeleteActiveOperation).not.toHaveBeenCalled();
 
     fireEvent.press(screen.getByTestId('confirm-delete'));
