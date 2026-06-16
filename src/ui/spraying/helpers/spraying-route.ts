@@ -87,12 +87,12 @@ export function findNearestPointOnSprayingRoute(
       segmentLengthSquared === 0
         ? 0
         : Math.max(
-          0,
-          Math.min(
-            1,
-            ((target.x - startMeters.x) * segmentX + (target.y - startMeters.y) * segmentY) / segmentLengthSquared,
-          ),
-        );
+            0,
+            Math.min(
+              1,
+              ((target.x - startMeters.x) * segmentX + (target.y - startMeters.y) * segmentY) / segmentLengthSquared,
+            ),
+          );
     const projectedX = startMeters.x + projection * segmentX;
     const projectedY = startMeters.y + projection * segmentY;
     const distanceMeters = Math.hypot(target.x - projectedX, target.y - projectedY);

@@ -1,32 +1,23 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
-import type { InspectionSimulationPoints, SimulationPointIndex } from '@/ui/inspection/helpers/simulation-route';
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface InspectionNearestPlantSimulationProps {
-  isRunning: boolean;
+  hasPoint: boolean;
+  isSelectingPoint: boolean;
   onClear(): void;
-  onSelectPoint(index: SimulationPointIndex): void;
-  onStart(): void;
-  onStop(): void;
-  points: InspectionSimulationPoints;
-  selectedPointIndex: SimulationPointIndex | null;
+  onSelectPoint(): void;
 }
 
 export const InspectionNearestPlantSimulation = ({
-  isRunning,
+  hasPoint,
+  isSelectingPoint,
   onClear,
   onSelectPoint,
-  onStart,
-  onStop,
-  points,
-  selectedPointIndex,
 }: InspectionNearestPlantSimulationProps) => {
   const theme = useColorScheme() ?? 'light';
-  const canStart = points.every(Boolean) && !isRunning;
-  const selectedPointLabel = selectedPointIndex === null ? null : `P${selectedPointIndex + 1}`;
 
   if (!__DEV__) {
     return null;
@@ -44,83 +35,48 @@ export const InspectionNearestPlantSimulation = ({
     >
       <View style={styles.content}>
         <Text style={[styles.statusText, { color: Colors[theme].text }]}>
-          {selectedPointLabel ? `Toque no mapa para marcar ${selectedPointLabel}` : 'Selecione P1, P2 ou P3'}
+          {isSelectingPoint
+            ? 'Toque no mapa para definir a localização'
+            : hasPoint
+              ? 'Localização DEV ativa'
+              : 'Defina uma localização DEV'}
         </Text>
 
-        <View style={styles.pointControls}>
-          {points.map((point, index) => {
-            const pointIndex = index as SimulationPointIndex;
-            const isSelected = selectedPointIndex === pointIndex;
-            const hasPoint = Boolean(point);
-
-            return (
-              <Pressable
-                accessibilityRole="button"
-                disabled={isRunning}
-                key={pointIndex}
-                onPress={() => onSelectPoint(pointIndex)}
-                style={[
-                  styles.pointButton,
-                  {
-                    backgroundColor: isSelected ? Colors[theme].tint : Colors[theme].neutralButtonBackground,
-                    borderColor: hasPoint ? Colors[theme].confirmationButtonBackground : Colors[theme].inputBorder,
-                    opacity: isRunning ? 0.55 : 1,
-                  },
-                ]}
-              >
-                <MaterialIcons
-                  color={isSelected ? Colors[theme].background : Colors[theme].text}
-                  name={hasPoint ? 'place' : 'add-location-alt'}
-                  size={16}
-                />
-                <Text
-                  style={[styles.pointLabel, { color: isSelected ? Colors[theme].background : Colors[theme].text }]}
-                >
-                  P{pointIndex + 1}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Pressable
+          accessibilityLabel={hasPoint ? 'Alterar localização DEV' : 'Marcar localização DEV'}
+          accessibilityRole="button"
+          onPress={onSelectPoint}
+          style={[
+            styles.pointButton,
+            {
+              backgroundColor: isSelectingPoint ? Colors[theme].tint : Colors[theme].neutralButtonBackground,
+              borderColor: hasPoint ? Colors[theme].confirmationButtonBackground : Colors[theme].inputBorder,
+            },
+          ]}
+        >
+          <MaterialIcons
+            color={isSelectingPoint ? Colors[theme].background : Colors[theme].text}
+            name={hasPoint ? 'place' : 'add-location-alt'}
+            size={18}
+          />
+          <Text
+            style={[styles.pointLabel, { color: isSelectingPoint ? Colors[theme].background : Colors[theme].text }]}
+          >
+            {hasPoint ? 'Alterar ponto' : 'Marcar ponto'}
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.actionControls}>
         <Pressable
+          accessibilityLabel="Excluir localização DEV"
           accessibilityRole="button"
-          disabled={!canStart}
-          onPress={onStart}
-          style={[
-            styles.actionButton,
-            {
-              backgroundColor: canStart ? Colors[theme].confirmationButtonBackground : Colors[theme].disabledText,
-            },
-          ]}
-        >
-          <MaterialIcons color="#FFFFFF" name="play-arrow" size={22} />
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          disabled={!isRunning}
-          onPress={onStop}
-          style={[
-            styles.actionButton,
-            {
-              backgroundColor: isRunning ? Colors[theme].warning : Colors[theme].disabledText,
-            },
-          ]}
-        >
-          <MaterialIcons color="#FFFFFF" name="stop" size={22} />
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          disabled={isRunning}
+          disabled={!hasPoint}
           onPress={onClear}
           style={[
             styles.actionButton,
             {
-              backgroundColor: isRunning ? Colors[theme].disabledText : Colors[theme].neutralButtonBackground,
+              backgroundColor: hasPoint ? Colors[theme].neutralButtonBackground : Colors[theme].disabledText,
               borderColor: Colors[theme].inputBorder,
               borderWidth: 1,
             },
@@ -172,19 +128,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
     flexDirection: 'row',
-    gap: 2,
+    gap: 6,
     height: 40,
     justifyContent: 'center',
-    width: 50,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
   },
   pointLabel: {
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 14,
-  },
-  pointControls: {
-    flexDirection: 'row',
-    gap: 8,
   },
   statusText: {
     fontSize: 12,
