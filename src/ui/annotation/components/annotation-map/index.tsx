@@ -1,16 +1,48 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
+import { AnnotationLocationSimulation } from '@/ui/annotation/components/annotation-location-simulation';
 import { useAnnotation } from '@/ui/annotation/view-models/use-annotation';
+import { createSimulationLocation } from '@/ui/inspection/helpers/simulation-location';
 import { UserMarkerLocation } from '@/ui/shared/components/user-marker-location';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, type LatLng } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
 
 export const AnnotationMap = () => {
   const theme = useColorScheme() ?? 'light';
-  const { currentLocation, initialRegion } = useAnnotation();
+  const { applyLocationUpdate, currentLocation, initialRegion, setLocationSimulationActive } = useAnnotation();
+  const [simulationPoint, setSimulationPoint] = useState<LatLng | null>(null);
+  const [isSelectingSimulationPoint, setIsSelectingSimulationPoint] = useState(false);
+
+  const clearSimulation = useCallback(() => {
+    setLocationSimulationActive(false);
+    setSimulationPoint(null);
+    setIsSelectingSimulationPoint(false);
+  }, [setLocationSimulationActive]);
+
+  const handleMapPress = useCallback(
+    (event: { nativeEvent: { coordinate: LatLng } }) => {
+      if (!__DEV__ || !isSelectingSimulationPoint) {
+        return;
+      }
+
+      const coordinate = event.nativeEvent.coordinate;
+      setLocationSimulationActive(true);
+      setSimulationPoint(coordinate);
+      setIsSelectingSimulationPoint(false);
+      applyLocationUpdate(createSimulationLocation(coordinate, Date.now()), { source: 'simulation' });
+    },
+    [applyLocationUpdate, isSelectingSimulationPoint, setLocationSimulationActive],
+  );
+
+  useEffect(
+    () => () => {
+      setLocationSimulationActive(false);
+    },
+    [setLocationSimulationActive],
+  );
 
   if (!initialRegion || !currentLocation) {
     return (
@@ -26,6 +58,7 @@ export const AnnotationMap = () => {
   return (
     <View style={styles.mapContainer}>
       <MapView
+        testID="annotation-map"
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
         customMapStyle={theme === 'dark' ? darkMapStyle : []}
@@ -35,6 +68,8 @@ export const AnnotationMap = () => {
           latitudeDelta: 0.002,
           longitudeDelta: 0.002,
         }}
+        onLongPress={handleMapPress}
+        onPress={handleMapPress}
         showsMyLocationButton={false}
         showsUserLocation={false}
       >
@@ -47,7 +82,24 @@ export const AnnotationMap = () => {
           headingDegrees={currentLocation.coords.heading ?? null}
           speedMetersPerSecond={currentLocation.coords.speed ?? null}
         />
+
+        {__DEV__ && simulationPoint ? (
+          <Marker
+            coordinate={simulationPoint}
+            identifier="annotation-simulation-point"
+            pinColor="#2563EB"
+            testID="annotation-simulation-marker"
+            title="LocalizaÃ§Ã£o DEV"
+          />
+        ) : null}
       </MapView>
+
+      <AnnotationLocationSimulation
+        hasPoint={simulationPoint !== null}
+        isSelectingPoint={isSelectingSimulationPoint}
+        onClear={clearSimulation}
+        onSelectPoint={() => setIsSelectingSimulationPoint(true)}
+      />
     </View>
   );
 };

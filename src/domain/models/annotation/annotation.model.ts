@@ -94,7 +94,7 @@ export interface CreateAnnotationParams {
 
 export interface SyncAnnotationPayload {
   localAnnotationId: string;
-  localOperationId?: string | null;
+  localOperationId: string;
   plantId?: string | null;
   occurrenceTypeId: string;
   latitude: number;
@@ -110,9 +110,10 @@ export interface SyncAnnotationPayload {
 }
 
 export interface SyncAnnotationResult {
-  field_operation_id?: string | null;
-  occurrence_id?: string | null;
+  field_operation_id: string;
+  occurrence_id: string;
   plant_id?: string | null;
+  operation_identity_mode?: 'explicit' | 'legacy';
 }
 
 export interface AnnotationState {

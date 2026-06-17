@@ -27,6 +27,7 @@ interface AnnotationContextProps {
   openAnnotationModal(): void;
   closeAnnotationModal(): void;
   applyLocationUpdate(location: LocationObject): void;
+  setLocationSimulationActive(isActive: boolean): void;
   saveAnnotation(params: SaveAnnotationParams): Promise<void>;
   finishActiveAnnotationOperation(): Promise<void>;
   syncAnnotations(): Promise<void>;
@@ -79,6 +80,7 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
         validationMessage: null,
         zones: [{ id: 'zone-web', name: 'Web' }],
         applyLocationUpdate: () => undefined,
+        setLocationSimulationActive: () => undefined,
       }}
     >
       {children}

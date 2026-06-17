@@ -1,8 +1,5 @@
-# annotation-sync Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change implement-annotation-feature. Update Purpose after archive.
-## Requirements
 ### Requirement: Annotation sync RPC call
 
 The app SHALL synchronize locally created annotations through a Supabase RPC boundary that atomically creates or reconciles the remote `field_operations`, `plant_occurrences`, and `plant_occurrence_events` records while preserving the local operation grouping used in SQLite.
@@ -43,17 +40,6 @@ The app SHALL mark local annotation data as synced only after the RPC succeeds a
 - **THEN** the app SHALL require the returned remote field operation id to match the id already stored locally
 - **AND** it SHALL not silently replace the existing parent operation mapping with a different remote id
 
-### Requirement: Sync failure handling
-
-The app SHALL preserve pending annotation data when the RPC fails.
-
-#### Scenario: RPC fails
-
-- **WHEN** the annotation RPC returns an error or no successful result
-- **THEN** the app SHALL keep the local annotation available for retry
-- **AND** it SHALL store the error message and show the annotation in the error count
-- **AND** it SHALL not show a successful synchronization message for annotations that failed
-
 ### Requirement: Database contract documentation
 
 The implementation SHALL keep `database.md` aligned with the actual Supabase annotation sync and occurrence event contracts.
@@ -62,4 +48,3 @@ The implementation SHALL keep `database.md` aligned with the actual Supabase ann
 
 - **WHEN** implementation creates or edits the Supabase annotation RPC
 - **THEN** the change SHALL update `database.md` with the table contract, RPC signature, payload fields, operation and annotation identity mapping, return shape, permissions, event behavior, and complete current SQL definition
-
