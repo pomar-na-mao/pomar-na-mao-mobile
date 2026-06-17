@@ -36,6 +36,7 @@ interface AnnotationContextProps {
   openAnnotationModal(): void;
   closeAnnotationModal(): void;
   applyLocationUpdate(location: Location.LocationObject, options?: LocationUpdateOptions): void;
+  setLocationSimulationActive(isActive: boolean): void;
   saveAnnotation(params: SaveAnnotationParams): Promise<void>;
   finishActiveAnnotationOperation(): Promise<void>;
   syncAnnotations(): Promise<void>;
@@ -71,6 +72,7 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
 
   const isLocationSimulationActiveRef = useRef(false);
   const activeOperationRef = useRef<LocalAnnotationOperation | null>(null);
+  const latestDeviceLocationRef = useRef<Location.LocationObject | null>(null);
 
   const initialRegion = useMemo(() => currentLocation?.coords ?? null, [currentLocation]);
 
@@ -112,12 +114,34 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
   }, [setIsVisible, setMessage, sqliteService]);
 
   const applyLocationUpdate = useCallback((location: Location.LocationObject, options?: LocationUpdateOptions) => {
-    if (__DEV__ && isLocationSimulationActiveRef.current && options?.source !== 'simulation') {
+    const source = options?.source ?? 'device';
+
+    if (source === 'device') {
+      latestDeviceLocationRef.current = location;
+    }
+
+    if (__DEV__ && isLocationSimulationActiveRef.current && source !== 'simulation') {
       return;
     }
 
     setCurrentLocation(location);
   }, []);
+
+  const setLocationSimulationActive = useCallback(
+    (isActive: boolean) => {
+      if (!__DEV__) {
+        return;
+      }
+
+      const wasActive = isLocationSimulationActiveRef.current;
+      isLocationSimulationActiveRef.current = isActive;
+
+      if (wasActive && !isActive && latestDeviceLocationRef.current) {
+        applyLocationUpdate(latestDeviceLocationRef.current);
+      }
+    },
+    [applyLocationUpdate],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -236,20 +260,27 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
       let lastErrorMessage: string | null = null;
 
       for (const annotation of pendingAnnotations) {
-        await sqliteService.markAnnotationSyncing(annotation.id);
-        const payload = await sqliteService.buildSyncPayload(annotation);
-        const { data, error } = await annotationRepository.syncAnnotation(payload);
+        try {
+          await sqliteService.markAnnotationSyncing(annotation.id);
+          const payload = await sqliteService.buildSyncPayload(annotation);
+          const { data, error } = await annotationRepository.syncAnnotation(payload);
 
-        if (error || !data) {
-          const message = error?.message ?? 'A RPC create_occurrence_annotation nao retornou dados.';
+          if (error || !data) {
+            const message = error?.message ?? 'A RPC create_occurrence_annotation nao retornou dados.';
+            errorCount += 1;
+            lastErrorMessage = message;
+            await sqliteService.markAnnotationSyncError(annotation.id, message, annotation.field_operation_id ?? null);
+            continue;
+          }
+
+          await sqliteService.markAnnotationSynced(annotation, data);
+          syncedCount += 1;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
           errorCount += 1;
           lastErrorMessage = message;
-          await sqliteService.markAnnotationSyncError(annotation.id, message);
-          continue;
+          await sqliteService.markAnnotationSyncError(annotation.id, message, annotation.field_operation_id ?? null);
         }
-
-        syncedCount += 1;
-        await sqliteService.markAnnotationSynced(annotation, data);
       }
 
       await refreshAnnotations();
@@ -296,6 +327,7 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
         openAnnotationModal,
         closeAnnotationModal,
         applyLocationUpdate,
+        setLocationSimulationActive,
         saveAnnotation,
         finishActiveAnnotationOperation,
         syncAnnotations,

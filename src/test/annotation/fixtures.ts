@@ -81,7 +81,7 @@ export const syncAnnotationPayload: SyncAnnotationPayload = {
   gpsAccuracyM: localAnnotationOccurrence.gps_accuracy_m,
   latitude: localAnnotationOccurrence.annotation_latitude,
   localAnnotationId: localAnnotationOccurrence.local_id ?? localAnnotationOccurrence.id,
-  localOperationId: localAnnotationOccurrence.field_operation_id,
+  localOperationId: localAnnotationOccurrence.field_operation_id ?? localAnnotationOperation.id,
   longitude: localAnnotationOccurrence.annotation_longitude,
   notes: localAnnotationOccurrence.notes,
   observedAt: localAnnotationOccurrence.observed_at,
