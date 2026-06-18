@@ -270,6 +270,10 @@ export function useAnnotationSqliteService() {
   }
 
   async function buildSyncPayload(occurrence: LocalAnnotationOccurrence): Promise<SyncAnnotationPayload> {
+    if (!occurrence.field_operation_id) {
+      throw new Error('Anotacao local sem operacao vinculada nao pode ser sincronizada.');
+    }
+
     return {
       assignedDistanceMeters: occurrence.assigned_distance_meters ?? null,
       assignmentMethod: occurrence.assignment_method ?? null,
@@ -278,7 +282,7 @@ export function useAnnotationSqliteService() {
       gpsAccuracyM: occurrence.gps_accuracy_m ?? null,
       latitude: occurrence.annotation_latitude,
       localAnnotationId: occurrence.local_id ?? occurrence.id,
-      localOperationId: occurrence.field_operation_id ?? null,
+      localOperationId: occurrence.field_operation_id,
       longitude: occurrence.annotation_longitude,
       notes: occurrence.notes ?? null,
       observedAt: occurrence.observed_at,
@@ -299,8 +303,22 @@ export function useAnnotationSqliteService() {
 
   async function markAnnotationSynced(occurrence: LocalAnnotationOccurrence, result: SyncAnnotationResult) {
     const timestamp = nowIso();
+    const usesLegacyOperationIdentity = result.operation_identity_mode === 'legacy';
 
     await database.withTransactionAsync(async () => {
+      if (occurrence.field_operation_id && !usesLegacyOperationIdentity) {
+        const operation = await database.getFirstAsync<Pick<LocalAnnotationOperation, 'remote_field_operation_id'>>(
+          `SELECT remote_field_operation_id
+           FROM local_field_operations
+           WHERE id = ?`,
+          [occurrence.field_operation_id],
+        );
+
+        if (operation?.remote_field_operation_id && operation.remote_field_operation_id !== result.field_operation_id) {
+          throw new Error('Operação remota divergente para a mesma operação local de anotação.');
+        }
+      }
+
       await database.runAsync(
         `UPDATE local_plant_occurrences
          SET sync_status = 'synced', remote_occurrence_id = ?, synced_at = ?,
@@ -310,34 +328,50 @@ export function useAnnotationSqliteService() {
       );
 
       if (occurrence.field_operation_id) {
+        if (!usesLegacyOperationIdentity) {
+          await database.runAsync(
+            `UPDATE local_field_operations
+             SET remote_field_operation_id = COALESCE(remote_field_operation_id, ?),
+                 sync_error = NULL, updated_at = ?
+             WHERE id = ?`,
+            [result.field_operation_id, timestamp, occurrence.field_operation_id],
+          );
+        }
+
         await database.runAsync(
           `UPDATE local_field_operations
-           SET sync_status = 'synced', remote_field_operation_id = COALESCE(?, remote_field_operation_id),
-               synced_at = ?, sync_error = NULL, updated_at = ?
+           SET sync_status = 'synced', synced_at = ?, sync_error = NULL, updated_at = ?
            WHERE id = ?
              AND NOT EXISTS (
                SELECT 1 FROM local_plant_occurrences
                WHERE field_operation_id = ? AND sync_status != 'synced'
              )`,
-          [
-            result.field_operation_id ?? null,
-            timestamp,
-            timestamp,
-            occurrence.field_operation_id,
-            occurrence.field_operation_id,
-          ],
+          [timestamp, timestamp, occurrence.field_operation_id, occurrence.field_operation_id],
         );
       }
     });
   }
 
-  async function markAnnotationSyncError(occurrenceId: string, message: string) {
-    await database.runAsync(
-      `UPDATE local_plant_occurrences
-       SET sync_status = 'error', sync_error = ?, updated_at = ?
-       WHERE id = ?`,
-      [message, nowIso(), occurrenceId],
-    );
+  async function markAnnotationSyncError(occurrenceId: string, message: string, operationId?: string | null) {
+    const timestamp = nowIso();
+
+    await database.withTransactionAsync(async () => {
+      await database.runAsync(
+        `UPDATE local_plant_occurrences
+         SET sync_status = 'error', sync_error = ?, updated_at = ?
+         WHERE id = ?`,
+        [message, timestamp, occurrenceId],
+      );
+
+      if (operationId) {
+        await database.runAsync(
+          `UPDATE local_field_operations
+           SET sync_status = 'error', sync_error = ?, updated_at = ?
+           WHERE id = ?`,
+          [message, timestamp, operationId],
+        );
+      }
+    });
   }
 
   async function clearAnnotations() {

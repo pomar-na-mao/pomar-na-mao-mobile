@@ -1,6 +1,6 @@
 import { syncAnnotationPayload } from '@/test/annotation/fixtures';
 import { supabase } from '../supabase/supabase-connection';
-import { annotationSupabaseService } from './annotation-supabase-service';
+import { annotationSupabaseService, normalizeAnnotationSyncResult } from './annotation-supabase-service';
 
 jest.mock('../supabase/supabase-connection', () => ({
   supabase: {
@@ -40,15 +40,25 @@ describe('annotationSupabaseService', () => {
   });
 
   it('maps annotation sync payload to create_occurrence_annotation RPC', async () => {
-    mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
+    mockSupabase.rpc.mockResolvedValue({
+      data: [
+        {
+          field_operation_id: 'remote-operation-1',
+          occurrence_id: 'remote-occurrence-1',
+          plant_id: 'remote-plant-1',
+        },
+      ],
+      error: null,
+    });
 
-    await annotationSupabaseService.syncAnnotation(syncAnnotationPayload);
+    const response = await annotationSupabaseService.syncAnnotation(syncAnnotationPayload);
 
     expect(mockSupabase.rpc).toHaveBeenCalledWith('create_occurrence_annotation', {
       p_assigned_distance_meters: syncAnnotationPayload.assignedDistanceMeters,
       p_assignment_method: 'nearest_plant',
       p_assignment_status: 'confirmed',
       p_device_id: syncAnnotationPayload.deviceId,
+      p_field_operation_local_id: syncAnnotationPayload.localOperationId,
       p_gps_accuracy_m: syncAnnotationPayload.gpsAccuracyM,
       p_latitude: syncAnnotationPayload.latitude,
       p_local_id: syncAnnotationPayload.localAnnotationId,
@@ -60,5 +70,60 @@ describe('annotationSupabaseService', () => {
       p_plant_id: null,
       p_severity: syncAnnotationPayload.severity,
     });
+    expect(response.data?.[0]?.operation_identity_mode).toBe('explicit');
+  });
+
+  it('retries without operation identity when the remote RPC signature is stale', async () => {
+    mockSupabase.rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: 'PGRST202',
+          details: 'Searched for the function public.create_occurrence_annotation',
+          hint: null,
+          message:
+            'Could not find the function public.create_occurrence_annotation(..., p_field_operation_local_id, ...)',
+        },
+      })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            field_operation_id: 'remote-operation-legacy',
+            occurrence_id: 'remote-occurrence-legacy',
+            plant_id: 'remote-plant-legacy',
+          },
+        ],
+        error: null,
+      });
+
+    const response = await annotationSupabaseService.syncAnnotation(syncAnnotationPayload);
+
+    expect(mockSupabase.rpc).toHaveBeenNthCalledWith(
+      1,
+      'create_occurrence_annotation',
+      expect.objectContaining({
+        p_field_operation_local_id: syncAnnotationPayload.localOperationId,
+      }),
+    );
+    expect(mockSupabase.rpc).toHaveBeenNthCalledWith(
+      2,
+      'create_occurrence_annotation',
+      expect.not.objectContaining({
+        p_field_operation_local_id: expect.anything(),
+      }),
+    );
+    expect(response.data?.[0]?.operation_identity_mode).toBe('legacy');
+  });
+
+  it('normalizes table and object RPC responses', () => {
+    const result = {
+      field_operation_id: 'remote-operation',
+      occurrence_id: 'remote-occurrence',
+      plant_id: 'remote-plant',
+    };
+
+    expect(normalizeAnnotationSyncResult([result])).toEqual(result);
+    expect(normalizeAnnotationSyncResult(result)).toEqual(result);
+    expect(normalizeAnnotationSyncResult(null)).toBeNull();
   });
 });

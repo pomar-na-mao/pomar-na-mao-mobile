@@ -1,4 +1,7 @@
-import { annotationSupabaseService } from '@/data/services/annotation/annotation-supabase-service';
+import {
+  annotationSupabaseService,
+  normalizeAnnotationSyncResult,
+} from '@/data/services/annotation/annotation-supabase-service';
 import type { SyncAnnotationPayload } from '@/domain/models/annotation';
 
 class AnnotationRepository {
@@ -10,7 +13,7 @@ class AnnotationRepository {
     const { data, error } = await annotationSupabaseService.syncAnnotation(payload);
 
     return {
-      data: data?.[0] ?? null,
+      data: normalizeAnnotationSyncResult(data),
       error,
     };
   }
