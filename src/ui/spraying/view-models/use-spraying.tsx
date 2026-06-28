@@ -15,6 +15,8 @@ import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { getSprayingDeviceId } from '@/ui/spraying/helpers/device';
 import { consolidateSprayingRoute, simulateSprayingPlants } from '@/ui/spraying/helpers/spraying-route';
+import { getSprayingZonesSnapshot } from '@/ui/shared/hooks/use-field-work-data';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { useSQLiteContext } from 'expo-sqlite';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -61,13 +63,14 @@ function clearSprayingReviewState(plants: SprayingPlant[]) {
 }
 
 export function SprayingProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const database = useSQLiteContext();
   const repository = useMemo(() => createSprayingRepository(database), [database]);
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
   const [aggregate, setAggregate] = useState<SprayingAggregate | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
-  const [zones, setZones] = useState<SprayingZoneOption[]>([]);
+  const [zones] = useState<SprayingZoneOption[]>(() => getSprayingZonesSnapshot(queryClient));
   const [selectedZone, setSelectedZone] = useState<SprayingZoneOption | null>(null);
   const [selectedZonePlants, setSelectedZonePlants] = useState<SprayingPlant[]>([]);
   const [trackingState, setTrackingState] = useState<SprayingTrackingReconciliation>('inactive');
@@ -143,25 +146,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
     let locationSubscription: Location.LocationSubscription | null = null;
 
-    void Promise.all([repository.local.getZones(), refresh()]).then(async ([cachedZones]) => {
-      if (!mounted) {
-        return;
-      }
-
-      setZones(cachedZones);
-      const { data, error } = await repository.getZones();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (data) {
-        setZones(data);
-      } else if (error && cachedZones.length === 0) {
-        setMessage(`Erro ao carregar zonas de Pulverização.\n${error.message}`);
-        setIsVisible(true);
-      }
-    });
+    void refresh();
 
     void Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
       if (!mounted || status !== 'granted') {
@@ -193,7 +178,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       locationSubscription?.remove();
     };
-  }, [refresh, repository, setIsVisible, setMessage]);
+  }, [refresh]);
 
   useEffect(() => {
     if (aggregate?.operation.lifecycle_status !== 'tracking') {

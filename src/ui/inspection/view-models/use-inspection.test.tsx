@@ -18,6 +18,8 @@ import {
   syncManualInspectionResult,
 } from '@/test/inspection/fixtures';
 import { InspectionProvider, useInspection } from './use-inspection';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fieldWorkQueryOptions } from '@/ui/shared/hooks/use-field-work-data';
 
 const mockSetMessage = jest.fn();
 const mockSetIsVisible = jest.fn();
@@ -201,10 +203,16 @@ function InspectionConsumer() {
 
 async function renderProvider(service = createSqliteService()) {
   mockedUseInspectionSqliteService.mockReturnValue(service);
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(fieldWorkQueryOptions.zones.queryKey, inspectionFilterOptions.zones);
+  queryClient.setQueryData(fieldWorkQueryOptions.occurrenceTypes.queryKey, inspectionFilterOptions.occurrenceTypes);
+  queryClient.setQueryData(fieldWorkQueryOptions.varieties.queryKey, inspectionFilterOptions.varieties);
   render(
-    <InspectionProvider>
-      <InspectionConsumer />
-    </InspectionProvider>,
+    <QueryClientProvider client={queryClient}>
+      <InspectionProvider>
+        <InspectionConsumer />
+      </InspectionProvider>
+    </QueryClientProvider>,
   );
   await waitFor(() => expect(service.listInspections).toHaveBeenCalled());
   return service;
@@ -244,6 +252,8 @@ describe('InspectionProvider', () => {
     expect(service.getLoadedPlants).toHaveBeenCalledWith(localInspection.id);
     expect(mockedLocation.requestForegroundPermissionsAsync).toHaveBeenCalled();
     expect(mockedLocation.watchPositionAsync).toHaveBeenCalled();
+    expect(mockedRepository.getFilterOptions).not.toHaveBeenCalled();
+    expect(service.getCachedFilterOptions).not.toHaveBeenCalled();
   });
 
   it('restores latest inspection plants without making it active when there is no pending inspection', async () => {
@@ -258,23 +268,17 @@ describe('InspectionProvider', () => {
     expect(screen.getByText('loaded:2')).toBeOnTheScreen();
   });
 
-  it('surfaces denied location permission and filter loading errors when cache is empty', async () => {
+  it('surfaces denied location permission without loading filters on route startup', async () => {
     mockedLocation.requestForegroundPermissionsAsync.mockResolvedValue({
       status: 'denied',
     } as Location.PermissionResponse);
-    mockedRepository.getFilterOptions.mockResolvedValue({ data: null, error: createPostgrestError('network failed') });
 
-    await renderProvider(
-      createSqliteService({
-        getCachedFilterOptions: jest.fn().mockResolvedValue({ occurrenceTypes: [], varieties: [], zones: [] }),
-      }),
-    );
+    await renderProvider();
 
-    await waitFor(() =>
-      expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Erro ao carregar filtros')),
-    );
+    await waitFor(() => expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Permiss')));
     expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Permiss'));
     expect(mockSetIsVisible).toHaveBeenCalledWith(true);
+    expect(mockedRepository.getFilterOptions).not.toHaveBeenCalled();
   });
 
   it('validates filters and creates a local inspection from repository plants', async () => {
