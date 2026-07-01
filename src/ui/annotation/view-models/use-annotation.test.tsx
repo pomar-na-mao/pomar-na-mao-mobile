@@ -15,6 +15,8 @@ const mockSetMessage = jest.fn();
 const mockSetIsVisible = jest.fn();
 const mockSetIsLoading = jest.fn();
 
+jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }));
+
 jest.mock('@/data/repositories/annotation/annotation-repository', () => ({
   annotationRepository: {
     getOptions: jest.fn(),
@@ -129,7 +131,7 @@ function AnnotationConsumer() {
 
 async function renderProvider(service = createSqliteService()) {
   mockedUseAnnotationSqliteService.mockReturnValue(service as never);
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
   queryClient.setQueryData(fieldWorkQueryOptions.occurrenceTypes.queryKey, annotationOptions.occurrenceTypes);
   queryClient.setQueryData(fieldWorkQueryOptions.zones.queryKey, annotationOptions.zones);
   render(
@@ -165,7 +167,7 @@ describe('AnnotationProvider', () => {
   });
 
   it('loads initial location on mount', async () => {
-    await renderProvider();
+    const service = await renderProvider();
 
     await waitFor(() => expect(screen.getByText(`location:${annotationLocation.timestamp}`)).toBeOnTheScreen());
     expect(screen.getByText('initial:ready')).toBeOnTheScreen();

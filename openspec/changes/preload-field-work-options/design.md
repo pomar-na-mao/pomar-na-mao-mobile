@@ -17,9 +17,8 @@ The feature providers also restore local operation state and request location pe
 **Non-Goals:**
 
 - Changing Supabase tables, RLS, RPCs, migrations, or API contracts.
-- Preloading filtered inspection plants or spraying zone plants before the user selects a filter or zone.
+- Automatically downloading plants without an explicit zone selection on the loaded-data card.
 - Replacing existing SQLite operation recovery, local work persistence, or synchronization behavior.
-- Allowing field-work entry from the menu while offline based only on locally cached structural data.
 
 ## Decisions
 
@@ -27,13 +26,19 @@ The feature providers also restore local operation state and request location pe
 
 Create shared query definitions for zones, occurrence types, and varieties, each with a stable query key and a normalized result. The field-work readiness hook starts these queries together and combines their states as follows:
 
-| Card | Required non-empty resources |
-| --- | --- |
+| Card       | Required non-empty resources       |
+| ---------- | ---------------------------------- |
 | Inspection | zones, occurrence types, varieties |
-| Annotation | zones, occurrence types |
-| Spraying | zones |
+| Annotation | zones, occurrence types            |
+| Spraying   | zones                              |
 
 Separate resource queries avoid repeated reads and preserve independent availability. For example, an occurrence-type failure does not make spraying unavailable when zones loaded successfully.
+
+### Persist successful structural resources with AsyncStorage
+
+Each successful zones, occurrence-types, or varieties response is serialized under a separate AsyncStorage key. Separate keys avoid read-modify-write races while the three Supabase queries run in parallel. On field-work startup, persisted resources hydrate the TanStack Query cache before readiness is evaluated or online requests are enabled.
+
+Persisted non-empty resources enable their dependent cards when the app restarts offline. When online, hydrated resources remain subject to mount-time remote validation and successful responses replace their persisted values. Invalid or unreadable persisted values are ignored rather than blocking startup.
 
 Alternative considered: invoke the existing inspection, annotation, and spraying repository option methods in parallel. That would move the timing but would still request zones and occurrence types multiple times and make per-resource failures harder to classify.
 
@@ -47,21 +52,32 @@ Alternative considered: let each provider call the same `useQuery` hook. A stale
 
 ### Derive card state from network and required query results
 
-A card is `loading` while network reachability or any required resource is unresolved. It is `unavailable` when the device is offline, a required request fails, or a required resource resolves to an empty array. It is `ready` only while the device is online and all required resources are non-empty.
+A card is `loading` while network reachability or an online request for any required resource is unresolved. It is `unavailable` when a required request fails, a required resource resolves to an empty array, or the device is offline without every required resource already cached. It is `ready` while all required resources are non-empty, including when those resources were loaded earlier in the current app process and the device is now offline.
 
-Cards are disabled in both `loading` and `unavailable` states. Loading uses a progress treatment; unavailable uses the Material Icons `cloud-off` glyph and an accessibility label that communicates the reason. Cached data does not override an explicitly offline network state because the requested menu behavior requires offline cards to remain disabled.
+When online, cached structural data is validated remotely when the field-work screen mounts, and cards remain loading while that validation is in progress. When explicitly offline, no remote validation is attempted and complete non-empty cached resources remain usable. Missing, failed, or empty dependencies disable only the affected cards.
+
+Cards are disabled in both `loading` and `unavailable` states. Loading uses a progress treatment; unavailable uses the Material Icons `cloud-off` glyph and an accessibility label that communicates the reason. An offline state changes missing or unresolved resources to unavailable but does not override complete cached resources.
 
 Alternative considered: represent all non-ready states with the offline glyph. Distinguishing pending work from a completed failure prevents a normal startup delay from appearing to be a connectivity error.
 
-### Retry on field-work focus
+### Retry on field-work focus and reconnection
 
 The first screen mount starts all structural queries. On later focus events, only failed or empty resources are refetched when the device is online. Successful non-empty resources remain cached, so retrying one dependency does not repeat every table read.
+
+While the field-work screen remains mounted, the network listener also detects an offline-to-online transition. Queries that were disabled while offline start automatically, and failed or empty cached resources are refetched so card readiness updates without requiring navigation or an app restart.
 
 Alternative considered: add a retry button to each card. Focus-based retry keeps the card layout simple and recovers naturally after the user restores connectivity and returns to the menu.
 
 ## Risks / Trade-offs
 
+### Persist zone plant snapshots in shared SQLite storage
+
+The loaded-data card replaces the weather card and opens a zone selector. An explicit load requests the existing plant RPC, then atomically replaces that zone's local snapshot, including occurrence data and load timestamp. Multiple zones may coexist.
+
+Inspection filters the selected zone snapshot locally, including the optional occurrence criterion. Spraying lists only loaded zones and reads the selected snapshot locally. Neither route requests plants from Supabase, which keeps both workflows usable after an app restart without internet. Inspection and spraying additionally require a non-empty plant snapshot; annotation remains independent.
+
 - [Network reachability can briefly be unknown on startup] -> Keep cards in loading state until reachability or query results establish a definitive state.
+- [The operating system can report an active network while Supabase is unreachable] -> Require a successful resource fetch on field-work mount and keep cards disabled during validation or after a refetch error.
 - [A valid resource table is intentionally empty] -> Treat it as unavailable as requested; tests will verify the dependency mapping per card.
 - [Direct navigation bypasses the menu] -> Do not issue hidden route-startup requests; option-dependent actions remain unavailable until the normal preload has populated the cache.
 - [Existing provider tests assume remote calls on mount] -> Replace those assertions with cache-seeding tests while retaining local restoration and location tests.

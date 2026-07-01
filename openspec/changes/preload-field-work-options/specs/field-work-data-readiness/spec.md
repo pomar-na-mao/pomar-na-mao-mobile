@@ -12,7 +12,7 @@ The app SHALL request the structural zones, occurrence types, and varieties need
 
 ### Requirement: Readiness is evaluated per card
 
-The app SHALL enable each field-work card only when the device is online and every structural resource required by that feature has loaded successfully with at least one record.
+The app SHALL enable each field-work card when every structural resource required by that feature has loaded successfully with at least one record. When offline, previously loaded in-memory resources SHALL remain eligible for readiness.
 
 #### Scenario: All structural resources are available
 
@@ -48,10 +48,17 @@ The app SHALL prevent navigation from loading or unavailable cards and SHALL dis
 
 #### Scenario: Required data cannot be used
 
-- **WHEN** the device is offline, a required Supabase request fails, or a required resource contains no records
+- **WHEN** a required Supabase request fails, a required resource contains no records, or the device is offline without a required resource cached
 - **THEN** every affected card SHALL remain disabled
 - **AND** each affected card SHALL show a `cloud-off` unavailable icon with an accessible description
 - **AND** pressing an affected card SHALL NOT navigate
+
+#### Scenario: Cached data remains usable offline
+
+- **WHEN** structural data exists in memory from an earlier successful request
+- **AND** the device has no usable internet connection
+- **THEN** each card with all required cached resources SHALL remain enabled
+- **AND** each card missing any required cached resource SHALL remain disabled
 
 ### Requirement: Preloaded data is reused by feature routes
 
@@ -63,10 +70,60 @@ The app SHALL provide successfully preloaded structural data to inspection, anno
 - **THEN** the route SHALL initialize its option state from the shared preload
 - **AND** route startup SHALL NOT repeat the Supabase request for those options
 
-#### Scenario: Feature loads selected plants
+### Requirement: Structural options persist across app restarts
 
-- **WHEN** the user applies an inspection filter or selects a spraying zone after route startup
-- **THEN** the feature SHALL still request and persist the matching plant data according to its existing workflow
+The app SHALL persist successfully loaded zones, occurrence types, and varieties and SHALL restore them before evaluating field-work readiness after a new app process starts.
+
+#### Scenario: App restarts offline after a successful preload
+
+- **WHEN** structural options were loaded successfully in an earlier app process
+- **AND** the user restarts the app without usable internet connectivity
+- **THEN** the app SHALL restore the persisted options
+- **AND** it SHALL enable each card whose required persisted collections are non-empty
+- **AND** it SHALL keep cards with missing or empty persisted dependencies disabled
+
+#### Scenario: Loaded plants survive restart
+
+- **WHEN** the user previously loaded plants for one or more zones and restarts the app
+- **THEN** the app SHALL restore those snapshots from SQLite
+
+### Requirement: Plant snapshots gate plant-dependent cards
+
+The app SHALL enable inspection and spraying only when at least one non-empty zone plant snapshot is stored locally. Annotation SHALL remain independent of plant snapshots.
+
+#### Scenario: No plants have been loaded
+
+- **WHEN** no local zone contains loaded plants
+- **THEN** inspection and spraying SHALL remain disabled
+- **AND** annotation readiness SHALL depend only on its structural resources
+
+### Requirement: Loaded-data card manages zone snapshots
+
+The field-work screen SHALL show a loaded-data card instead of the weather card and SHALL allow an online user to load plants for a selected zone into SQLite.
+
+#### Scenario: Loaded-data summary is displayed
+
+- **WHEN** the field-work screen contains one or more loaded zone snapshots
+- **THEN** the loaded-data card SHALL show each zone name and its plant count
+- **AND** it SHALL explain that plants must be loaded for inspection and spraying
+- **AND** this guidance SHALL appear in a visually distinct yellow informational banner
+- **AND** the unframed download icon in the card header SHALL open the plant-loading modal
+- **AND** the card SHALL retain a fixed height while the zone summary scrolls independently when it exceeds the available space
+
+#### Scenario: User clears loaded plants
+
+- **WHEN** the user confirms the trash action beside the load action
+- **THEN** the app SHALL remove all locally cached plant snapshots
+- **AND** SHALL refresh the summary and readiness of inspection and spraying
+- **AND** SHALL NOT delete remote Supabase plant records
+- **AND** the confirmation SHALL use the app theme and the same visual structure as the plant-loading modal
+
+#### Scenario: User removes one loaded zone
+
+- **WHEN** the user swipes a loaded-zone row from left to right and confirms removal
+- **THEN** the app SHALL remove only that zone's locally cached plants
+- **AND** SHALL preserve every other loaded zone
+- **AND** SHALL refresh the zone summary and card readiness
 
 ### Requirement: Unavailable resources can recover
 
@@ -77,3 +134,10 @@ The app SHALL retry failed or empty structural resources when the online field-w
 - **WHEN** a required resource was unavailable and the user revisits the field-work screen with usable internet connectivity
 - **THEN** the app SHALL retry that resource
 - **AND** it SHALL enable each affected card after all of its required resources return non-empty results
+
+#### Scenario: Connection becomes available while the screen remains open
+
+- **WHEN** the field-work screen is open without usable internet connectivity
+- **AND** the device regains usable internet connectivity
+- **THEN** the app SHALL request resources that were not loaded and retry failed or empty resources
+- **AND** it SHALL update each card state without requiring the user to leave the screen or restart the app

@@ -6,11 +6,13 @@ Inspection, annotation, and spraying currently request their structural Supabase
 
 - Preload the structural field-work data required by inspection, annotation, and spraying when the field-work screen starts.
 - Track loading, ready, and unavailable states independently for each field-work card.
-- Keep a card disabled while its required data is loading or when a required collection is empty, the Supabase request fails, or the device has no usable internet connection.
+- Keep a card disabled while its required data is loading or unavailable, while allowing offline entry when every required option collection is already cached and non-empty.
 - Show a `cloud-off` unavailable indicator inside disabled cards, with an accessible description.
 - Reuse the successfully preloaded data when opening each feature instead of issuing the same Supabase option request on route startup.
+- Persist successfully loaded structural options so they remain available after the app process restarts offline.
 - Retry availability loading when the field-work screen is revisited so transient failures can recover.
-- Preserve feature-specific loading, such as fetching plants after an inspection filter or spraying zone is selected.
+- Replace the weather card with a loaded-data card that downloads and persists plant snapshots by zone.
+- Make inspection and spraying consume only persisted plants filtered locally, and require loaded plants for readiness.
 
 ## Capabilities
 
@@ -30,6 +32,6 @@ Inspection, annotation, and spraying currently request their structural Supabase
 - Affected UI: `src/app/field-works.tsx` and its card states, accessibility, and tests.
 - Affected state/data flow: shared field-work option query/cache and the inspection, annotation, and spraying providers.
 - Affected remote reads: existing Supabase reads for `zones`, `occurrence_types`, and currently required inspection structural options move earlier and are shared instead of repeated on route entry.
-- Affected local behavior: existing SQLite restoration and feature-specific plant loading remain in place.
+- Affected local behavior: SQLite stores reusable per-zone plant snapshots shared by inspection and spraying.
 - Dependencies: existing TanStack Query, Expo Network, and Material Icons packages; no new package is required.
 - No Supabase schema, table, RPC, function, trigger, policy, permission, or migration changes.

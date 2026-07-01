@@ -19,3 +19,7 @@ The field-work navigation SHALL keep the inspection, annotation, and spraying en
 
 - **WHEN** a field-work card is loading or unavailable and the user presses it
 - **THEN** the app SHALL remain on the field-work screen
+
+### Requirement: Field-work screen exposes loaded data
+
+The field-work screen SHALL expose a loaded-data card for plant snapshot management and SHALL NOT render the weather card.

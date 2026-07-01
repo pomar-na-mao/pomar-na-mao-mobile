@@ -49,23 +49,22 @@ describe('InspectionFilterModal', () => {
     });
   });
 
-  it('renders filter options and submits the selected values', () => {
+  it('renders only zones and loads every plant from the selected zone', () => {
     render(<InspectionFilterModal />);
 
     expect(screen.getByText(/Filtro da inspe/)).toBeOnTheScreen();
     expect(screen.getByText('Zona')).toBeOnTheScreen();
-    expect(screen.getByText(/Ocorr/)).toBeOnTheScreen();
+    expect(screen.queryByText(/Ocorr/)).toBeNull();
     expect(screen.getByText('Talhao 1')).toBeOnTheScreen();
-    expect(screen.getByText('Praga')).toBeOnTheScreen();
+    expect(screen.queryByText('Praga')).toBeNull();
 
     fireEvent.press(screen.getByTestId('Zona-zone-1'));
-    fireEvent.press(screen.getByTestId(/Ocorr.*occurrence-1/));
     fireEvent.press(screen.getByText('Carregar'));
 
     expect(mockApplyFilters).toHaveBeenCalledWith({
-      occurrenceCode: 'PST',
-      occurrenceName: 'Praga',
-      occurrenceTypeId: 'occurrence-1',
+      occurrenceCode: null,
+      occurrenceName: null,
+      occurrenceTypeId: null,
       zoneId: 'zone-1',
       zoneName: 'Talhao 1',
     });

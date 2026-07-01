@@ -125,7 +125,7 @@ export const InspectionScreen = () => {
             onPress={openFilterModal}
           >
             <MaterialIcons name="filter-alt" size={20} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>Carregar Plantas</Text>
+            <Text style={styles.primaryButtonText}>Exibir plantas</Text>
           </Pressable>
 
           {canSync || isSynced ? (

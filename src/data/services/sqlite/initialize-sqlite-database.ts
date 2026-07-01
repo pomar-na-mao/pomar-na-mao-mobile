@@ -164,6 +164,26 @@ export async function initializeDatabases(database: SQLiteDatabase) {
     CREATE INDEX IF NOT EXISTS idx_local_plants_lat_lng ON local_plants(latitude, longitude);
   `);
 
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS local_field_work_zone_plants (
+      zone_id TEXT NOT NULL,
+      zone_name TEXT NOT NULL,
+      plant_id TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      variety_id INTEGER,
+      variety_name TEXT,
+      occurrences_json TEXT NOT NULL DEFAULT '[]',
+      loaded_at TEXT NOT NULL,
+      PRIMARY KEY (zone_id, plant_id)
+    );
+  `);
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_field_work_zone_plants_zone
+    ON local_field_work_zone_plants(zone_id);
+  `);
+
   await database.execAsync(
     `
      CREATE TABLE IF NOT EXISTS local_plant_occurrences (

@@ -2,7 +2,7 @@ import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { ThemedView } from '@/shared/themes/themed-view';
-import { WeatherCard } from '@/ui/shared/components/weather-card';
+import { FieldWorkLoadedDataCard } from '@/ui/shared/components/field-work-loaded-data-card';
 import { useFieldWorkDataReadiness, type FieldWorkCardId } from '@/ui/shared/hooks/use-field-work-data';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, type RelativePathString } from 'expo-router';
@@ -48,8 +48,8 @@ export default function FieldWorks() {
   const theme = useColorScheme() ?? 'light';
   const cardStates = useFieldWorkDataReadiness();
 
-  const handlePress = (route: string | null) => {
-    if (route) {
+  const handlePress = (cardId: FieldWorkCardId, route: string | null) => {
+    if (cardStates[cardId] === 'ready' && route) {
       router.push(route as RelativePathString);
     }
   };
@@ -60,7 +60,7 @@ export default function FieldWorks() {
         <View style={styles.topEmptySpace}></View>
 
         <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-          <WeatherCard />
+          <FieldWorkLoadedDataCard />
           {cards.map((card) => {
             const state = cardStates[card.id];
             const isLoading = state === 'loading';
@@ -73,7 +73,7 @@ export default function FieldWorks() {
                 activeOpacity={isReady ? 0.7 : 1}
                 disabled={!isReady}
                 key={card.id}
-                onPress={() => handlePress(card.route)}
+                onPress={isReady ? () => handlePress(card.id, card.route) : undefined}
                 style={[
                   styles.card,
                   !isReady && styles.cardDisabled,

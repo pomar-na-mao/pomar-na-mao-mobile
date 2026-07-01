@@ -25,6 +25,8 @@ const mockSetMessage = jest.fn();
 const mockSetIsVisible = jest.fn();
 const mockSetIsLoading = jest.fn();
 
+jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }));
+
 jest.mock('@/data/repositories/inspection/inspection-repository', () => ({
   inspectionRepository: {
     getFilterOptions: jest.fn(),
@@ -93,6 +95,10 @@ function createSqliteService(overrides: Partial<ReturnType<typeof useInspectionS
     createInspection: jest.fn().mockResolvedValue(localInspection),
     finishInspection: jest.fn().mockResolvedValue(undefined),
     getCachedFilterOptions: jest.fn().mockResolvedValue(inspectionFilterOptions),
+    getFieldWorkPlants: jest.fn().mockResolvedValue([inspectionPlant, secondInspectionPlant]),
+    getLoadedFieldWorkZones: jest
+      .fn()
+      .mockResolvedValue([{ id: 'zone-1', loadedAt: '2026-07-01', name: 'Talhao 1', plantCount: 2 }]),
     getChanges: jest.fn().mockResolvedValue([]),
     getInspectionById: jest.fn().mockResolvedValue(localInspection),
     getLatestInspection: jest.fn().mockResolvedValue(null),
@@ -203,7 +209,7 @@ function InspectionConsumer() {
 
 async function renderProvider(service = createSqliteService()) {
   mockedUseInspectionSqliteService.mockReturnValue(service);
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
   queryClient.setQueryData(fieldWorkQueryOptions.zones.queryKey, inspectionFilterOptions.zones);
   queryClient.setQueryData(fieldWorkQueryOptions.occurrenceTypes.queryKey, inspectionFilterOptions.occurrenceTypes);
   queryClient.setQueryData(fieldWorkQueryOptions.varieties.queryKey, inspectionFilterOptions.varieties);
@@ -281,7 +287,7 @@ describe('InspectionProvider', () => {
     expect(mockedRepository.getFilterOptions).not.toHaveBeenCalled();
   });
 
-  it('validates filters and creates a local inspection from repository plants', async () => {
+  it('validates filters and creates a local inspection from cached plants', async () => {
     const service = await renderProvider();
 
     await act(async () => {
@@ -294,25 +300,23 @@ describe('InspectionProvider', () => {
     });
 
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    expect(mockedRepository.getInspectionPlants).toHaveBeenCalledWith(inspectionFilter);
+    expect(service.getFieldWorkPlants).toHaveBeenCalledWith(inspectionFilter);
+    expect(mockedRepository.getInspectionPlants).not.toHaveBeenCalled();
     expect(service.createInspection).toHaveBeenCalledWith(inspectionFilter, [inspectionPlant, secondInspectionPlant]);
     expect(screen.getByText('active:inspection-1')).toBeOnTheScreen();
     expect(mockSetIsLoading).toHaveBeenLastCalledWith(false);
   });
 
-  it('handles filter repository errors and empty plant responses', async () => {
-    await renderProvider();
+  it('handles local cache errors and empty plant responses', async () => {
+    const service = await renderProvider();
 
-    mockedRepository.getInspectionPlants.mockResolvedValueOnce({
-      data: null,
-      error: createPostgrestError('rpc failed'),
-    });
+    jest.mocked(service.getFieldWorkPlants).mockRejectedValueOnce(new Error('cache failed'));
     await act(async () => {
       fireEvent.press(screen.getByTestId('apply-filter'));
     });
-    expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Erro ao buscar plantas'));
+    expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Erro ao iniciar inspeção'));
 
-    mockedRepository.getInspectionPlants.mockResolvedValueOnce({ data: [], error: null });
+    jest.mocked(service.getFieldWorkPlants).mockResolvedValueOnce([]);
     await act(async () => {
       fireEvent.press(screen.getByTestId('apply-filter'));
     });

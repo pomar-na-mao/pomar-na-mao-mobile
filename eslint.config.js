@@ -7,7 +7,7 @@ const typescriptEslintPlugin = require('@typescript-eslint/eslint-plugin');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    ignores: ['dist/*', 'expo-env.d.ts'],
     plugins: {
       prettier: prettierPlugin,
       '@typescript-eslint': typescriptEslintPlugin,

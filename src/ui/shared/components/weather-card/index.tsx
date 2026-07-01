@@ -90,14 +90,14 @@ export function WeatherCard() {
   const secondaryTextColor = isDark ? Colors.dark.disabledText : '#c6edc1';
   const iconColor = isDark ? Colors.dark.tint : '#FFFFFF';
 
-  const { isLoading, weather, location, error, getUvText } = useWeather();
+  const { isLoading, weather, location, getUvText } = useWeather();
 
   if (isLoading) {
     return <WeatherCardSkeleton cardBackground={cardBackground} primaryTextColor={primaryTextColor} />;
   }
 
-  const locationName = error ? 'Erro de localização' : location?.address || 'Localização obtida';
-  const weatherDescription = error ? '-' : weather?.weatherDescription || '-';
+  const locationName = location?.address || '';
+  const weatherDescription = weather?.weatherDescription || '-';
 
   return (
     <ThemedView style={[styles.weatherCard, { backgroundColor: cardBackground }]}>

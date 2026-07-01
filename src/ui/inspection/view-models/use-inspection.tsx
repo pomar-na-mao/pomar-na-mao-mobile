@@ -76,7 +76,9 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
   const [loadedPlants, setLoadedPlants] = useState<InspectionPlant[]>([]);
   const [nearestPlant, setNearestPlant] = useState<InspectionPlant | null>(null);
   const [inspections, setInspections] = useState<InspectionListItem[]>([]);
-  const [filterOptions] = useState<InspectionFilterOptions>(() => getInspectionFilterOptionsSnapshot(queryClient));
+  const [filterOptions, setFilterOptions] = useState<InspectionFilterOptions>(() =>
+    getInspectionFilterOptionsSnapshot(queryClient),
+  );
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isNearestPlantModalVisible, setIsNearestPlantModalVisible] = useState(false);
 
@@ -109,6 +111,23 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
   const refreshInspections = useCallback(async () => {
     const inspectionItems = await sqliteService.listInspections();
     setInspections(inspectionItems);
+  }, [sqliteService]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void sqliteService.getLoadedFieldWorkZones().then((loadedZones) => {
+      if (!mounted) return;
+      const loadedZoneIds = new Set(loadedZones.map((zone) => zone.id));
+      setFilterOptions((current) => ({
+        ...current,
+        zones: current.zones.filter((zone) => loadedZoneIds.has(zone.id)),
+      }));
+    });
+
+    return () => {
+      mounted = false;
+    };
   }, [sqliteService]);
 
   const restoreInspectionState = useCallback(async () => {
@@ -335,8 +354,8 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
 
   const applyFilters = useCallback(
     async (filters: InspectionFilter) => {
-      if (!filters.zoneId && !filters.occurrenceTypeId) {
-        setMessage('Selecione uma zona ou ocorrência para iniciar a inspeção.');
+      if (!filters.zoneId) {
+        setMessage('Selecione uma zona com plantas carregadas para iniciar a inspeção.');
         setIsVisible(true);
         return;
       }
@@ -344,15 +363,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
       setIsLoading(true);
 
       try {
-        const { data, error } = await inspectionRepository.getInspectionPlants(filters);
-
-        if (error) {
-          setMessage('Erro ao buscar plantas para inspeção.\n' + error.message);
-          setIsVisible(true);
-          return;
-        }
-
-        const plants = data ?? [];
+        const plants = await sqliteService.getFieldWorkPlants(filters);
 
         if (plants.length === 0) {
           setMessage('Nenhuma planta encontrada para os filtros selecionados.');

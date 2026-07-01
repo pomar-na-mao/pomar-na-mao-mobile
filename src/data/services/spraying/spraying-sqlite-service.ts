@@ -48,6 +48,16 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     );
   }
 
+  async function listLoadedZones() {
+    return database.getAllAsync<{ id: string; name: string; plantCount: number; loadedAt: string }>(
+      `SELECT zone_id AS id, zone_name AS name, COUNT(*) AS plantCount, MAX(loaded_at) AS loadedAt
+       FROM local_field_work_zone_plants
+       GROUP BY zone_id, zone_name
+       HAVING COUNT(*) > 0
+       ORDER BY zone_name`,
+    );
+  }
+
   async function getZonePlants(zoneId: string): Promise<SprayingPlant[]> {
     const rows = await database.getAllAsync<{
       id: string;
@@ -59,10 +69,10 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
       variety_id?: number | null;
       variety_name?: string | null;
     }>(
-      `SELECT id, local_id, latitude, longitude, zone_id, zone_name, variety_id, variety_name
-       FROM local_plants
-       WHERE zone_id = ? AND non_existent = 0
-       ORDER BY id`,
+      `SELECT plant_id AS id, NULL AS local_id, latitude, longitude, zone_id, zone_name, variety_id, variety_name
+       FROM local_field_work_zone_plants
+       WHERE zone_id = ?
+       ORDER BY plant_id`,
       [zoneId],
     );
 
@@ -803,6 +813,7 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
 
   return {
     getZones,
+    listLoadedZones,
     getZonePlants,
     cacheZonePlants,
     createOperation,

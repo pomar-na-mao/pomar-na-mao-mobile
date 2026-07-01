@@ -70,7 +70,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
   const { setIsLoading } = useLoadingStore();
   const [aggregate, setAggregate] = useState<SprayingAggregate | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
-  const [zones] = useState<SprayingZoneOption[]>(() => getSprayingZonesSnapshot(queryClient));
+  const [zones, setZones] = useState<SprayingZoneOption[]>(() => getSprayingZonesSnapshot(queryClient));
   const [selectedZone, setSelectedZone] = useState<SprayingZoneOption | null>(null);
   const [selectedZonePlants, setSelectedZonePlants] = useState<SprayingPlant[]>([]);
   const [trackingState, setTrackingState] = useState<SprayingTrackingReconciliation>('inactive');
@@ -82,6 +82,18 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     activeOperationIdRef.current = aggregate?.operation.id ?? null;
   }, [aggregate]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void repository.local.listLoadedZones().then((loadedZones) => {
+      if (mounted) setZones(loadedZones.map((zone) => ({ id: zone.id, name: zone.name })));
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [repository]);
 
   const refreshOperation = useCallback(
     async (operationId?: string | null) => {
@@ -204,24 +216,12 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       try {
         const cachedPlants = await repository.local.getZonePlants(zone.id);
+        if (cachedPlants.length === 0) {
+          throw new Error('Nenhuma planta carregada para essa zona.');
+        }
         setSelectedZone(zone);
         setSelectedZonePlants(cachedPlants);
-        if (cachedPlants.length > 0) {
-          await saveLoadedSprayingZone(zone);
-        }
-
-        const { data, error } = await repository.getZonePlants(zone.id);
-        if (data) {
-          await repository.local.cacheZonePlants(zone.id, zone.name, data);
-          setSelectedZonePlants(data);
-          if (data.length > 0) {
-            await saveLoadedSprayingZone(zone);
-          } else {
-            await clearLoadedSprayingZone();
-          }
-        } else if (error && cachedPlants.length === 0) {
-          throw new Error(`Erro ao carregar da zona.\n${error.message}`);
-        }
+        await saveLoadedSprayingZone(zone);
 
         setIsZoneSelectionVisible(false);
       } catch (error) {
