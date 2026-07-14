@@ -112,7 +112,24 @@ describe('FieldWorks', () => {
     expect(screen.getByText('1 planta')).toBeOnTheScreen();
     expect(screen.getByText('Talhão Sul')).toBeOnTheScreen();
     expect(screen.getByText('24 plantas')).toBeOnTheScreen();
+    expect(screen.queryByTestId('field-work-loaded-data-banner')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Plantas necessárias')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('field-work-loaded-data-card')).toHaveStyle({ height: 280 });
     expect(screen.getByTestId('field-work-loaded-zones-scroll').props.nestedScrollEnabled).toBe(true);
+  });
+
+  it('keeps the loaded-data card height fixed when several zones are loaded', () => {
+    mockLoadedZones = Array.from({ length: 8 }, (_, index) => ({
+      id: `zone-${index}`,
+      loadedAt: '2026-07-01',
+      name: `TalhÃ£o ${index + 1}`,
+      plantCount: index + 1,
+    }));
+
+    render(<FieldWorks />);
+
+    expect(screen.getByTestId('field-work-loaded-data-card')).toHaveStyle({ height: 280 });
+    expect(screen.getByTestId('field-work-loaded-zones-scroll')).toHaveProp('showsVerticalScrollIndicator', true);
   });
 
   it('confirms before deleting every loaded plant', async () => {

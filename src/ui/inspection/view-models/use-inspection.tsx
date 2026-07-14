@@ -172,7 +172,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      const nearest = findNearestInspectionPlant(location, plants);
+      const nearest = findNearestInspectionPlant(location, plants, nearestPlantRef.current?.plantId);
 
       if (!nearest) {
         if (nearestPlantRef.current) {
@@ -523,37 +523,17 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
 
         await sqliteService.markInspectionSynced(inspectionId, data);
         await sqliteService.clearLoadedPlantsChangedState(inspectionId);
-        const syncedPlants = await sqliteService.getLoadedPlants(inspectionId);
-        const resetPlants = syncedPlants.map((plant) => ({
-          ...plant,
-          isChanged: false,
-          isNearest: false,
-          distanceMeters: null,
-        }));
 
         if (activeInspectionSnapshot?.id === inspectionId) {
-          const nextInspection = await sqliteService.createInspection(
-            {
-              zoneId: activeInspectionSnapshot.zone_id ?? null,
-              zoneName: activeInspectionSnapshot.zone_name ?? null,
-              occurrenceTypeId: activeInspectionSnapshot.occurrence_type_id ?? null,
-              occurrenceCode: activeInspectionSnapshot.occurrence_code ?? null,
-              occurrenceName: activeInspectionSnapshot.occurrence_name ?? null,
-            },
-            resetPlants,
-          );
-
-          activeInspectionRef.current = nextInspection;
-          loadedPlantsRef.current = resetPlants;
+          activeInspectionRef.current = null;
+          loadedPlantsRef.current = [];
           nearestPlantRef.current = null;
-          setActiveInspection(nextInspection);
-          setLoadedPlants(resetPlants);
+          setActiveInspection(null);
+          setLoadedPlants([]);
           setNearestPlant(null);
-          setMessage('Inspeção sincronizada com sucesso. Nova inspeção iniciada com as plantas carregadas.');
-        } else {
-          setMessage('Inspeção sincronizada com sucesso.');
         }
 
+        setMessage('Inspeção sincronizada com sucesso.');
         lastPersistedNearestRef.current = null;
         setIsVisible(true);
       } catch (error) {

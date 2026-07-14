@@ -78,26 +78,28 @@ export function FieldWorkLoadedDataCard() {
           </TouchableOpacity>
         </View>
 
-        <View
-          style={[
-            styles.banner,
-            {
-              backgroundColor: theme === 'dark' ? '#4A3708' : '#FEF3C7',
-              borderColor: theme === 'dark' ? '#B7791F' : '#F59E0B',
-            },
-          ]}
-          testID="field-work-loaded-data-banner"
-        >
-          <MaterialIcons name="info-outline" size={22} color={theme === 'dark' ? '#FDE68A' : '#92400E'} />
-          <View style={styles.bannerTextContainer}>
-            <ThemedText style={[styles.bannerTitle, { color: theme === 'dark' ? '#FEF3C7' : '#78350F' }]}>
-              Plantas necessárias
-            </ThemedText>
-            <ThemedText type="cardInfo" style={[styles.hint, { color: theme === 'dark' ? '#FDE68A' : '#92400E' }]}>
-              Carregue plantas para liberar algumas atividades!
-            </ThemedText>
+        {!hasLoadedPlants ? (
+          <View
+            style={[
+              styles.banner,
+              {
+                backgroundColor: theme === 'dark' ? '#4A3708' : '#FEF3C7',
+                borderColor: theme === 'dark' ? '#B7791F' : '#F59E0B',
+              },
+            ]}
+            testID="field-work-loaded-data-banner"
+          >
+            <MaterialIcons name="info-outline" size={22} color={theme === 'dark' ? '#FDE68A' : '#92400E'} />
+            <View style={styles.bannerTextContainer}>
+              <ThemedText style={[styles.bannerTitle, { color: theme === 'dark' ? '#FEF3C7' : '#78350F' }]}>
+                Plantas necessárias
+              </ThemedText>
+              <ThemedText type="cardInfo" style={[styles.hint, { color: theme === 'dark' ? '#FDE68A' : '#92400E' }]}>
+                Carregue plantas para liberar algumas atividades!
+              </ThemedText>
+            </View>
           </View>
-        </View>
+        ) : null}
 
         <ScrollView
           contentContainerStyle={styles.zoneSummaryContent}
@@ -162,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     borderRadius: 12,
     borderWidth: 0.7,
-    height: 'auto',
+    height: 280,
     padding: 12,
     width: '100%',
   },
@@ -184,13 +186,13 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontSize: 18, fontWeight: '600' },
   zoneCount: {
     borderRadius: 12,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     overflow: 'hidden',
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  zoneName: { flex: 1, fontSize: 14, fontWeight: '500' },
+  zoneName: { flex: 1, fontSize: 12, fontWeight: '500' },
   zoneRow: {
     alignItems: 'center',
     borderRadius: 10,

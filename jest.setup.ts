@@ -31,6 +31,7 @@ jest.mock('react-native-maps', () => {
   const MockMapView = React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
     React.useImperativeHandle(ref, () => ({
       animateCamera: jest.fn(),
+      fitToCoordinates: jest.fn(),
     }));
 
     return React.createElement(View, props);

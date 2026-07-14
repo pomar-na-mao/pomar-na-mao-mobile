@@ -575,25 +575,9 @@ describe('InspectionProvider', () => {
     expect(service.markInspectionSyncing).toHaveBeenCalledWith(localInspection.id);
     expect(service.markInspectionSynced).toHaveBeenCalledWith(localInspection.id, syncManualInspectionResult);
     expect(service.clearLoadedPlantsChangedState).toHaveBeenCalledWith(localInspection.id);
-    expect(service.createInspection).toHaveBeenCalledWith(
-      {
-        occurrenceCode: localInspection.occurrence_code,
-        occurrenceName: localInspection.occurrence_name,
-        occurrenceTypeId: localInspection.occurrence_type_id,
-        zoneId: localInspection.zone_id,
-        zoneName: localInspection.zone_name,
-      },
-      expect.arrayContaining([
-        expect.objectContaining({
-          distanceMeters: null,
-          occurrences: [],
-          isChanged: false,
-          isNearest: false,
-          plantId: inspectionPlant.plantId,
-        }),
-      ]),
-    );
-    expect(screen.getByText('active:inspection-2')).toBeOnTheScreen();
-    expect(screen.getByText('loaded:2')).toBeOnTheScreen();
+    expect(service.createInspection).not.toHaveBeenCalled();
+    expect(screen.getByText('active:none')).toBeOnTheScreen();
+    expect(screen.getByText('loaded:0')).toBeOnTheScreen();
+    expect(mockSetMessage).toHaveBeenCalledWith('Inspeção sincronizada com sucesso.');
   });
 });

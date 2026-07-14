@@ -2,17 +2,22 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { inspectionLocation, inspectionPlant } from '@/test/inspection/fixtures';
 import { InspectionMap } from './index';
+import type { PlantMapVisualization } from '@/ui/shared/components/plant-map-markers/visualization';
 
 const mockUseInspection = jest.fn();
 const mockApplyLocationUpdate = jest.fn();
 const mockSetLocationSimulationActive = jest.fn();
+const mockPlantMapMarkers = jest.fn();
 
 jest.mock('@/ui/inspection/view-models/use-inspection', () => ({
   useInspection: () => mockUseInspection(),
 }));
 
 jest.mock('@/ui/shared/components/plant-map-markers', () => ({
-  PlantMapMarkers: () => null,
+  PlantMapMarkers: (props: unknown) => {
+    mockPlantMapMarkers(props);
+    return null;
+  },
 }));
 
 jest.mock('@/ui/shared/components/user-marker-location', () => ({
@@ -79,6 +84,60 @@ describe('InspectionMap', () => {
 
     expect(mockSetLocationSimulationActive).toHaveBeenLastCalledWith(false);
     expect(screen.queryByTestId('inspection-simulation-marker')).not.toBeOnTheScreen();
+  });
+
+  it('bounds a large inspection collection and keeps the nearest plant individual', () => {
+    const plants = Array.from({ length: 5000 }, (_, index) => ({
+      ...inspectionPlant,
+      plantId: `plant-${index}`,
+      latitude: inspectionLocation.coords.latitude + (index % 100) * 0.00001,
+      longitude: inspectionLocation.coords.longitude + Math.floor(index / 100) * 0.00001,
+    }));
+    mockUseInspection.mockReturnValue({
+      applyLocationUpdate: mockApplyLocationUpdate,
+      currentLocation: inspectionLocation,
+      initialRegion: inspectionLocation.coords,
+      loadedPlants: plants,
+      nearestPlant: plants[0],
+      setLocationSimulationActive: mockSetLocationSimulationActive,
+    });
+
+    render(<InspectionMap />);
+
+    const markerProps = mockPlantMapMarkers.mock.calls[0]?.[0] as {
+      visualization: PlantMapVisualization[];
+    };
+    const representedPlantCount = markerProps.visualization.reduce(
+      (total, item) => total + (item.type === 'cluster' ? item.count : 1),
+      0,
+    );
+    expect(representedPlantCount).toBe(plants.length);
+    expect(markerProps.visualization.length).toBeLessThanOrEqual(250);
+    expect(markerProps.visualization[0]).toMatchObject({ id: 'plant-0', isPriority: true, type: 'plant' });
+  });
+
+  it('centers the initial visualization on loaded plants when the user is elsewhere', () => {
+    const distantPlant = {
+      ...inspectionPlant,
+      latitude: -22,
+      longitude: -48,
+      plantId: 'distant-plant',
+    };
+    mockUseInspection.mockReturnValue({
+      applyLocationUpdate: mockApplyLocationUpdate,
+      currentLocation: inspectionLocation,
+      initialRegion: inspectionLocation.coords,
+      loadedPlants: [distantPlant],
+      nearestPlant: null,
+      setLocationSimulationActive: mockSetLocationSimulationActive,
+    });
+
+    render(<InspectionMap />);
+
+    const markerProps = mockPlantMapMarkers.mock.calls[0]?.[0] as {
+      visualization: PlantMapVisualization[];
+    };
+    expect(markerProps.visualization).toEqual([expect.objectContaining({ id: 'distant-plant', type: 'plant' })]);
   });
 
   it('does not change location when the map is pressed before selection is armed', () => {

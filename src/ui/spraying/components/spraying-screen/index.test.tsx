@@ -78,6 +78,7 @@ describe('SprayingScreen', () => {
 
     expect(screen.getByText('Exibir plantas')).toBeOnTheScreen();
     expect(screen.getByTestId('spraying-action-bar')).toHaveStyle({ backgroundColor: 'transparent' });
+    expect(screen.getByTestId('spraying-summary-panel')).toHaveStyle({ top: 44 });
     expect(screen.getByText('Carregue as plantas de uma zona')).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Exibir plantas'));
     expect(mockOpenZoneSelection).toHaveBeenCalled();

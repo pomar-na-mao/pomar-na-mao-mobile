@@ -10,6 +10,8 @@ The app SHALL preload zone, occurrence type, and variety options on the field-wo
 - **THEN** the app SHALL make the preloaded zones, occurrence types, and varieties available for selection or display
 - **AND** it SHALL NOT repeat the Supabase structural-option request on inspection route startup
 
+## ADDED Requirements
+
 ### Requirement: Inspection filters cached plants
 
 The inspection workflow SHALL use only shared SQLite plant snapshots and SHALL NOT request plants remotely when selecting a zone.

@@ -19,6 +19,26 @@ describe('nearest-plant helpers', () => {
     expect(result?.distance).toBeGreaterThanOrEqual(0);
   });
 
+  it('keeps nearest selection deterministic for tied distances', () => {
+    const tiedPlantA = {
+      ...inspectionPlant,
+      latitude: inspectionLocation.coords.latitude + 0.00001,
+      longitude: inspectionLocation.coords.longitude,
+      plantId: 'plant-a',
+    };
+    const tiedPlantB = {
+      ...inspectionPlant,
+      latitude: inspectionLocation.coords.latitude - 0.00001,
+      longitude: inspectionLocation.coords.longitude,
+      plantId: 'plant-b',
+    };
+
+    expect(findNearestInspectionPlant(inspectionLocation, [tiedPlantB, tiedPlantA])?.plant.plantId).toBe('plant-a');
+    expect(findNearestInspectionPlant(inspectionLocation, [tiedPlantA, tiedPlantB], 'plant-b')?.plant.plantId).toBe(
+      'plant-b',
+    );
+  });
+
   it('keeps the current nearest plant when the new candidate is inside the tie margin', () => {
     const shouldKeep = shouldKeepCurrentNearestPlant({
       candidateDistanceMeters: 1,

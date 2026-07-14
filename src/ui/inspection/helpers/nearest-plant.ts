@@ -5,6 +5,7 @@ import type { LocationObject } from 'expo-location';
 export const MEANINGFUL_DISTANCE_CHANGE_METERS = 0.5;
 
 const NEAREST_PLANT_TIE_MARGIN_METERS = 0.25;
+const NEAREST_PLANT_DISTANCE_EPSILON_METERS = 0.001;
 
 interface ShouldKeepCurrentNearestPlantParams {
   candidateDistanceMeters: number;
@@ -19,7 +20,11 @@ interface ShouldPersistNearestPlantParams {
   lastPersistedNearest: { plantId: string; distance: number } | null;
 }
 
-export function findNearestInspectionPlant(location: LocationObject, plants: InspectionPlant[]) {
+export function findNearestInspectionPlant(
+  location: LocationObject,
+  plants: InspectionPlant[],
+  preferredPlantId?: string | null,
+) {
   if (plants.length === 0) {
     return null;
   }
@@ -35,7 +40,14 @@ export function findNearestInspectionPlant(location: LocationObject, plants: Ins
   for (const plant of plants.slice(1)) {
     const distance = twoPointsDistance(userPoint, plant);
 
-    if (distance < nearestDistance) {
+    const isCloser = distance + NEAREST_PLANT_DISTANCE_EPSILON_METERS < nearestDistance;
+    const isSameDistance = Math.abs(distance - nearestDistance) <= NEAREST_PLANT_DISTANCE_EPSILON_METERS;
+    const shouldPreferPlant =
+      isSameDistance &&
+      ((plant.plantId === preferredPlantId && nearestPlant.plantId !== preferredPlantId) ||
+        (nearestPlant.plantId !== preferredPlantId && plant.plantId.localeCompare(nearestPlant.plantId) < 0));
+
+    if (isCloser || shouldPreferPlant) {
       nearestPlant = plant;
       nearestDistance = distance;
     }

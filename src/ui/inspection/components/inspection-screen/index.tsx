@@ -37,7 +37,11 @@ export const InspectionScreen = () => {
     <View style={styles.container}>
       <InspectionMap />
 
-      <View pointerEvents="box-none" style={styles.topPanel}>
+      <View
+        pointerEvents="box-none"
+        style={[styles.topPanel, __DEV__ && styles.topPanelWithDiagnostics]}
+        testID="inspection-summary-panel"
+      >
         <View
           style={[
             styles.summaryCard,
@@ -290,5 +294,8 @@ const styles = StyleSheet.create({
     right: 12,
     top: 12,
     zIndex: 20,
+  },
+  topPanelWithDiagnostics: {
+    top: 44,
   },
 });

@@ -67,7 +67,11 @@ export function SprayingScreen() {
     <View style={styles.container}>
       <SprayingMap />
 
-      <View pointerEvents="box-none" style={styles.topPanel}>
+      <View
+        pointerEvents="box-none"
+        style={[styles.topPanel, __DEV__ && styles.topPanelWithDiagnostics]}
+        testID="spraying-summary-panel"
+      >
         <View
           style={[
             styles.summary,
@@ -289,6 +293,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 12,
     top: 12,
+  },
+  topPanelWithDiagnostics: {
+    top: 44,
   },
   warning: {
     fontSize: 12,
