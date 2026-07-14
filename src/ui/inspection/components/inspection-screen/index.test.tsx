@@ -45,8 +45,9 @@ describe('InspectionScreen', () => {
     expect(screen.getByText(/Inspe/)).toBeOnTheScreen();
     expect(screen.getByText('Vazio')).toBeOnTheScreen();
     expect(screen.getAllByText('0')).toHaveLength(2);
-    expect(screen.getByText('Carregar Plantas')).toBeOnTheScreen();
+    expect(screen.getByText('Exibir plantas')).toBeOnTheScreen();
     expect(screen.getByText('Finalizar')).toBeOnTheScreen();
+    expect(screen.getByTestId('inspection-summary-panel')).toHaveStyle({ top: 44 });
 
     fireEvent.press(screen.getByLabelText(/Abrir filtro/));
     expect(mockOpenFilterModal).toHaveBeenCalled();

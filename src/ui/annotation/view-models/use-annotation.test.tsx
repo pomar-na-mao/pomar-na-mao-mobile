@@ -8,10 +8,14 @@ import * as Location from 'expo-location';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { AnnotationProvider, useAnnotation } from './use-annotation';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fieldWorkQueryOptions } from '@/ui/shared/hooks/use-field-work-data';
 
 const mockSetMessage = jest.fn();
 const mockSetIsVisible = jest.fn();
 const mockSetIsLoading = jest.fn();
+
+jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }));
 
 jest.mock('@/data/repositories/annotation/annotation-repository', () => ({
   annotationRepository: {
@@ -71,6 +75,11 @@ const latestDeviceAnnotationLocation: Location.LocationObject = {
   timestamp: annotationLocation.timestamp + 200,
 };
 
+const annotationOptions = {
+  occurrenceTypes: [{ code: 'PST', id: 'occurrence-1', name: 'Praga' }],
+  zones: [{ id: 'zone-1', name: 'Talhao 1' }],
+};
+
 function createSqliteService() {
   return {
     buildSyncPayload: jest.fn(),
@@ -95,6 +104,9 @@ function AnnotationConsumer() {
     <View>
       <Text>location:{annotation.currentLocation?.timestamp ?? 'none'}</Text>
       <Text>initial:{annotation.initialRegion ? 'ready' : 'none'}</Text>
+      <Text>
+        options:{annotation.occurrenceTypes.length}:{annotation.zones.length}
+      </Text>
       <Pressable testID="activate-simulation" onPress={() => annotation.setLocationSimulationActive(true)}>
         <Text>activate simulation</Text>
       </Pressable>
@@ -119,10 +131,15 @@ function AnnotationConsumer() {
 
 async function renderProvider(service = createSqliteService()) {
   mockedUseAnnotationSqliteService.mockReturnValue(service as never);
+  const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
+  queryClient.setQueryData(fieldWorkQueryOptions.occurrenceTypes.queryKey, annotationOptions.occurrenceTypes);
+  queryClient.setQueryData(fieldWorkQueryOptions.zones.queryKey, annotationOptions.zones);
   render(
-    <AnnotationProvider>
-      <AnnotationConsumer />
-    </AnnotationProvider>,
+    <QueryClientProvider client={queryClient}>
+      <AnnotationProvider>
+        <AnnotationConsumer />
+      </AnnotationProvider>
+    </QueryClientProvider>,
   );
 
   await waitFor(() => expect(service.listAnnotations).toHaveBeenCalled());
@@ -150,11 +167,14 @@ describe('AnnotationProvider', () => {
   });
 
   it('loads initial location on mount', async () => {
-    await renderProvider();
+    const service = await renderProvider();
 
     await waitFor(() => expect(screen.getByText(`location:${annotationLocation.timestamp}`)).toBeOnTheScreen());
     expect(screen.getByText('initial:ready')).toBeOnTheScreen();
+    expect(screen.getByText('options:1:1')).toBeOnTheScreen();
     expect(mockedLocation.watchPositionAsync).toHaveBeenCalled();
+    expect(mockedRepository.getOptions).not.toHaveBeenCalled();
+    expect(service.getCachedOptions).not.toHaveBeenCalled();
   });
 
   it('keeps the simulated location effective and restores the latest device location when cleared', async () => {

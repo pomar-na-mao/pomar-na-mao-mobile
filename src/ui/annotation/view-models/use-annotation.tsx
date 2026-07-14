@@ -10,6 +10,8 @@ import type {
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { getAnnotationDeviceId } from '@/ui/annotation/helpers/device';
+import { getAnnotationOptionsSnapshot } from '@/ui/shared/hooks/use-field-work-data';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -57,6 +59,7 @@ const ANNOTATION_LOCATION_TIME_INTERVAL_MS = 250;
 const AnnotationContext = createContext({} as AnnotationContextProps);
 
 export const AnnotationProvider = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = useQueryClient();
   const sqliteService = useAnnotationSqliteService();
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
@@ -65,8 +68,9 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
   const [activeOperation, setActiveOperation] = useState<LocalAnnotationOperation | null>(null);
   const [annotations, setAnnotations] = useState<AnnotationRecord[]>([]);
   const [summary, setSummary] = useState<AnnotationSummary>(emptySummary);
-  const [occurrenceTypes, setOccurrenceTypes] = useState<AnnotationOccurrenceTypeOption[]>([]);
-  const [zones, setZones] = useState<AnnotationZoneOption[]>([]);
+  const [options] = useState(() => getAnnotationOptionsSnapshot(queryClient));
+  const occurrenceTypes: AnnotationOccurrenceTypeOption[] = options.occurrenceTypes;
+  const zones: AnnotationZoneOption[] = options.zones;
   const [isAnnotationModalVisible, setIsAnnotationModalVisible] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
@@ -91,27 +95,6 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
     setSummary(nextSummary);
     setActiveOperation(operation);
   }, [sqliteService]);
-
-  const loadOptions = useCallback(async () => {
-    const cachedOptions = await sqliteService.getCachedOptions();
-    setOccurrenceTypes(cachedOptions.occurrenceTypes);
-    setZones(cachedOptions.zones);
-
-    const { data, error } = await annotationRepository.getOptions();
-
-    if (error) {
-      if (cachedOptions.occurrenceTypes.length === 0) {
-        setMessage('Erro ao carregar dados de anotação.\n' + error.message);
-        setIsVisible(true);
-      }
-      return;
-    }
-
-    if (data) {
-      setOccurrenceTypes(data.occurrenceTypes);
-      setZones(data.zones);
-    }
-  }, [setIsVisible, setMessage, sqliteService]);
 
   const applyLocationUpdate = useCallback((location: Location.LocationObject, options?: LocationUpdateOptions) => {
     const source = options?.source ?? 'device';
@@ -148,7 +131,6 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
     let subscription: Location.LocationSubscription | null = null;
 
     refreshAnnotations();
-    loadOptions();
 
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -187,7 +169,7 @@ export const AnnotationProvider = ({ children }: { children: React.ReactNode }) 
       mounted = false;
       subscription?.remove();
     };
-  }, [applyLocationUpdate, loadOptions, refreshAnnotations, setIsVisible, setMessage]);
+  }, [applyLocationUpdate, refreshAnnotations, setIsVisible, setMessage]);
 
   const openAnnotationModal = useCallback(() => {
     setValidationMessage(null);

@@ -11,30 +11,19 @@ export const InspectionFilterModal = () => {
   const theme = useColorScheme() ?? 'light';
   const { isFilterModalVisible, closeFilterModal, filterOptions, applyFilters } = useInspection();
   const [zoneId, setZoneId] = useState<string | null>(null);
-  const [occurrenceTypeId, setOccurrenceTypeId] = useState<string | null>(null);
 
   const zoneOptions = useMemo(
     () => filterOptions.zones.map((zone) => ({ label: zone.name, value: zone.id })),
     [filterOptions.zones],
   );
-  const occurrenceOptions = useMemo(
-    () =>
-      filterOptions.occurrenceTypes.map((occurrence) => ({
-        label: occurrence.name,
-        value: occurrence.id,
-      })),
-    [filterOptions.occurrenceTypes],
-  );
-
   const submit = () => {
     const selectedZone = filterOptions.zones.find((zone) => zone.id === zoneId);
-    const selectedOccurrence = filterOptions.occurrenceTypes.find((occurrence) => occurrence.id === occurrenceTypeId);
     const filters: InspectionFilter = {
       zoneId: selectedZone?.id ?? null,
       zoneName: selectedZone?.name ?? null,
-      occurrenceTypeId: selectedOccurrence?.id ?? null,
-      occurrenceCode: selectedOccurrence?.code ?? null,
-      occurrenceName: selectedOccurrence?.name ?? null,
+      occurrenceTypeId: null,
+      occurrenceCode: null,
+      occurrenceName: null,
     };
 
     applyFilters(filters);
@@ -46,7 +35,7 @@ export const InspectionFilterModal = () => {
         <Pressable style={[styles.content, { backgroundColor: Colors[theme].card }]}>
           <Text style={[styles.title, { color: Colors[theme].text }]}>Filtro da inspeção</Text>
           <Text style={[styles.subtitle, { color: Colors[theme].disabledText }]}>
-            Selecione uma zona, uma ocorrência, ou combine os dois filtros.
+            Selecione uma zona para carregar todas as plantas disponíveis.
           </Text>
 
           <ThemedDropdown
@@ -55,14 +44,6 @@ export const InspectionFilterModal = () => {
             placeholder="Selecionar zona"
             value={zoneId}
             onSelect={(value) => setZoneId(String(value))}
-          />
-
-          <ThemedDropdown
-            label="Ocorrência"
-            options={occurrenceOptions}
-            placeholder="Selecionar ocorrência"
-            value={occurrenceTypeId}
-            onSelect={(value) => setOccurrenceTypeId(String(value))}
           />
 
           <View style={styles.actions}>

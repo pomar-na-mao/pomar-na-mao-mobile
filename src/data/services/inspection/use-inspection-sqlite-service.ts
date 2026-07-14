@@ -14,6 +14,7 @@ import {
 import { randomUUID } from 'expo-crypto';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useMemo } from 'react';
+import { createFieldWorkPlantCacheService } from '@/data/services/shared/field-work-plant-cache-service';
 
 function nowIso() {
   return new Date().toISOString();
@@ -63,6 +64,7 @@ function parseJsonValue(value?: string | null) {
 
 export function useInspectionSqliteService() {
   const database = useSQLiteContext();
+  const fieldWorkPlantCache = useMemo(() => createFieldWorkPlantCacheService(database), [database]);
 
   async function getCachedFilterOptions(): Promise<InspectionFilterOptions> {
     const [zones, occurrenceTypes, varieties] = await Promise.all([
@@ -457,6 +459,8 @@ export function useInspectionSqliteService() {
   return useMemo(
     () => ({
       getCachedFilterOptions,
+      getFieldWorkPlants: fieldWorkPlantCache.getFilteredPlants,
+      getLoadedFieldWorkZones: fieldWorkPlantCache.listLoadedZones,
       createInspection,
       getInspectionById,
       getLatestPendingInspection,
@@ -473,6 +477,6 @@ export function useInspectionSqliteService() {
       markInspectionSynced,
       markInspectionSyncError,
     }),
-    [database],
+    [database, fieldWorkPlantCache],
   );
 }

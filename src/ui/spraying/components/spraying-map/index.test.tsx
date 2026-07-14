@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import type { PlantMapMarkerData } from '@/ui/shared/components/plant-map-markers';
+import type { PlantMapVisualization } from '@/ui/shared/components/plant-map-markers/visualization';
 import { sprayingAggregateFixture } from '@/test/spraying/fixtures';
 import { SprayingMap } from './index';
 
@@ -60,18 +61,20 @@ describe('SprayingMap', () => {
     render(<SprayingMap />);
 
     const markerProps = mockPlantMapMarkers.mock.calls[0]?.[0] as {
-      plantsData: PlantMapMarkerData[];
+      visualization: PlantMapVisualization[];
     };
+    const plant = markerProps.visualization[0];
 
-    expect(markerProps.plantsData[0]).toEqual(
+    expect(plant).toMatchObject({ type: 'plant' });
+    expect(plant.type === 'plant' ? plant.plant : null).toEqual(
       expect.objectContaining({
         plantId: 'plant-1',
         latitude: sprayingAggregateFixture.plants[0]?.latitude,
         longitude: sprayingAggregateFixture.plants[0]?.longitude,
       }),
     );
-    expect(markerProps.plantsData[0]).not.toHaveProperty('isChanged');
-    expect(markerProps.plantsData[0]).not.toHaveProperty('markerFillColor');
+    expect(plant.type === 'plant' ? plant.plant : null).not.toHaveProperty('isChanged');
+    expect(plant.type === 'plant' ? plant.plant : null).not.toHaveProperty('markerFillColor');
   });
 
   it('highlights affected plants on the map for direct review', () => {
@@ -94,10 +97,11 @@ describe('SprayingMap', () => {
     render(<SprayingMap />);
 
     const markerProps = mockPlantMapMarkers.mock.calls[0]?.[0] as {
-      plantsData: PlantMapMarkerData[];
+      visualization: PlantMapVisualization[];
     };
+    const plant = markerProps.visualization[0];
 
-    expect(markerProps.plantsData[0]).toEqual(
+    expect(plant.type === 'plant' ? plant.plant : null).toEqual(
       expect.objectContaining({
         markerBorderColor: '#92400E',
         markerFillColor: '#F59E0B',
@@ -129,6 +133,36 @@ describe('SprayingMap', () => {
     markerProps.onPlantPress({ plantId: 'plant-1', latitude: -23, longitude: -49 });
 
     expect(mockTogglePlant).toHaveBeenCalledWith(sprayingAggregateFixture.plants[0]);
+  });
+
+  it('expands clusters without toggling a spraying plant', () => {
+    mockUseSpraying.mockReturnValue({
+      aggregate: null,
+      currentLocation: null,
+      prepareRouteSimulation: mockPrepareRouteSimulation,
+      recordSimulatedLocation: mockRecordSimulatedLocation,
+      selectedZonePlants: sprayingAggregateFixture.plants,
+      togglePlant: mockTogglePlant,
+    });
+    render(<SprayingMap />);
+    const markerProps = mockPlantMapMarkers.mock.calls[0]?.[0] as {
+      onClusterPress: (cluster: Extract<PlantMapVisualization, { type: 'cluster' }>) => void;
+    };
+
+    markerProps.onClusterPress({
+      bounds: {
+        northEast: { latitude: -22.9, longitude: -48.9 },
+        southWest: { latitude: -23.1, longitude: -49.1 },
+      },
+      count: 20,
+      highlightedCount: 2,
+      id: 'cluster-1',
+      latitude: -23,
+      longitude: -49,
+      type: 'cluster',
+    });
+
+    expect(mockTogglePlant).not.toHaveBeenCalled();
   });
 
   it('records a DEV route simulation from P1 to P2 while tracking', async () => {
@@ -229,5 +263,50 @@ describe('SprayingMap', () => {
     });
 
     fireEvent.press(screen.getByLabelText('Parar simulacao de rota'));
+  });
+
+  it('clears manual simulation points and previous route when aggregate becomes null', async () => {
+    mockUseSpraying.mockReturnValue({
+      aggregate: {
+        ...sprayingAggregateFixture,
+        operation: {
+          ...sprayingAggregateFixture.operation,
+          lifecycle_status: 'tracking',
+        },
+      },
+      currentLocation: null,
+      prepareRouteSimulation: mockPrepareRouteSimulation,
+      recordSimulatedLocation: mockRecordSimulatedLocation,
+      selectedZonePlants: [],
+      togglePlant: mockTogglePlant,
+    });
+
+    const { rerender } = render(<SprayingMap />);
+
+    fireEvent.press(screen.getByLabelText('Marcar P1'));
+    fireEvent(screen.getByTestId('spraying-map'), 'press', {
+      nativeEvent: { coordinate: { latitude: -23, longitude: -49 } },
+    });
+    fireEvent.press(screen.getByLabelText('Marcar P2'));
+    fireEvent(screen.getByTestId('spraying-map'), 'press', {
+      nativeEvent: { coordinate: { latitude: -23.00001, longitude: -49.00001 } },
+    });
+
+    expect(screen.getByTestId('spraying-simulation-point-0')).toBeOnTheScreen();
+    expect(screen.getByTestId('spraying-simulation-point-1')).toBeOnTheScreen();
+
+    mockUseSpraying.mockReturnValue({
+      aggregate: null,
+      currentLocation: null,
+      prepareRouteSimulation: mockPrepareRouteSimulation,
+      recordSimulatedLocation: mockRecordSimulatedLocation,
+      selectedZonePlants: [],
+      togglePlant: mockTogglePlant,
+    });
+
+    rerender(<SprayingMap />);
+
+    expect(screen.queryByTestId('spraying-simulation-point-0')).toBeNull();
+    expect(screen.queryByTestId('spraying-simulation-point-1')).toBeNull();
   });
 });

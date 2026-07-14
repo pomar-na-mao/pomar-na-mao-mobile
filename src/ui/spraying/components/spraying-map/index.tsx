@@ -1,7 +1,13 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { PlantMapMarkers, type PlantMapMarkerData } from '@/ui/shared/components/plant-map-markers';
+import { PlantMapDiagnostics } from '@/ui/shared/components/plant-map-diagnostics';
+import {
+  createPlantMapRegion,
+  type PlantMapClusterVisualization,
+} from '@/ui/shared/components/plant-map-markers/visualization';
 import { UserMarkerLocation } from '@/ui/shared/components/user-marker-location';
+import { usePlantMapVisualization } from '@/ui/shared/hooks/use-plant-map-visualization';
 import { SprayingRouteSimulation } from '@/ui/spraying/components/spraying-route-simulation';
 import {
   buildSprayingSimulationRoute,
@@ -62,6 +68,7 @@ export function SprayingMap() {
 
         return {
           id: plant.plantId,
+          isHighlighted: isAffected,
           plantId: plant.plantId,
           latitude: plant.latitude,
           longitude: plant.longitude,
@@ -75,6 +82,29 @@ export function SprayingMap() {
       }),
     [plants],
   );
+  const initialMapRegion = useMemo(() => createPlantMapRegion(plantMarkers, center, 0.003), [center, plantMarkers]);
+  const mapDatasetKey = useMemo(
+    () =>
+      plantMarkers.length === 0
+        ? `spraying-empty:${center?.latitude ?? 0}:${center?.longitude ?? 0}`
+        : [
+            'spraying-plants',
+            plantMarkers.length,
+            initialMapRegion.latitude,
+            initialMapRegion.longitude,
+            initialMapRegion.latitudeDelta,
+            initialMapRegion.longitudeDelta,
+          ].join(':'),
+    [center?.latitude, center?.longitude, initialMapRegion, plantMarkers.length],
+  );
+  const plantVisualization = usePlantMapVisualization(plantMarkers, initialMapRegion, null, center !== null);
+
+  const handleClusterPress = useCallback((cluster: PlantMapClusterVisualization) => {
+    mapRef.current?.fitToCoordinates([cluster.bounds.southWest, cluster.bounds.northEast], {
+      animated: true,
+      edgePadding: { bottom: 70, left: 70, right: 70, top: 70 },
+    });
+  }, []);
 
   const stopSimulation = useCallback(() => {
     if (simulationIntervalRef.current) {
@@ -89,7 +119,24 @@ export function SprayingMap() {
     stopSimulation();
     setSimulationPoints(EMPTY_SPRAYING_SIMULATION_POINTS);
     setSelectedSimulationPointIndex(null);
+    setSimulatedLocation(null);
   }, [stopSimulation]);
+
+  useEffect(() => {
+    if (!aggregate) {
+      const hasPoints = simulationPoints.some(Boolean);
+      if (hasPoints || isSimulationRunning || selectedSimulationPointIndex !== null || simulatedLocation !== null) {
+        clearSimulation();
+      }
+    }
+  }, [
+    aggregate,
+    simulationPoints,
+    isSimulationRunning,
+    selectedSimulationPointIndex,
+    simulatedLocation,
+    clearSimulation,
+  ]);
 
   const startSimulation = useCallback(async () => {
     if (!__DEV__ || !canUseSimulation || simulationRoutePreview.length === 0) {
@@ -187,17 +234,14 @@ export function SprayingMap() {
   return (
     <View style={styles.mapContainer}>
       <MapView
+        key={mapDatasetKey}
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         customMapStyle={theme === 'dark' ? darkMapStyle : []}
-        initialRegion={{
-          latitude: center.latitude,
-          longitude: center.longitude,
-          latitudeDelta: 0.003,
-          longitudeDelta: 0.003,
-        }}
+        initialRegion={initialMapRegion}
         onLongPress={handleMapPress}
         onPress={handleMapPress}
+        onRegionChangeComplete={plantVisualization.onRegionChangeComplete}
         showsMyLocationButton={false}
         showsUserLocation={false}
         style={StyleSheet.absoluteFillObject}
@@ -216,7 +260,8 @@ export function SprayingMap() {
         ) : null}
 
         <PlantMapMarkers
-          plantsData={plantMarkers}
+          visualization={plantVisualization.items}
+          onClusterPress={handleClusterPress}
           onPlantPress={(marker) => {
             const plant = plants.find((candidate) => candidate.plantId === marker.plantId);
 
@@ -249,6 +294,8 @@ export function SprayingMap() {
             )
           : null}
       </MapView>
+
+      <PlantMapDiagnostics diagnostics={plantVisualization.diagnostics} />
 
       <SprayingRouteSimulation
         canUseSimulation={canUseSimulation}

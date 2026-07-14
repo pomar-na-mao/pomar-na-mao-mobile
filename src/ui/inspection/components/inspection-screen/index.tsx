@@ -37,7 +37,11 @@ export const InspectionScreen = () => {
     <View style={styles.container}>
       <InspectionMap />
 
-      <View pointerEvents="box-none" style={styles.topPanel}>
+      <View
+        pointerEvents="box-none"
+        style={[styles.topPanel, __DEV__ && styles.topPanelWithDiagnostics]}
+        testID="inspection-summary-panel"
+      >
         <View
           style={[
             styles.summaryCard,
@@ -125,7 +129,7 @@ export const InspectionScreen = () => {
             onPress={openFilterModal}
           >
             <MaterialIcons name="filter-alt" size={20} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>Carregar Plantas</Text>
+            <Text style={styles.primaryButtonText}>Exibir plantas</Text>
           </Pressable>
 
           {canSync || isSynced ? (
@@ -290,5 +294,8 @@ const styles = StyleSheet.create({
     right: 12,
     top: 12,
     zIndex: 20,
+  },
+  topPanelWithDiagnostics: {
+    top: 44,
   },
 });

@@ -14,6 +14,7 @@ import {
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
 import { getInspectionDeviceId } from '@/ui/inspection/helpers/device';
+import { getInspectionFilterOptionsSnapshot } from '@/ui/shared/hooks/use-field-work-data';
 import {
   findNearestInspectionPlant,
   MEANINGFUL_DISTANCE_CHANGE_METERS,
@@ -21,6 +22,7 @@ import {
   shouldPersistNearestPlant,
 } from '@/ui/inspection/helpers/nearest-plant';
 import { twoPointsDistance } from '@/utils/geolocation/geolocation-math';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -58,18 +60,13 @@ interface InspectionContextProps {
   refreshInspections(): Promise<void>;
 }
 
-const emptyFilterOptions: InspectionFilterOptions = {
-  zones: [],
-  occurrenceTypes: [],
-  varieties: [],
-};
-
 const INSPECTION_LOCATION_DISTANCE_INTERVAL_METERS = 0;
 const INSPECTION_LOCATION_TIME_INTERVAL_MS = 250;
 
 const InspectionContext = createContext({} as InspectionContextProps);
 
 export const InspectionProvider = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = useQueryClient();
   const sqliteService = useInspectionSqliteService();
   const { setMessage, setIsVisible } = useAlertBoxStore();
   const { setIsLoading } = useLoadingStore();
@@ -79,7 +76,9 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
   const [loadedPlants, setLoadedPlants] = useState<InspectionPlant[]>([]);
   const [nearestPlant, setNearestPlant] = useState<InspectionPlant | null>(null);
   const [inspections, setInspections] = useState<InspectionListItem[]>([]);
-  const [filterOptions, setFilterOptions] = useState<InspectionFilterOptions>(emptyFilterOptions);
+  const [filterOptions, setFilterOptions] = useState<InspectionFilterOptions>(() =>
+    getInspectionFilterOptionsSnapshot(queryClient),
+  );
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isNearestPlantModalVisible, setIsNearestPlantModalVisible] = useState(false);
 
@@ -114,6 +113,23 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
     setInspections(inspectionItems);
   }, [sqliteService]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    void sqliteService.getLoadedFieldWorkZones().then((loadedZones) => {
+      if (!mounted) return;
+      const loadedZoneIds = new Set(loadedZones.map((zone) => zone.id));
+      setFilterOptions((current) => ({
+        ...current,
+        zones: current.zones.filter((zone) => loadedZoneIds.has(zone.id)),
+      }));
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [sqliteService]);
+
   const restoreInspectionState = useCallback(async () => {
     const pendingInspection = await sqliteService.getLatestPendingInspection();
 
@@ -144,29 +160,6 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
     }
   }, [sqliteService]);
 
-  const loadFilterOptions = useCallback(async () => {
-    const cachedOptions = await sqliteService.getCachedFilterOptions();
-    setFilterOptions(cachedOptions);
-
-    const { data, error } = await inspectionRepository.getFilterOptions();
-
-    if (error) {
-      if (
-        cachedOptions.zones.length === 0 &&
-        cachedOptions.occurrenceTypes.length === 0 &&
-        cachedOptions.varieties.length === 0
-      ) {
-        setMessage('Erro ao carregar filtros de inspeção.\n' + error.message);
-        setIsVisible(true);
-      }
-      return;
-    }
-
-    if (data) {
-      setFilterOptions(data);
-    }
-  }, [setIsVisible, setMessage, sqliteService]);
-
   const evaluateNearestPlantFromLocation = useCallback(
     (location: Location.LocationObject) => {
       const plants = loadedPlantsRef.current;
@@ -179,7 +172,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      const nearest = findNearestInspectionPlant(location, plants);
+      const nearest = findNearestInspectionPlant(location, plants, nearestPlantRef.current?.plantId);
 
       if (!nearest) {
         if (nearestPlantRef.current) {
@@ -313,7 +306,6 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
 
     refreshInspections();
     restoreInspectionState();
-    loadFilterOptions();
 
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -352,7 +344,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
       mounted = false;
       subscription?.remove();
     };
-  }, [applyLocationUpdate, loadFilterOptions, refreshInspections, restoreInspectionState, setIsVisible, setMessage]);
+  }, [applyLocationUpdate, refreshInspections, restoreInspectionState, setIsVisible, setMessage]);
 
   useEffect(() => {
     if (currentLocation) {
@@ -362,8 +354,8 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
 
   const applyFilters = useCallback(
     async (filters: InspectionFilter) => {
-      if (!filters.zoneId && !filters.occurrenceTypeId) {
-        setMessage('Selecione uma zona ou ocorrência para iniciar a inspeção.');
+      if (!filters.zoneId) {
+        setMessage('Selecione uma zona com plantas carregadas para iniciar a inspeção.');
         setIsVisible(true);
         return;
       }
@@ -371,15 +363,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
       setIsLoading(true);
 
       try {
-        const { data, error } = await inspectionRepository.getInspectionPlants(filters);
-
-        if (error) {
-          setMessage('Erro ao buscar plantas para inspeção.\n' + error.message);
-          setIsVisible(true);
-          return;
-        }
-
-        const plants = data ?? [];
+        const plants = await sqliteService.getFieldWorkPlants(filters);
 
         if (plants.length === 0) {
           setMessage('Nenhuma planta encontrada para os filtros selecionados.');
@@ -539,37 +523,17 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
 
         await sqliteService.markInspectionSynced(inspectionId, data);
         await sqliteService.clearLoadedPlantsChangedState(inspectionId);
-        const syncedPlants = await sqliteService.getLoadedPlants(inspectionId);
-        const resetPlants = syncedPlants.map((plant) => ({
-          ...plant,
-          isChanged: false,
-          isNearest: false,
-          distanceMeters: null,
-        }));
 
         if (activeInspectionSnapshot?.id === inspectionId) {
-          const nextInspection = await sqliteService.createInspection(
-            {
-              zoneId: activeInspectionSnapshot.zone_id ?? null,
-              zoneName: activeInspectionSnapshot.zone_name ?? null,
-              occurrenceTypeId: activeInspectionSnapshot.occurrence_type_id ?? null,
-              occurrenceCode: activeInspectionSnapshot.occurrence_code ?? null,
-              occurrenceName: activeInspectionSnapshot.occurrence_name ?? null,
-            },
-            resetPlants,
-          );
-
-          activeInspectionRef.current = nextInspection;
-          loadedPlantsRef.current = resetPlants;
+          activeInspectionRef.current = null;
+          loadedPlantsRef.current = [];
           nearestPlantRef.current = null;
-          setActiveInspection(nextInspection);
-          setLoadedPlants(resetPlants);
+          setActiveInspection(null);
+          setLoadedPlants([]);
           setNearestPlant(null);
-          setMessage('Inspeção sincronizada com sucesso. Nova inspeção iniciada com as plantas carregadas.');
-        } else {
-          setMessage('Inspeção sincronizada com sucesso.');
         }
 
+        setMessage('Inspeção sincronizada com sucesso.');
         lastPersistedNearestRef.current = null;
         setIsVisible(true);
       } catch (error) {
