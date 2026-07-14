@@ -7,6 +7,8 @@ import * as Location from 'expo-location';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SprayingProvider, useSpraying } from './use-spraying';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fieldWorkQueryOptions } from '@/ui/shared/hooks/use-field-work-data';
 
 type MockSprayingRepository = Omit<jest.Mocked<SprayingRepository>, 'local'> & {
   local: jest.Mocked<SprayingSqliteService>;
@@ -24,6 +26,8 @@ const mockStartSprayingLocationUpdates = jest.fn();
 const mockStopSprayingLocationUpdates = jest.fn();
 
 let mockSprayingRepository: MockSprayingRepository;
+
+jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }));
 
 const sprayingZones: SprayingZoneOption[] = [
   { id: 'zone-1', name: 'Talhao 1' },
@@ -99,6 +103,9 @@ function createMockLocalService(
     finishTracking: jest.fn(),
     getAggregate: jest.fn().mockResolvedValue(null),
     getLastTrackPoint: jest.fn(),
+    listLoadedZones: jest
+      .fn()
+      .mockResolvedValue(sprayingZones.map((zone) => ({ ...zone, loadedAt: '2026-07-01', plantCount: 1 }))),
     getOperation: jest.fn(),
     getRecoverableOperation: jest.fn().mockResolvedValue(null),
     getZonePlants: jest.fn().mockResolvedValue([]),
@@ -149,6 +156,7 @@ function SprayingConsumer() {
       <Text>aggregate:{spraying.aggregate?.operation.id ?? 'none'}</Text>
       <Text>zone:{spraying.selectedZone?.name ?? 'none'}</Text>
       <Text>plants:{spraying.selectedZonePlants.length}</Text>
+      <Text>zones:{spraying.zones.length}</Text>
       <Pressable testID="load-zone-2" onPress={() => void spraying.loadZone('zone-2')}>
         <Text>load zone 2</Text>
       </Pressable>
@@ -160,12 +168,16 @@ function SprayingConsumer() {
 }
 
 async function renderProvider(repository = createMockRepository()) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
+  queryClient.setQueryData(fieldWorkQueryOptions.zones.queryKey, sprayingZones);
   render(
-    <SprayingProvider>
-      <SprayingConsumer />
-    </SprayingProvider>,
+    <QueryClientProvider client={queryClient}>
+      <SprayingProvider>
+        <SprayingConsumer />
+      </SprayingProvider>
+    </QueryClientProvider>,
   );
-  await waitFor(() => expect(repository.local.getZones).toHaveBeenCalled());
+  await waitFor(() => expect(repository.local.getRecoverableOperation).toHaveBeenCalled());
   return repository;
 }
 
@@ -210,7 +222,10 @@ describe('SprayingProvider loaded zone persistence', () => {
 
     await waitFor(() => expect(screen.getByText('zone:Talhao 1')).toBeOnTheScreen());
     expect(screen.getByText('plants:1')).toBeOnTheScreen();
+    expect(screen.getByText('zones:2')).toBeOnTheScreen();
     expect(mockSprayingRepository.local.getZonePlants).toHaveBeenCalledWith('zone-1');
+    expect(mockSprayingRepository.getZones).not.toHaveBeenCalled();
+    expect(mockSprayingRepository.local.getZones).not.toHaveBeenCalled();
   });
 
   it('clears a persisted loaded zone when its cached plant list is empty', async () => {
@@ -241,8 +256,8 @@ describe('SprayingProvider loaded zone persistence', () => {
   it('replaces the persisted loaded zone when another zone is loaded', async () => {
     await renderProvider(
       createMockRepository({
-        repositoryOverrides: {
-          getZonePlants: jest.fn().mockResolvedValue({ data: zone2Plants, error: null }),
+        localOverrides: {
+          getZonePlants: jest.fn().mockImplementation(async (zoneId) => (zoneId === 'zone-2' ? zone2Plants : [])),
         },
       }),
     );
@@ -252,7 +267,9 @@ describe('SprayingProvider loaded zone persistence', () => {
     });
 
     await waitFor(() => expect(mockSaveLoadedSprayingZone).toHaveBeenCalledWith(sprayingZones[1]));
-    expect(mockSprayingRepository.local.cacheZonePlants).toHaveBeenCalledWith('zone-2', 'Talhao 2', zone2Plants);
+    expect(mockSprayingRepository.local.getZonePlants).toHaveBeenCalledWith('zone-2');
+    expect(mockSprayingRepository.getZonePlants).not.toHaveBeenCalled();
+    expect(mockSprayingRepository.local.cacheZonePlants).not.toHaveBeenCalled();
     expect(screen.getByText('zone:Talhao 2')).toBeOnTheScreen();
     expect(screen.getByText('plants:1')).toBeOnTheScreen();
   });

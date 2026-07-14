@@ -35,7 +35,7 @@ export function SprayingZoneModal() {
         <Pressable style={[styles.content, { backgroundColor: colors.card }]}>
           <Text style={[styles.title, { color: colors.text }]}>Selecionar zona</Text>
           <Text style={[styles.subtitle, { color: colors.disabledText }]}>
-            Carregue as plantas da zona antes de informar os dados da Pulverização.
+            Selecione uma zona previamente carregada em Dados carregados.
           </Text>
 
           <ThemedDropdown

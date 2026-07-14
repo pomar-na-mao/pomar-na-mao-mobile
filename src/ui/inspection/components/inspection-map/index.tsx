@@ -5,8 +5,14 @@ import { InspectionNearestPlantSimulation } from '@/ui/inspection/components/ins
 import { createSimulationLocation } from '@/ui/inspection/helpers/simulation-location';
 import { useInspection } from '@/ui/inspection/view-models/use-inspection';
 import { PlantMapMarkers } from '@/ui/shared/components/plant-map-markers';
+import { PlantMapDiagnostics } from '@/ui/shared/components/plant-map-diagnostics';
+import {
+  createPlantMapRegion,
+  type PlantMapClusterVisualization,
+} from '@/ui/shared/components/plant-map-markers/visualization';
 import { UserMarkerLocation } from '@/ui/shared/components/user-marker-location';
-import React, { useCallback, useEffect, useState } from 'react';
+import { usePlantMapVisualization } from '@/ui/shared/hooks/use-plant-map-visualization';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, type LatLng } from 'react-native-maps';
 import { darkMapStyle } from '../../../../../mapStyle';
@@ -23,6 +29,38 @@ export const InspectionMap = () => {
   } = useInspection();
   const [simulationPoint, setSimulationPoint] = useState<LatLng | null>(null);
   const [isSelectingSimulationPoint, setIsSelectingSimulationPoint] = useState(false);
+  const mapRef = useRef<MapView | null>(null);
+  const mapRegion = useMemo(
+    () => createPlantMapRegion(loadedPlants, initialRegion, 0.002),
+    [initialRegion, loadedPlants],
+  );
+  const mapDatasetKey = useMemo(
+    () =>
+      loadedPlants.length === 0
+        ? `inspection-empty:${initialRegion?.latitude ?? 0}:${initialRegion?.longitude ?? 0}`
+        : [
+            'inspection-plants',
+            loadedPlants.length,
+            mapRegion.latitude,
+            mapRegion.longitude,
+            mapRegion.latitudeDelta,
+            mapRegion.longitudeDelta,
+          ].join(':'),
+    [initialRegion?.latitude, initialRegion?.longitude, loadedPlants.length, mapRegion],
+  );
+  const plantVisualization = usePlantMapVisualization(
+    loadedPlants,
+    mapRegion,
+    nearestPlant?.plantId,
+    initialRegion !== null,
+  );
+
+  const handleClusterPress = useCallback((cluster: PlantMapClusterVisualization) => {
+    mapRef.current?.fitToCoordinates([cluster.bounds.southWest, cluster.bounds.northEast], {
+      animated: true,
+      edgePadding: { bottom: 70, left: 70, right: 70, top: 70 },
+    });
+  }, []);
 
   const clearSimulation = useCallback(() => {
     setLocationSimulationActive(false);
@@ -66,16 +104,14 @@ export const InspectionMap = () => {
   return (
     <View style={styles.mapContainer}>
       <MapView
+        key={mapDatasetKey}
+        ref={mapRef}
         testID="inspection-map"
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
         customMapStyle={theme === 'dark' ? darkMapStyle : []}
-        initialRegion={{
-          latitude: initialRegion.latitude,
-          longitude: initialRegion.longitude,
-          latitudeDelta: 0.002,
-          longitudeDelta: 0.002,
-        }}
+        initialRegion={mapRegion}
+        onRegionChangeComplete={plantVisualization.onRegionChangeComplete}
         onPress={handleMapPress}
         onLongPress={handleMapPress}
         showsMyLocationButton={false}
@@ -90,7 +126,11 @@ export const InspectionMap = () => {
           headingDegrees={currentLocation.coords.heading ?? null}
           speedMetersPerSecond={currentLocation.coords.speed ?? null}
         />
-        <PlantMapMarkers plantsData={loadedPlants} nearestPlantId={nearestPlant?.plantId ?? null} />
+        <PlantMapMarkers
+          visualization={plantVisualization.items}
+          nearestPlantId={nearestPlant?.plantId ?? null}
+          onClusterPress={handleClusterPress}
+        />
 
         {__DEV__ && simulationPoint ? (
           <Marker
@@ -102,6 +142,8 @@ export const InspectionMap = () => {
           />
         ) : null}
       </MapView>
+
+      <PlantMapDiagnostics diagnostics={plantVisualization.diagnostics} />
 
       <InspectionNearestPlantSimulation
         hasPoint={simulationPoint !== null}
