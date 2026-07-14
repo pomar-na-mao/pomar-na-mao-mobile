@@ -105,9 +105,7 @@ function createMockLocalService(
     getLastTrackPoint: jest.fn(),
     listLoadedZones: jest
       .fn()
-      .mockResolvedValue(
-        sprayingZones.map((zone) => ({ ...zone, loadedAt: '2026-07-01', plantCount: 1 })),
-      ),
+      .mockResolvedValue(sprayingZones.map((zone) => ({ ...zone, loadedAt: '2026-07-01', plantCount: 1 }))),
     getOperation: jest.fn(),
     getRecoverableOperation: jest.fn().mockResolvedValue(null),
     getZonePlants: jest.fn().mockResolvedValue([]),
