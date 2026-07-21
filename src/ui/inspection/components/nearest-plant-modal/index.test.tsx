@@ -75,7 +75,7 @@ describe('NearestPlantModal', () => {
 
     fireEvent.press(screen.getByTestId(/A.*remove_occurrence/));
     fireEvent.press(screen.getByTestId(/Ocorr.*occurrence-1/));
-    fireEvent.changeText(screen.getByPlaceholderText('Severidade'), 'media');
+    fireEvent.press(screen.getByText('Média'));
     fireEvent.changeText(screen.getByPlaceholderText(/Observa/), 'observada no campo');
     await act(async () => {
       fireEvent.press(screen.getByText('Salvar'));
@@ -85,7 +85,7 @@ describe('NearestPlantModal', () => {
       changeType: 'remove_occurrence',
       notes: 'observada no campo',
       occurrence: inspectionFilterOptions.occurrenceTypes[0],
-      severity: 'media',
+      severity: 'medium',
     });
   });
 
@@ -108,5 +108,60 @@ describe('NearestPlantModal', () => {
 
     fireEvent.press(screen.getByText('Fechar'));
     expect(mockCloseNearestPlantModal).toHaveBeenCalled();
+  });
+
+  it('renders multiple occurrences properly inside the scroll view', () => {
+    const multipleOccurrences = Array.from({ length: 15 }, (_, i) => ({
+      code: `OCC-${i}`,
+      name: `Ocorrência ${i + 1}`,
+      occurrenceTypeId: `occ-type-${i}`,
+      observedAt: '2026-05-30T12:00:00.000Z',
+      severity: i % 2 === 0 ? 'alta' : null,
+      status: 'open',
+    }));
+
+    mockUseInspection.mockReturnValue({
+      closeNearestPlantModal: mockCloseNearestPlantModal,
+      filterOptions: inspectionFilterOptions,
+      isNearestPlantModalVisible: true,
+      nearestPlant: { ...inspectionPlant, occurrences: multipleOccurrences, distanceMeters: 1.5 },
+      saveOccurrenceChange: mockSaveOccurrenceChange,
+    });
+
+    render(<NearestPlantModal />);
+
+    expect(screen.getByText('Ocorrência 1')).toBeOnTheScreen();
+    expect(screen.getByText('Ocorrência 15')).toBeOnTheScreen();
+    expect(screen.getByText('Baixa')).toBeOnTheScreen();
+    expect(screen.getByText('Média')).toBeOnTheScreen();
+    expect(screen.getByText('Alta')).toBeOnTheScreen();
+    expect(screen.getByPlaceholderText(/Observa/)).toBeOnTheScreen();
+    expect(screen.getByTestId('nearest-plant-scroll')).toHaveProp('showsVerticalScrollIndicator', true);
+  });
+
+  it('maps severity codes like high, medium, low to user-facing labels in current occurrences list', () => {
+    mockUseInspection.mockReturnValue({
+      closeNearestPlantModal: mockCloseNearestPlantModal,
+      filterOptions: inspectionFilterOptions,
+      isNearestPlantModalVisible: true,
+      nearestPlant: {
+        ...inspectionPlant,
+        occurrences: [
+          {
+            code: 'PST',
+            name: 'Lagarta',
+            occurrenceTypeId: 'occ-1',
+            status: 'open',
+            severity: 'high',
+          },
+        ],
+      },
+      saveOccurrenceChange: mockSaveOccurrenceChange,
+    });
+
+    render(<NearestPlantModal />);
+
+    expect(screen.getByText('Lagarta')).toBeOnTheScreen();
+    expect(screen.getAllByText('Alta').length).toBeGreaterThan(0);
   });
 });

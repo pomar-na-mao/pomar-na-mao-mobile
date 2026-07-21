@@ -22,6 +22,18 @@ const changeOptions: { label: string; value: InspectionChangeType }[] = [
   { label: 'Remover ocorrência', value: 'remove_occurrence' },
 ];
 
+const severityOptions = [
+  { label: 'Baixa', value: 'low' },
+  { label: 'Média', value: 'medium' },
+  { label: 'Alta', value: 'high' },
+] as const;
+
+const severityLabels: Record<string, string> = {
+  low: 'Baixa',
+  medium: 'Média',
+  high: 'Alta',
+};
+
 export const NearestPlantModal = () => {
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
@@ -29,7 +41,7 @@ export const NearestPlantModal = () => {
     useInspection();
   const [changeType, setChangeType] = useState<InspectionChangeType>('add_occurrence');
   const [occurrenceTypeId, setOccurrenceTypeId] = useState<string | null>(null);
-  const [severity, setSeverity] = useState('');
+  const [severity, setSeverity] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
 
   const occurrenceOptions = useMemo(
@@ -49,10 +61,10 @@ export const NearestPlantModal = () => {
     await saveOccurrenceChange({
       changeType,
       occurrence,
-      severity: severity.trim() || null,
+      severity,
       notes: notes.trim() || null,
     });
-    setSeverity('');
+    setSeverity(null);
     setNotes('');
   };
 
@@ -68,8 +80,8 @@ export const NearestPlantModal = () => {
         style={styles.keyboardAvoidingView}
         testID="nearest-plant-keyboard-avoiding-view"
       >
-        <Pressable style={styles.overlay} onPress={closeNearestPlantModal}>
-          <Pressable style={[styles.content, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+        <View style={styles.overlay}>
+          <View style={[styles.content, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text }]}>Planta mais próxima</Text>
               <Text style={[styles.subtitle, { color: colors.disabledText }]}>Ações para a planta detectada</Text>
@@ -81,7 +93,7 @@ export const NearestPlantModal = () => {
                   contentContainerStyle={styles.scrollContent}
                   keyboardDismissMode="on-drag"
                   keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}
+                  showsVerticalScrollIndicator={true}
                   style={styles.scroll}
                   testID="nearest-plant-scroll"
                 >
@@ -123,7 +135,7 @@ export const NearestPlantModal = () => {
                           </Text>
                           {occurrence.severity ? (
                             <Text style={[styles.occurrenceSeverity, { color: colors.warning }]}>
-                              {occurrence.severity}
+                              {severityLabels[occurrence.severity] ?? occurrence.severity}
                             </Text>
                           ) : null}
                         </View>
@@ -149,20 +161,33 @@ export const NearestPlantModal = () => {
                       onSelect={(value) => setOccurrenceTypeId(String(value))}
                     />
 
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: colors.inputBackground,
-                          borderColor: colors.inputBorder,
-                          color: colors.text,
-                        },
-                      ]}
-                      placeholder="Severidade"
-                      placeholderTextColor={colors.inputPlaceholder}
-                      value={severity}
-                      onChangeText={setSeverity}
-                    />
+                    <View style={styles.section}>
+                      <Text style={[styles.sectionLabel, { color: colors.text }]}>Severidade</Text>
+                      <View style={styles.optionGrid}>
+                        {severityOptions.map((option) => {
+                          const isSelected = severity === option.value;
+                          return (
+                            <Pressable
+                              accessibilityRole="button"
+                              key={option.value}
+                              onPress={() => setSeverity(isSelected ? null : option.value)}
+                              style={[
+                                styles.optionChip,
+                                {
+                                  backgroundColor: isSelected ? colors.tint : colors.background,
+                                  borderColor: isSelected ? colors.tint : colors.line,
+                                },
+                              ]}
+                            >
+                              <Text style={[styles.optionText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+
                     <TextInput
                       style={[
                         styles.input,
@@ -192,8 +217,8 @@ export const NearestPlantModal = () => {
                 <Text style={[styles.emptyText, { color: colors.text }]}>Nenhuma planta próxima detectada.</Text>
               </View>
             )}
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -210,10 +235,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    maxHeight: '90%',
-    minHeight: 0,
+    flex: 1,
     padding: 16,
     width: '100%',
   },
@@ -274,14 +298,30 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     textAlignVertical: 'top',
   },
+  optionChip: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  optionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
   occurrence: {
     borderRadius: 8,
     gap: 2,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    width: '100%',
   },
   occurrenceList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   occurrenceName: {
@@ -295,15 +335,26 @@ const styles = StyleSheet.create({
   overlay: {
     backgroundColor: 'rgba(0,0,0,0.55)',
     flex: 1,
-    justifyContent: 'center',
     padding: 16,
+    paddingBottom: 24,
+    paddingTop: 48,
   },
   scroll: {
+    flex: 1,
     flexShrink: 1,
     minHeight: 0,
   },
   scrollContent: {
     paddingBottom: 16,
+    paddingRight: 8,
+  },
+  section: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   sectionTitle: {
     fontSize: 15,
