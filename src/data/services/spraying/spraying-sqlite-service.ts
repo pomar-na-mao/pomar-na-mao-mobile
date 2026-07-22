@@ -92,9 +92,10 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
 
   async function cacheZonePlants(zoneId: string, zoneName: string, plants: SprayingPlant[]) {
     const timestamp = nowIso();
+    const livingPlants = plants.filter((plant) => !plant.is_dead && !plant.non_existent);
 
     await database.withTransactionAsync(async () => {
-      for (const plant of plants) {
+      for (const plant of livingPlants) {
         await database.runAsync(
           `INSERT INTO local_plants (
             id, local_id, latitude, longitude, zone_id, zone_name,
