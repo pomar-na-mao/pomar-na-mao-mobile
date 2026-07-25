@@ -265,7 +265,10 @@ export function SprayingMap() {
           onPlantPress={(marker) => {
             const plant = plants.find((candidate) => candidate.plantId === marker.plantId);
 
-            if (plant && aggregate?.operation.lifecycle_status === 'simulated') {
+            if (
+              plant &&
+              ['simulated', 'reviewed', 'sync_error'].includes(aggregate?.operation.lifecycle_status ?? '')
+            ) {
               void togglePlant(plant);
             }
           }}

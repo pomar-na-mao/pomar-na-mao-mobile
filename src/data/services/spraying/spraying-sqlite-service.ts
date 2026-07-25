@@ -265,6 +265,13 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     );
   }
 
+  async function listOperations(): Promise<LocalSprayingOperation[]> {
+    return database.getAllAsync<LocalSprayingOperation>(
+      `SELECT * FROM local_spraying_operations
+       ORDER BY started_at DESC, updated_at DESC`,
+    );
+  }
+
   async function deleteOperation(operationId: string) {
     await database.withTransactionAsync(async () => {
       await database.runAsync('DELETE FROM local_spraying_confirmed_plants WHERE field_operation_local_id = ?', [
@@ -821,6 +828,7 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     replaceInputs,
     getOperation,
     getRecoverableOperation,
+    listOperations,
     listTrackPoints,
     getLastTrackPoint,
     resetTrackPointsForSimulation,

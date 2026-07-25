@@ -28,6 +28,7 @@ export function SprayingScreen() {
     confirmReview,
     deleteActiveOperation,
     finishTracking,
+    openListView,
     openSetup,
     openZoneSelection,
     selectedZone,
@@ -65,110 +66,130 @@ export function SprayingScreen() {
 
   return (
     <View style={styles.container}>
-      <SprayingMap />
-
-      <View
-        pointerEvents="box-none"
-        style={[styles.topPanel, __DEV__ && styles.topPanelWithDiagnostics]}
-        testID="spraying-summary-panel"
-      >
-        <View
-          style={[
-            styles.summary,
-            {
-              backgroundColor: theme === 'dark' ? 'rgba(46,49,46,0.96)' : 'rgba(255,255,255,0.96)',
-              borderColor: colors.cardBorder,
-            },
-          ]}
+      <View style={[styles.screenHeader, { backgroundColor: colors.background, borderBottomColor: colors.cardBorder }]}>
+        <Pressable
+          accessibilityLabel="Voltar para lista de pulverizações"
+          accessibilityRole="button"
+          onPress={openListView}
+          style={[styles.headerBackBtn, { borderColor: colors.cardBorder }]}
+          testID="back-to-list-btn"
         >
-          <View style={styles.header}>
-            <View style={[styles.icon, { backgroundColor: colors.logoBackground }]}>
-              <MaterialIcons name="agriculture" color={colors.tint} size={22} />
-            </View>
-            <View style={styles.titleGroup}>
-              <Text style={[styles.title, { color: colors.text }]}>Pulverização</Text>
-              <Text style={[styles.subtitle, { color: colors.disabledText }]} numberOfLines={1}>
-                {aggregate?.operation.zone_name ??
-                  (selectedZone
-                    ? `${selectedZone.name} - ${selectedZonePlants.length} plantas carregadas`
-                    : 'Carregue as plantas de uma zona')}
-              </Text>
-            </View>
-            <View style={[styles.badge, { backgroundColor: colors.activeTrackColor }]}>
-              <Text style={[styles.badgeText, { color: colors.tint }]}>{status ? statusLabels[status] : 'Vazio'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.metrics}>
-            <Metric label="Pontos" value={aggregate?.summary.trackPoints ?? 0} colors={colors} />
-            <Metric
-              label="Rota"
-              value={`${Math.round(aggregate?.summary.routeDistanceMeters ?? 0)} m`}
-              colors={colors}
-            />
-            <Metric label="Candidatas" value={aggregate?.summary.candidatePlants ?? 0} colors={colors} />
-            <Metric label="Confirmadas" value={aggregate?.summary.confirmedPlants ?? 0} colors={colors} />
-          </View>
-
-          {trackingState === 'recovery_required' ? (
-            <Text style={[styles.warning, { color: colors.warning }]}>
-              A operacao estava em rastreamento, mas a tarefa GPS precisa ser retomada.
-            </Text>
-          ) : null}
-
-          {status === 'simulated' ? (
-            <Text style={[styles.warning, { color: colors.tint }]}>
-              Plantas em laranja serão sincronizadas. Toque no mapa para marcar ou desmarcar.
-            </Text>
-          ) : null}
-        </View>
+          <MaterialIcons name="arrow-back" color={colors.text} size={20} />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          {aggregate ? (status === 'tracking' ? 'Rastreamento' : 'Detalhes da Pulverização') : 'Nova Pulverização'}
+        </Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      {mainAction || canDeleteLocalSprayingState ? (
-        <View pointerEvents="box-none" style={styles.bottomPanel}>
-          <View testID="spraying-action-bar" style={styles.actionBar}>
-            {canDeleteLocalSprayingState ? (
-              <Pressable
-                accessibilityLabel="Excluir estado local de pulverização"
-                accessibilityRole="button"
-                onPress={() => setIsDeleteConfirmationVisible(true)}
-                style={[styles.iconButton, { backgroundColor: colors.background, borderColor: colors.danger }]}
-              >
-                <MaterialIcons name="delete-outline" color={colors.danger} size={24} />
-              </Pressable>
+      <View style={{ flex: 1, position: 'relative' }}>
+        <SprayingMap />
+
+        <View
+          pointerEvents="box-none"
+          style={[styles.topPanel, __DEV__ && styles.topPanelWithDiagnostics]}
+          testID="spraying-summary-panel"
+        >
+          <View
+            style={[
+              styles.summary,
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(46,49,46,0.96)' : 'rgba(255,255,255,0.96)',
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.header}>
+              <View style={[styles.icon, { backgroundColor: colors.logoBackground }]}>
+                <MaterialIcons name="agriculture" color={colors.tint} size={22} />
+              </View>
+              <View style={styles.titleGroup}>
+                <Text style={[styles.title, { color: colors.text }]}>Pulverização</Text>
+                <Text style={[styles.subtitle, { color: colors.disabledText }]} numberOfLines={1}>
+                  {aggregate?.operation.zone_name ??
+                    (selectedZone
+                      ? `${selectedZone.name} - ${selectedZonePlants.length} plantas carregadas`
+                      : 'Carregue as plantas de uma zona')}
+                </Text>
+              </View>
+              <View style={[styles.badge, { backgroundColor: colors.activeTrackColor }]}>
+                <Text style={[styles.badgeText, { color: colors.tint }]}>
+                  {status ? statusLabels[status] : 'Vazio'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.metrics}>
+              <Metric label="Pontos" value={aggregate?.summary.trackPoints ?? 0} colors={colors} />
+              <Metric
+                label="Rota"
+                value={`${Math.round(aggregate?.summary.routeDistanceMeters ?? 0)} m`}
+                colors={colors}
+              />
+              <Metric label="Candidatas" value={aggregate?.summary.candidatePlants ?? 0} colors={colors} />
+              <Metric label="Confirmadas" value={aggregate?.summary.confirmedPlants ?? 0} colors={colors} />
+            </View>
+
+            {trackingState === 'recovery_required' ? (
+              <Text style={[styles.warning, { color: colors.warning }]}>
+                A operacao estava em rastreamento, mas a tarefa GPS precisa ser retomada.
+              </Text>
             ) : null}
 
-            {mainAction ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => void mainAction.action()}
-                style={[styles.primaryButton, { backgroundColor: colors.tint }]}
-              >
-                <MaterialIcons name={mainAction.icon} color="#FFFFFF" size={20} />
-                <Text style={styles.primaryButtonText}>{mainAction.label}</Text>
-              </Pressable>
+            {status === 'simulated' ? (
+              <Text style={[styles.warning, { color: colors.tint }]}>
+                Plantas em laranja serão sincronizadas. Toque no mapa para marcar ou desmarcar.
+              </Text>
             ) : null}
           </View>
         </View>
-      ) : null}
 
-      <ConfirmationModal
-        visible={isDeleteConfirmationVisible}
-        title="Excluir Pulverização"
-        message={
-          aggregate
-            ? 'Deseja apagar a operacao ativa e todos os pontos, rota, insumos e revisoes locais?'
-            : 'Deseja remover as plantas carregadas desta Pulverização?'
-        }
-        onCancel={() => setIsDeleteConfirmationVisible(false)}
-        onConfirm={() => {
-          setIsDeleteConfirmationVisible(false);
-          void deleteActiveOperation();
-        }}
-      />
+        {mainAction || canDeleteLocalSprayingState ? (
+          <View pointerEvents="box-none" style={styles.bottomPanel}>
+            <View testID="spraying-action-bar" style={styles.actionBar}>
+              {canDeleteLocalSprayingState ? (
+                <Pressable
+                  accessibilityLabel="Excluir estado local de pulverização"
+                  accessibilityRole="button"
+                  onPress={() => setIsDeleteConfirmationVisible(true)}
+                  style={[styles.iconButton, { backgroundColor: colors.background, borderColor: colors.danger }]}
+                >
+                  <MaterialIcons name="delete-outline" color={colors.danger} size={24} />
+                </Pressable>
+              ) : null}
 
-      <SprayingSetupModal />
-      <SprayingZoneModal />
+              {mainAction ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void mainAction.action()}
+                  style={[styles.primaryButton, { backgroundColor: colors.tint }]}
+                >
+                  <MaterialIcons name={mainAction.icon} color="#FFFFFF" size={20} />
+                  <Text style={styles.primaryButtonText}>{mainAction.label}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+
+        <ConfirmationModal
+          visible={isDeleteConfirmationVisible}
+          title="Excluir Pulverização"
+          message={
+            aggregate
+              ? 'Deseja apagar a operacao ativa e todos os pontos, rota, insumos e revisoes locais?'
+              : 'Deseja remover as plantas carregadas desta Pulverização?'
+          }
+          onCancel={() => setIsDeleteConfirmationVisible(false)}
+          onConfirm={() => {
+            setIsDeleteConfirmationVisible(false);
+            void deleteActiveOperation();
+          }}
+        />
+
+        <SprayingSetupModal />
+        <SprayingZoneModal />
+      </View>
     </View>
   );
 }
@@ -200,6 +221,34 @@ const styles = StyleSheet.create({
     gap: 10,
     justifyContent: 'center',
     padding: 10,
+  },
+  screenHeader: {
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    height: 56,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  headerBackBtn: {
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  backBtn: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
   badge: {
     borderRadius: 999,

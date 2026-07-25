@@ -24,7 +24,7 @@ function MainLayout() {
         <Stack.Screen name="field-works" options={{ headerShown: false }} />
         <Stack.Screen name="inspection" options={{ title: 'Inspeção' }} />
         <Stack.Screen name="annotation" options={{ title: 'Anotação' }} />
-        <Stack.Screen name="spraying" options={{ title: 'Pulverização' }} />
+        <Stack.Screen name="spraying" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </>
