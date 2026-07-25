@@ -108,6 +108,7 @@ function createMockLocalService(
       .mockResolvedValue(sprayingZones.map((zone) => ({ ...zone, loadedAt: '2026-07-01', plantCount: 1 }))),
     getOperation: jest.fn(),
     getRecoverableOperation: jest.fn().mockResolvedValue(null),
+    listOperations: jest.fn().mockResolvedValue([]),
     getZonePlants: jest.fn().mockResolvedValue([]),
     getZones: jest.fn().mockResolvedValue(sprayingZones),
     listTrackPoints: jest.fn(),

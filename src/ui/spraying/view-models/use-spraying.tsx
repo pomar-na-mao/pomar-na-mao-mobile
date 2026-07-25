@@ -10,12 +10,18 @@ import {
   stopSprayingLocationUpdates,
   type SprayingTrackingReconciliation,
 } from '@/data/services/spraying/spraying-location-service';
-import type { SprayingAggregate, SprayingPlant, SprayingSetup, SprayingZoneOption } from '@/domain/models/spraying';
+import type {
+  LocalSprayingOperation,
+  SprayingAggregate,
+  SprayingPlant,
+  SprayingSetup,
+  SprayingZoneOption,
+} from '@/domain/models/spraying';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
+import { getSprayingZonesSnapshot } from '@/ui/shared/hooks/use-field-work-data';
 import { getSprayingDeviceId } from '@/ui/spraying/helpers/device';
 import { consolidateSprayingRoute, simulateSprayingPlants } from '@/ui/spraying/helpers/spraying-route';
-import { getSprayingZonesSnapshot } from '@/ui/shared/hooks/use-field-work-data';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -28,6 +34,8 @@ interface SprayingContextValue {
   selectedZone: SprayingZoneOption | null;
   selectedZonePlants: SprayingPlant[];
   trackingState: SprayingTrackingReconciliation;
+  operationsList: LocalSprayingOperation[];
+  activeView: 'list' | 'map';
   isZoneSelectionVisible: boolean;
   isSetupVisible: boolean;
   isReviewVisible: boolean;
@@ -38,8 +46,11 @@ interface SprayingContextValue {
   closeSetup(): void;
   openReview(): void;
   closeReview(): void;
+  openListView(): void;
+  openMapView(operationId?: string): Promise<void>;
   beginOperation(setup: SprayingSetup): Promise<void>;
   deleteActiveOperation(): Promise<void>;
+  deleteOperationById(operationId: string): Promise<void>;
   prepareRouteSimulation(): Promise<boolean>;
   recordSimulatedLocation(location: Location.LocationObject): Promise<void>;
   startTracking(): Promise<void>;
@@ -48,6 +59,8 @@ interface SprayingContextValue {
   togglePlant(plant: SprayingPlant): Promise<void>;
   confirmReview(): Promise<void>;
   syncOperation(): Promise<void>;
+  syncOperationById(operationId: string): Promise<void>;
+  refreshOperationsList(): Promise<void>;
   refresh(): Promise<void>;
 }
 
@@ -74,6 +87,8 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
   const [selectedZone, setSelectedZone] = useState<SprayingZoneOption | null>(null);
   const [selectedZonePlants, setSelectedZonePlants] = useState<SprayingPlant[]>([]);
   const [trackingState, setTrackingState] = useState<SprayingTrackingReconciliation>('inactive');
+  const [operationsList, setOperationsList] = useState<LocalSprayingOperation[]>([]);
+  const [activeView, setActiveView] = useState<'list' | 'map'>('list');
   const [isZoneSelectionVisible, setIsZoneSelectionVisible] = useState(false);
   const [isSetupVisible, setIsSetupVisible] = useState(false);
   const [isReviewVisible, setIsReviewVisible] = useState(false);
@@ -93,6 +108,11 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
+  }, [repository]);
+
+  const refreshOperationsList = useCallback(async () => {
+    const list = await repository.local.listOperations();
+    setOperationsList(list);
   }, [repository]);
 
   const refreshOperation = useCallback(
@@ -137,6 +157,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
   }, [repository]);
 
   const refresh = useCallback(async () => {
+    await refreshOperationsList();
     const recoverable = await repository.local.getRecoverableOperation();
     if (!recoverable) {
       activeOperationIdRef.current = null;
@@ -152,7 +173,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     } else {
       setTrackingState('inactive');
     }
-  }, [refreshOperation, repository, restoreLoadedZone]);
+  }, [refreshOperation, refreshOperationsList, repository, restoreLoadedZone]);
 
   useEffect(() => {
     let mounted = true;
@@ -400,6 +421,62 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     [aggregate, repository],
   );
 
+  const openListView = useCallback(() => {
+    setActiveView('list');
+    void refreshOperationsList();
+  }, [refreshOperationsList]);
+
+  const openMapView = useCallback(
+    async (operationId?: string) => {
+      if (operationId) {
+        await refreshOperation(operationId);
+      } else {
+        const recoverable = await repository.local.getRecoverableOperation();
+        if (recoverable && recoverable.lifecycle_status === 'tracking') {
+          await refreshOperation(recoverable.id);
+        } else {
+          setAggregate(null);
+          await restoreLoadedZone();
+        }
+      }
+      setActiveView('map');
+    },
+    [refreshOperation, repository, restoreLoadedZone],
+  );
+
+  const deleteOperationById = useCallback(
+    async (operationId: string) => {
+      setIsLoading(true);
+      try {
+        const targetOp = await repository.local.getOperation(operationId);
+        if (targetOp?.lifecycle_status === 'tracking') {
+          await stopSprayingLocationUpdates();
+        }
+        await repository.local.deleteOperation(operationId);
+        if (activeOperationIdRef.current === operationId) {
+          await clearLoadedSprayingZone();
+          activeOperationIdRef.current = null;
+          setAggregate(null);
+          setSelectedZone(null);
+          setSelectedZonePlants([]);
+          setTrackingState('inactive');
+          setIsReviewVisible(false);
+          setIsSetupVisible(false);
+        }
+
+        await refreshOperationsList();
+        setMessage('Pulverização excluída!');
+        setIsVisible(true);
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : String(error));
+        setIsVisible(true);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [repository, setIsLoading, setIsVisible, setMessage, refreshOperationsList],
+  );
+
   const finishTracking = useCallback(async () => {
     if (!aggregate || aggregate.operation.lifecycle_status !== 'tracking') {
       return;
@@ -408,24 +485,44 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       await stopSprayingLocationUpdates();
+
+      const points = await repository.local.listTrackPoints(aggregate.operation.id);
+      if (points.length < 2) {
+        await startSprayingLocationUpdates(aggregate.operation.id, aggregate.operation.device_id);
+        throw new Error('A rota precisa de pelo menos dois pontos GPS validos.');
+      }
+
       await repository.local.finishTracking(aggregate.operation.id);
       const operation = await repository.local.getOperation(aggregate.operation.id);
-      const points = await repository.local.listTrackPoints(aggregate.operation.id);
       if (!operation) {
-        throw new Error('Operacao local nao encontrada.');
+        throw new Error('Operação local não encontrada.');
       }
 
       const route = consolidateSprayingRoute(points);
       await repository.local.saveConsolidatedRoute(operation, route);
+
+      // Run simulation automatically so the list card shows candidate/confirmed counts
+      const matches = simulateSprayingPlants({
+        plants: aggregate.plants,
+        points,
+        minDistanceMeters: operation.min_distance_meters,
+        maxDistanceMeters: operation.max_distance_meters,
+      });
+      await repository.local.saveSimulation(operation.id, matches);
+      await repository.local.confirmAllAutomaticCandidates(operation.id, operation.device_id);
+
       setTrackingState('inactive');
-      await refreshOperation(operation.id);
+      await refreshOperationsList();
+      setActiveView('list');
+      setMessage('Pulverização finalizada com sucesso.');
+      setIsVisible(true);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
       setIsVisible(true);
     } finally {
       setIsLoading(false);
     }
-  }, [aggregate, refreshOperation, repository, setIsLoading, setIsVisible, setMessage]);
+  }, [aggregate, refreshOperationsList, repository, setIsLoading, setIsVisible, setMessage]);
 
   const simulate = useCallback(async () => {
     if (!aggregate || aggregate.operation.lifecycle_status !== 'finished') {
@@ -478,44 +575,91 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
 
     await repository.local.markReviewed(aggregate.operation.id);
     await refreshOperation(aggregate.operation.id);
+    await refreshOperationsList();
     setIsReviewVisible(false);
-  }, [aggregate, refreshOperation, repository]);
+    setActiveView('list');
+  }, [aggregate, refreshOperation, refreshOperationsList, repository]);
+
+  const syncOperationById = useCallback(
+    async (operationId: string) => {
+      setIsLoading(true);
+      try {
+        let opAggregate =
+          aggregate?.operation.id === operationId ? aggregate : await repository.local.getAggregate(operationId);
+
+        if (!opAggregate) {
+          throw new Error('Operação local não encontrada.');
+        }
+
+        if (opAggregate.operation.lifecycle_status === 'finished') {
+          const matches = simulateSprayingPlants({
+            plants: opAggregate.plants,
+            points: opAggregate.trackPoints,
+            minDistanceMeters: opAggregate.operation.min_distance_meters,
+            maxDistanceMeters: opAggregate.operation.max_distance_meters,
+          });
+          await repository.local.saveSimulation(opAggregate.operation.id, matches);
+          await repository.local.confirmAllAutomaticCandidates(
+            opAggregate.operation.id,
+            opAggregate.operation.device_id,
+          );
+          await repository.local.markReviewed(opAggregate.operation.id);
+          opAggregate = await repository.local.getAggregate(operationId);
+        } else if (opAggregate.operation.lifecycle_status === 'simulated') {
+          await repository.local.markReviewed(opAggregate.operation.id);
+          opAggregate = await repository.local.getAggregate(operationId);
+        }
+
+        if (!opAggregate || !['reviewed', 'sync_error'].includes(opAggregate.operation.lifecycle_status)) {
+          throw new Error('A Pulverização precisa estar finalizada ou revisada para sincronizar.');
+        }
+
+        const payload = await repository.local.buildSyncPayload(opAggregate.operation.id);
+        await repository.local.markSyncing(opAggregate.operation.id);
+        await refreshOperationsList();
+        if (activeOperationIdRef.current === operationId) {
+          await refreshOperation(operationId);
+        }
+
+        const { data, error } = await repository.syncReviewedOperation(payload);
+        if (error || !data) {
+          throw new Error(error?.message ?? 'A RPC de Pulverização não retornou dados.');
+        }
+
+        await repository.local.markSynced(opAggregate.operation.id, data);
+        if (activeOperationIdRef.current === operationId) {
+          activeOperationIdRef.current = null;
+          setAggregate(null);
+          setSelectedZonePlants((currentPlants) => clearSprayingReviewState(currentPlants));
+          setTrackingState('inactive');
+          setIsReviewVisible(false);
+          setIsSetupVisible(false);
+        }
+        await refreshOperationsList();
+        setMessage('Pulverização sincronizada com sucesso.');
+        setIsVisible(true);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        await repository.local.markSyncError(operationId, message);
+        if (activeOperationIdRef.current === operationId) {
+          await refreshOperation(operationId);
+        }
+        await refreshOperationsList();
+        setMessage(`Erro ao sincronizar Pulverização.\n${message}`);
+        setIsVisible(true);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [aggregate, refreshOperation, refreshOperationsList, repository, setIsLoading, setIsVisible, setMessage],
+  );
 
   const syncOperation = useCallback(async () => {
-    if (!aggregate || !['reviewed', 'sync_error'].includes(aggregate.operation.lifecycle_status)) {
+    if (!aggregate) {
       return;
     }
-
-    setIsLoading(true);
-    try {
-      const payload = await repository.local.buildSyncPayload(aggregate.operation.id);
-      await repository.local.markSyncing(aggregate.operation.id);
-      await refreshOperation(aggregate.operation.id);
-
-      const { data, error } = await repository.syncReviewedOperation(payload);
-      if (error || !data) {
-        throw new Error(error?.message ?? 'A RPC de Pulverização nao retornou dados.');
-      }
-
-      await repository.local.markSynced(aggregate.operation.id, data);
-      activeOperationIdRef.current = null;
-      setAggregate(null);
-      setSelectedZonePlants((currentPlants) => clearSprayingReviewState(currentPlants));
-      setTrackingState('inactive');
-      setIsReviewVisible(false);
-      setIsSetupVisible(false);
-      setMessage('Pulverização sincronizada com sucesso.');
-      setIsVisible(true);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await repository.local.markSyncError(aggregate.operation.id, message);
-      await refreshOperation(aggregate.operation.id);
-      setMessage(`Erro ao sincronizar Pulverização.\n${message}`);
-      setIsVisible(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [aggregate, refreshOperation, repository, setIsLoading, setIsVisible, setMessage]);
+    await syncOperationById(aggregate.operation.id);
+  }, [aggregate, syncOperationById]);
 
   return (
     <SprayingContext.Provider
@@ -526,6 +670,8 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
         selectedZone,
         selectedZonePlants,
         trackingState,
+        operationsList,
+        activeView,
         isZoneSelectionVisible,
         isSetupVisible,
         isReviewVisible,
@@ -540,8 +686,11 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
         closeSetup: () => setIsSetupVisible(false),
         openReview: () => setIsReviewVisible(true),
         closeReview: () => setIsReviewVisible(false),
+        openListView,
+        openMapView,
         beginOperation,
         deleteActiveOperation,
+        deleteOperationById,
         prepareRouteSimulation,
         recordSimulatedLocation,
         startTracking,
@@ -550,6 +699,8 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
         togglePlant,
         confirmReview,
         syncOperation,
+        syncOperationById,
+        refreshOperationsList,
         refresh,
       }}
     >
