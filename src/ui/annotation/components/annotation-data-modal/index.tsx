@@ -8,7 +8,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 
 const severityOptions = [
   { label: 'Baixa', value: 'low' },
-  { label: 'Media', value: 'medium' },
+  { label: 'Média', value: 'medium' },
   { label: 'Alta', value: 'high' },
 ] as const;
 

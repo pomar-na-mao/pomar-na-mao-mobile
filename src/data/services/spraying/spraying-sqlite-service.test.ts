@@ -34,6 +34,19 @@ describe('spraying sqlite service', () => {
     );
   });
 
+  it('lists all local spraying operations ordered by date', async () => {
+    const database = createMockSprayingSQLiteDatabase();
+    database.getAllAsync.mockResolvedValue([sprayingOperationFixture]);
+    const service = createSprayingSqliteService(database as unknown as SQLiteDatabase);
+
+    const list = await service.listOperations();
+
+    expect(list).toEqual([sprayingOperationFixture]);
+    expect(database.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining('SELECT * FROM local_spraying_operations'),
+    );
+  });
+
   it('rejects incomplete setup before writing', async () => {
     const database = createMockSprayingSQLiteDatabase();
     const service = createSprayingSqliteService(database as unknown as SQLiteDatabase);
