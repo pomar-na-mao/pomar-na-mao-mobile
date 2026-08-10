@@ -8,6 +8,13 @@ const mockOpenFilterModal = jest.fn();
 const mockOpenNearestPlantModal = jest.fn();
 const mockFinishActiveInspection = jest.fn();
 const mockSyncInspection = jest.fn();
+const mockBack = jest.fn();
+
+jest.mock('expo-router', () => ({
+  useRouter: () => ({
+    back: mockBack,
+  }),
+}));
 
 jest.mock('@/ui/inspection/view-models/use-inspection', () => ({
   useInspection: () => mockUseInspection(),
@@ -39,17 +46,20 @@ describe('InspectionScreen', () => {
     });
   });
 
-  it('renders empty state summary and disabled finish action', () => {
+  it('renders the shared header and disabled finish action', () => {
     render(<InspectionScreen />);
 
-    expect(screen.getByText(/Inspe/)).toBeOnTheScreen();
+    expect(screen.getByText('Inspecao')).toBeOnTheScreen();
     expect(screen.getByText('Vazio')).toBeOnTheScreen();
     expect(screen.getAllByText('0')).toHaveLength(2);
     expect(screen.getByText('Exibir plantas')).toBeOnTheScreen();
     expect(screen.getByText('Finalizar')).toBeOnTheScreen();
     expect(screen.getByTestId('inspection-summary-panel')).toHaveStyle({ top: 44 });
 
+    fireEvent.press(screen.getByLabelText(/Voltar para trabalhos de campo/));
     fireEvent.press(screen.getByLabelText(/Abrir filtro/));
+
+    expect(mockBack).toHaveBeenCalled();
     expect(mockOpenFilterModal).toHaveBeenCalled();
   });
 
@@ -72,6 +82,7 @@ describe('InspectionScreen', () => {
 
     fireEvent.press(screen.getByLabelText(/Finalizar/));
     fireEvent.press(screen.getByLabelText(/Abrir detalhes/));
+
     expect(mockFinishActiveInspection).toHaveBeenCalled();
     expect(mockOpenNearestPlantModal).toHaveBeenCalled();
   });
