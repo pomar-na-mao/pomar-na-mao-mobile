@@ -40,7 +40,7 @@ export function SprayingMap() {
     selectedZonePlants,
     togglePlant,
   } = useSpraying();
-  const plants = aggregate?.plants ?? selectedZonePlants;
+  const plants = aggregate?.plants ?? selectedZonePlants ?? [];
   const simulationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mapRef = useRef<MapView | null>(null);
   const [simulationPoints, setSimulationPoints] = useState<SprayingSimulationPoints>(EMPTY_SPRAYING_SIMULATION_POINTS);

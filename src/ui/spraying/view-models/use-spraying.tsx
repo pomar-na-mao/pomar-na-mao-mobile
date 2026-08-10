@@ -67,6 +67,7 @@ interface SprayingContextValue {
 const SprayingContext = createContext({} as SprayingContextValue);
 
 function clearSprayingReviewState(plants: SprayingPlant[]) {
+  if (!plants || !Array.isArray(plants)) return [];
   return plants.map((plant) => ({
     ...plant,
     distanceMeters: null,

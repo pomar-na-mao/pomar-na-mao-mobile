@@ -12,7 +12,7 @@ export function SprayingZoneModal() {
   const { closeZoneSelection, isZoneSelectionVisible, loadZone, selectedZone, zones } = useSpraying();
   const [zoneId, setZoneId] = useState('');
   const [validation, setValidation] = useState<string | null>(null);
-  const zoneOptions = useMemo(() => zones.map((zone) => ({ label: zone.name, value: zone.id })), [zones]);
+  const zoneOptions = useMemo(() => (zones ?? []).map((zone) => ({ label: zone.name, value: zone.id })), [zones]);
 
   useEffect(() => {
     if (isZoneSelectionVisible) {

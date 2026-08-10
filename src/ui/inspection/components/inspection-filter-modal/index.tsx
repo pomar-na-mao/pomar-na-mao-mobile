@@ -13,11 +13,11 @@ export const InspectionFilterModal = () => {
   const [zoneId, setZoneId] = useState<string | null>(null);
 
   const zoneOptions = useMemo(
-    () => filterOptions.zones.map((zone) => ({ label: zone.name, value: zone.id })),
-    [filterOptions.zones],
+    () => (filterOptions?.zones ?? []).map((zone) => ({ label: zone.name, value: zone.id })),
+    [filterOptions?.zones],
   );
   const submit = () => {
-    const selectedZone = filterOptions.zones.find((zone) => zone.id === zoneId);
+    const selectedZone = (filterOptions?.zones ?? []).find((zone) => zone.id === zoneId);
     const filters: InspectionFilter = {
       zoneId: selectedZone?.id ?? null,
       zoneName: selectedZone?.name ?? null,

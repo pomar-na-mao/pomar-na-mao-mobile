@@ -6,6 +6,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { Platform } from 'react-native';
 
 export type SprayingTrackingReconciliation = 'inactive' | 'active' | 'recovery_required';
 
@@ -32,6 +33,8 @@ export async function getActiveSprayingTracking(): Promise<ActiveSprayingTrackin
 }
 
 export async function requestSprayingLocationPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+
   if (!(await TaskManager.isAvailableAsync())) {
     return false;
   }
@@ -46,6 +49,8 @@ export async function requestSprayingLocationPermissions(): Promise<boolean> {
 }
 
 export async function startSprayingLocationUpdates(operationId: string, deviceId: string): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+
   if (!(await requestSprayingLocationPermissions())) {
     return false;
   }
@@ -85,6 +90,8 @@ export async function startSprayingLocationUpdates(operationId: string, deviceId
 }
 
 export async function stopSprayingLocationUpdates() {
+  if (Platform.OS === 'web') return;
+
   const activeTask = await Location.hasStartedLocationUpdatesAsync(SPRAYING_LOCATION_TASK);
   if (activeTask) {
     await Location.stopLocationUpdatesAsync(SPRAYING_LOCATION_TASK);
@@ -97,7 +104,7 @@ export async function reconcileSprayingLocationUpdates(
 ): Promise<SprayingTrackingReconciliation> {
   const [activeTracking, activeTask] = await Promise.all([
     getActiveSprayingTracking(),
-    Location.hasStartedLocationUpdatesAsync(SPRAYING_LOCATION_TASK),
+    Platform.OS === 'web' ? Promise.resolve(false) : Location.hasStartedLocationUpdatesAsync(SPRAYING_LOCATION_TASK),
   ]);
 
   if (!operationId) {

@@ -152,7 +152,7 @@ export function SprayingSetupModal() {
               </View>
 
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Insumos aplicados</Text>
-              {inputs.map((input, index) => (
+              {(inputs ?? []).map((input, index) => (
                 <View key={`input-${index}`} style={[styles.inputCard, { borderColor: colors.line }]}>
                   <TextInput
                     accessibilityLabel={`Produto ${index + 1}`}

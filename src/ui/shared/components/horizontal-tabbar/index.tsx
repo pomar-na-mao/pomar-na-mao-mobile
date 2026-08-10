@@ -13,8 +13,8 @@ interface HorizontalTabBarProps {
   onTabChange: (tab: HorizontalTab) => void;
 }
 
-const HorizontalTabBar: React.FC<HorizontalTabBarProps> = ({ tabs, onTabChange }) => {
-  const [activeTab, setActiveTab] = useState(tabs[0]);
+const HorizontalTabBar: React.FC<HorizontalTabBarProps> = ({ tabs = [], onTabChange }) => {
+  const [activeTab, setActiveTab] = useState<HorizontalTab | null>(tabs[0] ?? null);
 
   const onTabPressHandler = (tab: HorizontalTab) => {
     setActiveTab(tab);
@@ -42,14 +42,14 @@ const HorizontalTabBar: React.FC<HorizontalTabBarProps> = ({ tabs, onTabChange }
             disabled={feature.isDisabled}
             style={[
               styles.tabItem,
-              activeTab.key === feature.key && { borderBottomColor: Colors[theme].blue },
+              activeTab?.key === feature.key && { borderBottomColor: Colors[theme].blue },
               feature.isDisabled && styles.disabledTabItem,
             ]}
           >
             <ThemedText
               type="tabItem"
               style={[
-                activeTab.key === feature.key && { color: Colors[theme].blue },
+                activeTab?.key === feature.key && { color: Colors[theme].blue },
                 feature.isDisabled && { color: Colors[theme].icon },
               ]}
             >

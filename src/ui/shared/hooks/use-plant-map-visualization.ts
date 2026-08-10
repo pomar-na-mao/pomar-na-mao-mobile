@@ -15,7 +15,8 @@ export function usePlantMapVisualization(
   const [region, setRegion] = useState(initialRegion);
   const hasInitializedRegion = useRef(isRegionReady);
   const lastResetKeyRef = useRef<string | null>(isRegionReady ? null : null);
-  const coordinateKey = plants
+  const safePlants = plants ?? [];
+  const coordinateKey = safePlants
     .map((plant) => `${plant.plantId ?? plant.id}:${plant.latitude}:${plant.longitude}`)
     .join('|');
 
@@ -27,10 +28,10 @@ export function usePlantMapVisualization(
       setRegion(initialRegion);
     }
   }, [coordinateKey, initialRegion, isRegionReady]);
-  const index = useMemo(() => createPlantSpatialIndex(plants), [coordinateKey]);
+  const index = useMemo(() => createPlantSpatialIndex(safePlants), [coordinateKey]);
   const result = useMemo(
-    () => selectPlantMapVisualization(index, region, priorityPlantId, plants),
-    [index, plants, priorityPlantId, region],
+    () => selectPlantMapVisualization(index, region, priorityPlantId, safePlants),
+    [index, priorityPlantId, region, safePlants],
   );
   const onRegionChangeComplete = useCallback((nextRegion: PlantMapRegion) => setRegion(nextRegion), []);
 
