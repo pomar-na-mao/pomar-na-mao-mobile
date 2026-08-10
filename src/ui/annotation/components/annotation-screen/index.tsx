@@ -3,11 +3,14 @@ import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { AnnotationDataModal } from '@/ui/annotation/components/annotation-data-modal';
 import { AnnotationMap } from '@/ui/annotation/components/annotation-map';
 import { useAnnotation } from '@/ui/annotation/view-models/use-annotation';
+import { FieldWorkHeader } from '@/ui/shared/components/field-work-header';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export const AnnotationScreen = () => {
+  const router = useRouter();
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const {
@@ -24,116 +27,124 @@ export const AnnotationScreen = () => {
 
   return (
     <View style={styles.container}>
-      <AnnotationMap />
+      <FieldWorkHeader
+        backAccessibilityLabel="Voltar para trabalhos de campo"
+        onBackPress={() => router.back()}
+        title="Anotacao"
+      />
 
-      <View pointerEvents="box-none" style={styles.topPanel}>
-        <View
-          style={[
-            styles.summaryCard,
-            {
-              backgroundColor: theme === 'dark' ? 'rgba(46, 49, 46, 0.96)' : 'rgba(255, 255, 255, 0.96)',
-              borderColor: colors.cardBorder,
-            },
-          ]}
-        >
-          <View style={styles.summaryHeader}>
-            <View style={[styles.summaryIcon, { backgroundColor: colors.logoBackground }]}>
-              <MaterialIcons name="edit-location-alt" size={20} color={colors.tint} />
-            </View>
-            <View style={styles.summaryTitleGroup}>
-              <Text style={[styles.summaryTitle, { color: colors.text }]}>Anotação</Text>
-              <Text numberOfLines={1} style={[styles.summarySubtitle, { color: colors.disabledText }]}>
-                Registre ocorrências
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: activeOperation ? colors.activeTrackColor : colors.neutralButtonBackground },
-              ]}
-            >
-              <Text style={[styles.statusBadgeText, { color: activeOperation ? colors.tint : colors.disabledText }]}>
-                {statusLabel}
-              </Text>
-            </View>
-          </View>
+      <View style={styles.content}>
+        <AnnotationMap />
 
-          <View style={styles.summaryMetrics}>
-            <View style={[styles.metricChip, { backgroundColor: theme === 'dark' ? '#243B2A' : '#E8F3E8' }]}>
-              <Text style={[styles.metricValue, { color: colors.text }]}>{summary.total}</Text>
-              <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Total</Text>
+        <View pointerEvents="box-none" style={styles.topPanel}>
+          <View
+            style={[
+              styles.summaryCard,
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(46, 49, 46, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.summaryHeader}>
+              <View style={[styles.summaryIcon, { backgroundColor: colors.logoBackground }]}>
+                <MaterialIcons name="edit-location-alt" size={20} color={colors.tint} />
+              </View>
+              <View style={styles.summaryTitleGroup}>
+                <Text style={[styles.summaryTitle, { color: colors.text }]}>AnotaÃ§Ã£o</Text>
+                <Text numberOfLines={1} style={[styles.summarySubtitle, { color: colors.disabledText }]}>
+                  Registre ocorrÃªncias
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: activeOperation ? colors.activeTrackColor : colors.neutralButtonBackground },
+                ]}
+              >
+                <Text style={[styles.statusBadgeText, { color: activeOperation ? colors.tint : colors.disabledText }]}>
+                  {statusLabel}
+                </Text>
+              </View>
             </View>
-            <View style={[styles.metricChip, { backgroundColor: theme === 'dark' ? '#263B46' : '#E7F1F8' }]}>
-              <Text style={[styles.metricValue, { color: colors.text }]}>{summary.pending}</Text>
-              <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Pendentes</Text>
-            </View>
-            <View style={[styles.metricChip, { backgroundColor: theme === 'dark' ? '#4A2424' : '#FDECEC' }]}>
-              <Text style={[styles.metricValue, { color: colors.text }]}>{summary.error}</Text>
-              <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Erros</Text>
+
+            <View style={styles.summaryMetrics}>
+              <View style={[styles.metricChip, { backgroundColor: theme === 'dark' ? '#243B2A' : '#E8F3E8' }]}>
+                <Text style={[styles.metricValue, { color: colors.text }]}>{summary.total}</Text>
+                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Total</Text>
+              </View>
+              <View style={[styles.metricChip, { backgroundColor: theme === 'dark' ? '#263B46' : '#E7F1F8' }]}>
+                <Text style={[styles.metricValue, { color: colors.text }]}>{summary.pending}</Text>
+                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Pendentes</Text>
+              </View>
+              <View style={[styles.metricChip, { backgroundColor: theme === 'dark' ? '#4A2424' : '#FDECEC' }]}>
+                <Text style={[styles.metricValue, { color: colors.text }]}>{summary.error}</Text>
+                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Erros</Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
 
-      <View pointerEvents="box-none" style={styles.bottomPanel}>
-        <View
-          style={[
-            styles.actionBar,
-            { backgroundColor: theme === 'dark' ? 'rgba(28, 29, 28, 0.94)' : 'rgba(255, 255, 255, 0.94)' },
-          ]}
-        >
-          <Pressable
-            accessibilityLabel="Abrir dados da anotacao"
-            accessibilityRole="button"
-            onPress={openAnnotationModal}
-            style={[styles.primaryButton, { backgroundColor: colors.tint }]}
-          >
-            <MaterialIcons name="add-location-alt" size={20} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>Dados</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityLabel="Finalizar anotacao"
-            accessibilityRole="button"
-            disabled={!activeOperation}
-            onPress={finishActiveAnnotationOperation}
-            style={[styles.primaryButton, { backgroundColor: colors.secondary, opacity: activeOperation ? 1 : 0.55 }]}
-          >
-            <MaterialIcons name="check" size={20} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>Finalizar</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityLabel="Sincronizar anotacoes"
-            accessibilityRole="button"
-            disabled={summary.pending + summary.error === 0}
-            onPress={syncAnnotations}
+        <View pointerEvents="box-none" style={styles.bottomPanel}>
+          <View
             style={[
-              styles.iconButton,
-              {
-                backgroundColor: colors.confirmationButtonBackground,
-                opacity: summary.pending + summary.error > 0 ? 1 : 0.55,
-              },
+              styles.actionBar,
+              { backgroundColor: theme === 'dark' ? 'rgba(28, 29, 28, 0.94)' : 'rgba(255, 255, 255, 0.94)' },
             ]}
           >
-            <MaterialIcons name="sync" size={22} color="#FFFFFF" />
-          </Pressable>
+            <Pressable
+              accessibilityLabel="Abrir dados da anotacao"
+              accessibilityRole="button"
+              onPress={openAnnotationModal}
+              style={[styles.primaryButton, { backgroundColor: colors.tint }]}
+            >
+              <MaterialIcons name="add-location-alt" size={20} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>Dados</Text>
+            </Pressable>
 
-          <Pressable
-            accessibilityLabel="Apagar anotacoes"
-            accessibilityRole="button"
-            disabled={!hasAnnotations}
-            onPress={clearAnnotations}
-            style={[
-              styles.iconButton,
-              {
-                backgroundColor: colors.destructiveButtonBackground,
-                opacity: hasAnnotations ? 1 : 0.55,
-              },
-            ]}
-          >
-            <MaterialIcons name="delete-outline" size={22} color="#FFFFFF" />
-          </Pressable>
+            <Pressable
+              accessibilityLabel="Finalizar anotacao"
+              accessibilityRole="button"
+              disabled={!activeOperation}
+              onPress={finishActiveAnnotationOperation}
+              style={[styles.primaryButton, { backgroundColor: colors.secondary, opacity: activeOperation ? 1 : 0.55 }]}
+            >
+              <MaterialIcons name="check" size={20} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>Finalizar</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityLabel="Sincronizar anotacoes"
+              accessibilityRole="button"
+              disabled={summary.pending + summary.error === 0}
+              onPress={syncAnnotations}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor: colors.confirmationButtonBackground,
+                  opacity: summary.pending + summary.error > 0 ? 1 : 0.55,
+                },
+              ]}
+            >
+              <MaterialIcons name="sync" size={22} color="#FFFFFF" />
+            </Pressable>
+
+            <Pressable
+              accessibilityLabel="Apagar anotacoes"
+              accessibilityRole="button"
+              disabled={!hasAnnotations}
+              onPress={clearAnnotations}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor: colors.destructiveButtonBackground,
+                  opacity: hasAnnotations ? 1 : 0.55,
+                },
+              ]}
+            >
+              <MaterialIcons name="delete-outline" size={22} color="#FFFFFF" />
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -160,6 +171,9 @@ const styles = StyleSheet.create({
     zIndex: 30,
   },
   container: {
+    flex: 1,
+  },
+  content: {
     flex: 1,
   },
   iconButton: {

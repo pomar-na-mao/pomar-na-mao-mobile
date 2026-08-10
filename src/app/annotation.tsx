@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function AnnotationRoute() {
   return (
     <ThemedView style={{ flex: 1 }}>
-      <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
+      <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
         <AnnotationProvider>
           <AnnotationScreen />
         </AnnotationProvider>
