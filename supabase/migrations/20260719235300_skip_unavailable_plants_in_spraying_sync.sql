@@ -41,7 +41,7 @@ declare
   v_confirmed_plants_count integer := 0;
 begin
   if p_payload is null or jsonb_typeof(p_payload) <> 'object' then
-    raise exception 'Payload de pulverizacao invalido';
+    raise exception 'Payload de pulverização invalido';
   end if;
 
   if v_local_operation_id is null or v_device_id is null then

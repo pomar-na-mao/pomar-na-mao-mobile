@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 import { SprayingScreen } from '.';
 
+const mockOpenListView = jest.fn();
 const mockOpenSetup = jest.fn();
 const mockOpenZoneSelection = jest.fn();
 const mockStartTracking = jest.fn();
@@ -25,6 +26,7 @@ jest.mock('@/ui/spraying/view-models/use-spraying', () => ({
     confirmReview: mockConfirmReview,
     deleteActiveOperation: mockDeleteActiveOperation,
     finishTracking: mockFinishTracking,
+    openListView: mockOpenListView,
     openSetup: mockOpenSetup,
     openZoneSelection: mockOpenZoneSelection,
     simulate: mockSimulate,
@@ -76,11 +78,16 @@ describe('SprayingScreen', () => {
   it('starts by asking the user to configure a zone', () => {
     render(<SprayingScreen />);
 
+    expect(screen.getByText('Nova Pulverização')).toBeOnTheScreen();
     expect(screen.getByText('Exibir plantas')).toBeOnTheScreen();
     expect(screen.getByTestId('spraying-action-bar')).toHaveStyle({ backgroundColor: 'transparent' });
     expect(screen.getByTestId('spraying-summary-panel')).toHaveStyle({ top: 44 });
     expect(screen.getByText('Carregue as plantas de uma zona')).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByTestId('back-to-list-btn'));
     fireEvent.press(screen.getByText('Exibir plantas'));
+
+    expect(mockOpenListView).toHaveBeenCalled();
     expect(mockOpenZoneSelection).toHaveBeenCalled();
     expect(mockOpenSetup).not.toHaveBeenCalled();
   });
@@ -115,7 +122,7 @@ describe('SprayingScreen', () => {
     ['draft', 'Iniciar GPS', mockStartTracking],
     ['tracking', 'Finalizar rota', mockFinishTracking],
     ['finished', 'Simular', mockSimulate],
-    ['simulated', 'Confirmar revisão', mockConfirmReview],
+    ['simulated', 'Confirmar revisÃ£o', mockConfirmReview],
     ['reviewed', 'Sincronizar', mockSyncOperation],
     ['sync_error', 'Sincronizar', mockSyncOperation],
   ] as const)('shows the correct action for %s', (status, label, action) => {
@@ -153,7 +160,7 @@ describe('SprayingScreen', () => {
     render(<SprayingScreen />);
 
     expect(screen.getByText(/Plantas em laranja/)).toBeOnTheScreen();
-    expect(screen.getByText('Confirmar revisão')).toBeOnTheScreen();
+    expect(screen.getByText('Confirmar revisÃ£o')).toBeOnTheScreen();
   });
 
   it('requires confirmation before deleting an active operation', () => {

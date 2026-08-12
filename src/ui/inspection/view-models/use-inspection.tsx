@@ -417,12 +417,6 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
         (item) => item.occurrenceTypeId === occurrence.id && item.status === 'open',
       );
 
-      if (changeType !== 'add_occurrence' && !existingOccurrence) {
-        setMessage('Selecione uma ocorrência existente para atualizar ou resolver.');
-        setIsVisible(true);
-        return;
-      }
-
       const distanceToPlantMeters = currentLocation
         ? twoPointsDistance(
             {

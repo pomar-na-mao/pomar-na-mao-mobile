@@ -1,12 +1,13 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ConfirmationModal } from '@/ui/shared/components/confirmation-modal';
+import { FieldWorkHeader } from '@/ui/shared/components/field-work-header';
 import { useSpraying } from '@/ui/spraying/view-models/use-spraying';
-import { SprayingOperationCard } from './spraying-operation-card';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SprayingOperationCard } from './spraying-operation-card';
 
 export function SprayingListScreen() {
   const router = useRouter();
@@ -17,36 +18,12 @@ export function SprayingListScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.topHeader}>
-        <Pressable
-          accessibilityLabel="Voltar para Trabalhos de Campo"
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={[styles.backBtn, { borderColor: colors.cardBorder }]}
-          testID="back-to-field-works-btn"
-        >
-          <MaterialIcons name="arrow-back" color={colors.text} size={20} />
-        </Pressable>
-
-        <View style={styles.topTitleGroup}>
-          <Text style={[styles.mainTitle, { color: colors.text }]}>Pulverizações</Text>
-          <Text style={[styles.mainSubtitle, { color: colors.disabledText }]}>
-            {operationsList.length === 1
-              ? '1 pulverização registrada'
-              : `${operationsList.length} pulverizações registradas`}
-          </Text>
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => void openMapView()}
-          style={[styles.newBtn, { backgroundColor: colors.tint }]}
-          testID="new-spraying-btn"
-        >
-          <MaterialIcons name="add" color="#FFFFFF" size={20} />
-          <Text style={styles.newBtnText}>Nova</Text>
-        </Pressable>
-      </View>
+      <FieldWorkHeader
+        backAccessibilityLabel="Voltar para Trabalhos de Campo"
+        backButtonTestID="back-to-field-works-btn"
+        onBackPress={() => router.back()}
+        title="Pulverizações"
+      />
 
       <FlatList
         data={operationsList}
@@ -101,19 +78,8 @@ export function SprayingListScreen() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: 'center',
-    marginRight: 8,
-    width: 40,
-  },
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
   },
   emptyBtn: {
     alignItems: 'center',
@@ -149,40 +115,19 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   listContentEmpty: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingBottom: 24,
-  },
-  mainSubtitle: {
-    fontSize: 12,
-  },
-  mainTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  newBtn: {
-    alignItems: 'center',
-    borderRadius: 12,
-    flexDirection: 'row',
-    gap: 4,
-    height: 42,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   newBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
-  },
-  topHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  topTitleGroup: {
-    flex: 1,
   },
 });

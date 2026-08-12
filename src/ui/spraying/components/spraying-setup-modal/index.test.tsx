@@ -31,8 +31,8 @@ describe('SprayingSetupModal', () => {
   it('labels the treatment band distances', () => {
     render(<SprayingSetupModal />);
 
-    expect(screen.getByText('Distância típica planta-trator (m)')).toBeOnTheScreen();
-    expect(screen.getByText('Alcance máximo da pulverização (m)')).toBeOnTheScreen();
+    expect(screen.getByText('Planta — Trator (m)')).toBeOnTheScreen();
+    expect(screen.getByText('Alcance máximo (m)')).toBeOnTheScreen();
   });
 
   it('allows the form to scroll while the keyboard is open', () => {

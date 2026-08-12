@@ -271,7 +271,7 @@ export function useAnnotationSqliteService() {
 
   async function buildSyncPayload(occurrence: LocalAnnotationOccurrence): Promise<SyncAnnotationPayload> {
     if (!occurrence.field_operation_id) {
-      throw new Error('Anotacao local sem operacao vinculada nao pode ser sincronizada.');
+      throw new Error('Anotação local sem operacao vinculada nao pode ser sincronizada.');
     }
 
     return {

@@ -22,8 +22,8 @@ function MainLayout() {
       <Stack screenOptions={{ animation: 'fade' }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="field-works" options={{ headerShown: false }} />
-        <Stack.Screen name="inspection" options={{ title: 'Inspeção' }} />
-        <Stack.Screen name="annotation" options={{ title: 'Anotação' }} />
+        <Stack.Screen name="inspection" options={{ headerShown: false }} />
+        <Stack.Screen name="annotation" options={{ headerShown: false }} />
         <Stack.Screen name="spraying" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />

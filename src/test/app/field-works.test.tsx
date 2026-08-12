@@ -93,8 +93,8 @@ describe('FieldWorks', () => {
     fireEvent.press(screen.getByTestId('field-work-load-plants-button'));
     expect(mockOpenPlantLoader).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Nenhuma planta carregada')).toBeOnTheScreen();
-    expect(screen.getByText('Plantas necessárias')).toBeOnTheScreen();
-    expect(screen.getByText(/Carregue plantas para liberar/)).toBeOnTheScreen();
+    expect(screen.getByText('Plantas')).toBeOnTheScreen();
+    expect(screen.getByText(/Carregue as plantas antes de ir a campo/)).toBeOnTheScreen();
     expect(screen.getByTestId('field-work-loaded-data-banner')).toBeOnTheScreen();
     expect(screen.queryByText(/plantas carregadas/)).toBeNull();
     expect(screen.queryByText('Carregar')).toBeNull();
@@ -112,8 +112,10 @@ describe('FieldWorks', () => {
     expect(screen.getByText('1 planta')).toBeOnTheScreen();
     expect(screen.getByText('Talhão Sul')).toBeOnTheScreen();
     expect(screen.getByText('24 plantas')).toBeOnTheScreen();
+    expect(screen.getByText('2 áreas · 25 plantas')).toBeOnTheScreen();
+    expect(screen.getByText('Áreas disponíveis offline')).toBeOnTheScreen();
     expect(screen.queryByTestId('field-work-loaded-data-banner')).not.toBeOnTheScreen();
-    expect(screen.queryByText('Plantas necessárias')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Nenhuma planta carregada')).not.toBeOnTheScreen();
     expect(screen.getByTestId('field-work-loaded-data-card')).toHaveStyle({ height: 280 });
     expect(screen.getByTestId('field-work-loaded-zones-scroll').props.nestedScrollEnabled).toBe(true);
   });
@@ -139,6 +141,15 @@ describe('FieldWorks', () => {
     fireEvent.press(screen.getByTestId('field-work-clear-plants-button'));
     expect(screen.getByTestId('field-work-clear-plants-modal')).toBeOnTheScreen();
     expect(screen.getByText('Excluir plantas carregadas?')).toBeOnTheScreen();
+    expect(screen.getByTestId('field-work-clear-plants-cancel-button')).toHaveStyle({
+      backgroundColor: '#F1F3F1',
+      borderWidth: 1,
+      minHeight: 50,
+    });
+    expect(screen.getByTestId('field-work-clear-plants-confirm-button')).toHaveStyle({
+      backgroundColor: '#B91C1C',
+      minHeight: 50,
+    });
     await act(async () => {
       fireEvent.press(screen.getByText('Excluir'));
     });
