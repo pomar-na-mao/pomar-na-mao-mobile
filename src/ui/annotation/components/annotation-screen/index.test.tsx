@@ -45,9 +45,9 @@ describe('AnnotationScreen', () => {
   it('renders the shared header and opens the annotation modal', () => {
     render(<AnnotationScreen />);
 
-    expect(screen.getByText('Anotacao')).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Voltar para trabalhos de campo/)).toBeOnTheScreen();
     expect(screen.getByText('Vazio')).toBeOnTheScreen();
-    expect(screen.getByText('Dados')).toBeOnTheScreen();
+    expect(screen.getByText('Marcar')).toBeOnTheScreen();
     expect(screen.getByText('Finalizar')).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText(/Voltar para trabalhos de campo/));

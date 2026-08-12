@@ -30,7 +30,7 @@ export const AnnotationScreen = () => {
       <FieldWorkHeader
         backAccessibilityLabel="Voltar para trabalhos de campo"
         onBackPress={() => router.back()}
-        title="Anotacao"
+        title="Anotação"
       />
 
       <View style={styles.content}>
@@ -51,9 +51,9 @@ export const AnnotationScreen = () => {
                 <MaterialIcons name="edit-location-alt" size={20} color={colors.tint} />
               </View>
               <View style={styles.summaryTitleGroup}>
-                <Text style={[styles.summaryTitle, { color: colors.text }]}>AnotaÃ§Ã£o</Text>
+                <Text style={[styles.summaryTitle, { color: colors.text }]}>Anotação</Text>
                 <Text numberOfLines={1} style={[styles.summarySubtitle, { color: colors.disabledText }]}>
-                  Registre ocorrÃªncias
+                  Registre ocorrências
                 </Text>
               </View>
               <View
@@ -93,17 +93,17 @@ export const AnnotationScreen = () => {
             ]}
           >
             <Pressable
-              accessibilityLabel="Abrir dados da anotacao"
+              accessibilityLabel="Abrir dados da anotação"
               accessibilityRole="button"
               onPress={openAnnotationModal}
               style={[styles.primaryButton, { backgroundColor: colors.tint }]}
             >
               <MaterialIcons name="add-location-alt" size={20} color="#FFFFFF" />
-              <Text style={styles.primaryButtonText}>Dados</Text>
+              <Text style={styles.primaryButtonText}>Marcar</Text>
             </Pressable>
 
             <Pressable
-              accessibilityLabel="Finalizar anotacao"
+              accessibilityLabel="Finalizar anotação"
               accessibilityRole="button"
               disabled={!activeOperation}
               onPress={finishActiveAnnotationOperation}

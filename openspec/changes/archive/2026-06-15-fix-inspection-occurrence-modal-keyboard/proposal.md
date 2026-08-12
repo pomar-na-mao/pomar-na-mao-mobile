@@ -8,7 +8,7 @@ confirm the final occurrence fields when adding an occurrence during inspection.
 
 - Update the inspection nearest-plant occurrence modal so keyboard appearance
   does not obscure the final fields or save action.
-- Reuse the proven layout behavior from the spraying "Nova Pulverizacao" setup
+- Reuse the proven layout behavior from the spraying "Nova Pulverização" setup
   modal: keyboard avoidance, scrollable content, drag-to-dismiss behavior, and
   enough bottom spacing for deployed mobile keyboards.
 - Preserve the current occurrence add/remove behavior, validation, dropdowns,

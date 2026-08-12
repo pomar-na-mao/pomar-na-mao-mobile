@@ -13,7 +13,7 @@ export const AnnotationMap = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme === 'dark' ? '#162116' : '#DDEEDD' }]}>
       <View style={[styles.mapGrid, { borderColor: colors.cardBorder }]}>
-        <ThemedText type="subtitle">Mapa de anotacao</ThemedText>
+        <ThemedText type="subtitle">Mapa de anotação</ThemedText>
         <ThemedText style={styles.text}>
           {currentLocation
             ? `${currentLocation.coords.latitude.toFixed(5)}, ${currentLocation.coords.longitude.toFixed(5)}`

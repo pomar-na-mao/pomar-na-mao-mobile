@@ -64,7 +64,7 @@ export function SprayingListScreen() {
       <ConfirmationModal
         visible={Boolean(deletingId)}
         title="Excluir Pulverização"
-        message="Deseja apagar esta operaÃ§Ã£o e todos os dados locais associados?"
+        message="Deseja apagar esta operação e todos os dados locais associados?"
         onCancel={() => setDeletingId(null)}
         onConfirm={async () => {
           if (deletingId) {

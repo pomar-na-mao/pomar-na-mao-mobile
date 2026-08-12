@@ -49,7 +49,7 @@ describe('InspectionScreen', () => {
   it('renders the shared header and disabled finish action', () => {
     render(<InspectionScreen />);
 
-    expect(screen.getByText('Inspecao')).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Voltar para trabalhos de campo/)).toBeOnTheScreen();
     expect(screen.getByText('Vazio')).toBeOnTheScreen();
     expect(screen.getAllByText('0')).toHaveLength(2);
     expect(screen.getByText('Exibir plantas')).toBeOnTheScreen();

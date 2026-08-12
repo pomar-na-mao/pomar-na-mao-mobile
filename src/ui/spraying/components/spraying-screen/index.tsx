@@ -71,7 +71,7 @@ export function SprayingScreen() {
         backAccessibilityLabel="Voltar para lista de pulverizacoes"
         backButtonTestID="back-to-list-btn"
         onBackPress={openListView}
-        title={aggregate ? (status === 'tracking' ? 'Rastreamento' : 'Detalhes da Pulverizacao') : 'Nova Pulverizacao'}
+        title={aggregate ? (status === 'tracking' ? 'Rastreamento' : 'Detalhes da Pulverização') : 'Nova Pulverização'}
       />
 
       <View style={styles.content}>

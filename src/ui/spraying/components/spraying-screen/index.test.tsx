@@ -78,7 +78,7 @@ describe('SprayingScreen', () => {
   it('starts by asking the user to configure a zone', () => {
     render(<SprayingScreen />);
 
-    expect(screen.getByText('Nova Pulverizacao')).toBeOnTheScreen();
+    expect(screen.getByText('Nova Pulverização')).toBeOnTheScreen();
     expect(screen.getByText('Exibir plantas')).toBeOnTheScreen();
     expect(screen.getByTestId('spraying-action-bar')).toHaveStyle({ backgroundColor: 'transparent' });
     expect(screen.getByTestId('spraying-summary-panel')).toHaveStyle({ top: 44 });

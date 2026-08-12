@@ -457,7 +457,7 @@ describe('InspectionProvider', () => {
     );
   });
 
-  it('blocks removal when the occurrence is absent from loaded and local offline state', async () => {
+  it('saves removal even when the occurrence is absent from loaded and local offline state', async () => {
     const service = await renderProvider(
       createSqliteService({
         getChanges: jest.fn().mockResolvedValue([]),
@@ -475,8 +475,13 @@ describe('InspectionProvider', () => {
       fireEvent.press(screen.getByTestId('save-remove'));
     });
 
-    expect(service.addInspectionChange).not.toHaveBeenCalled();
-    expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Selecione uma ocorr'));
+    expect(service.addInspectionChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changeType: 'remove_occurrence',
+        newValue: expect.objectContaining({ status: 'removed' }),
+        previousValue: null,
+      }),
+    );
   });
 
   it('validates occurrence saving and finishing when there is no active inspection', async () => {

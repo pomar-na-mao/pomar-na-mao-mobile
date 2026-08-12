@@ -159,7 +159,7 @@ begin
     v_operation_type_id,
     coalesce(p_zone_id, v_zone_id),
     'manual',
-    'Anotacao de ocorrencia',
+    'Anotação de ocorrencia',
     v_observed_at,
     v_observed_at,
     p_notes,

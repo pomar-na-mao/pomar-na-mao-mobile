@@ -1,10 +1,10 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
-import { FieldWorkHeader } from '@/ui/shared/components/field-work-header';
 import { InspectionFilterModal } from '@/ui/inspection/components/inspection-filter-modal';
 import { InspectionMap } from '@/ui/inspection/components/inspection-map';
 import { NearestPlantModal } from '@/ui/inspection/components/nearest-plant-modal';
 import { useInspection } from '@/ui/inspection/view-models/use-inspection';
+import { FieldWorkHeader } from '@/ui/shared/components/field-work-header';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -31,8 +31,8 @@ export const InspectionScreen = () => {
   const isSynced = activeInspection?.sync_status === 'synced';
   const statusLabel = isSynced ? 'Sincronizada' : canSync ? 'Finalizada' : activeInspection ? 'Em campo' : 'Vazio';
   const activeFilterLabel = activeInspection
-    ? [activeInspection.zone_name ?? 'Todas as zonas', activeInspection.occurrence_name ?? 'Todas as ocorrÃªncias'].join(
-        ' â€¢ ',
+    ? [activeInspection.zone_name ?? 'Todas as zonas', activeInspection.occurrence_name ?? 'Todas as ocorrências'].join(
+        ' • ',
       )
     : 'Aplique um filtro para carregar plantas.';
 
@@ -41,7 +41,7 @@ export const InspectionScreen = () => {
       <FieldWorkHeader
         backAccessibilityLabel="Voltar para trabalhos de campo"
         onBackPress={() => router.back()}
-        title="Inspecao"
+        title="Inspeção"
       />
 
       <View style={styles.content}>
@@ -66,7 +66,7 @@ export const InspectionScreen = () => {
                 <MaterialIcons name="fact-check" size={20} color={colors.tint} />
               </View>
               <View style={styles.summaryTitleGroup}>
-                <Text style={[styles.summaryTitle, { color: colors.text }]}>InspeÃ§Ã£o</Text>
+                <Text style={[styles.summaryTitle, { color: colors.text }]}>Inspeção</Text>
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"
@@ -90,13 +90,13 @@ export const InspectionScreen = () => {
             <View style={styles.summaryMetrics}>
               <View style={[styles.metricChip, { backgroundColor: theme === 'dark' ? '#243B2A' : '#E8F3E8' }]}>
                 <Text style={[styles.metricValue, { color: colors.text }]}>{loadedPlants.length}</Text>
-                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>carregadas</Text>
+                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Carregadas</Text>
               </View>
               <View style={[styles.metricChip, { backgroundColor: theme === 'dark' ? '#263B46' : '#E7F1F8' }]}>
                 <Text style={[styles.metricValue, { color: colors.text }]}>
                   {activeInspection?.plants_changed_count ?? 0}
                 </Text>
-                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>alteradas</Text>
+                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Alteradas</Text>
               </View>
               <View
                 style={[
@@ -108,7 +108,7 @@ export const InspectionScreen = () => {
                 <Text numberOfLines={1} style={[styles.metricValue, { color: colors.danger }]}>
                   {nearestShortId ?? '--'}
                 </Text>
-                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>prÃ³xima â€¢ {distanceLabel}</Text>
+                <Text style={[styles.metricLabel, { color: colors.disabledText }]}>Distância {distanceLabel}</Text>
               </View>
             </View>
           </View>
@@ -134,7 +134,7 @@ export const InspectionScreen = () => {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Abrir filtro de inspeÃ§Ã£o"
+              accessibilityLabel="Abrir filtro de inspeção"
               style={[styles.primaryButton, { backgroundColor: colors.tint }]}
               onPress={openFilterModal}
             >
@@ -145,7 +145,7 @@ export const InspectionScreen = () => {
             {canSync || isSynced ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Sincronizar inspeÃ§Ã£o"
+                accessibilityLabel="Sincronizar inspeção"
                 disabled={!canSync}
                 style={[
                   styles.primaryButton,
@@ -166,7 +166,7 @@ export const InspectionScreen = () => {
             ) : (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Finalizar inspeÃ§Ã£o"
+                accessibilityLabel="Finalizar inspeção"
                 disabled={!canFinish}
                 style={[
                   styles.primaryButton,
