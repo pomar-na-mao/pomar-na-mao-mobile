@@ -3,6 +3,7 @@ import {
   SPRAYING_LOCATION_TASK,
   type ActiveSprayingTracking,
 } from '@/shared/constants/spraying-background-location';
+import { hasPreciseLocationPermission } from '@/shared/helpers/high-accuracy-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
@@ -37,7 +38,7 @@ export async function requestSprayingLocationPermissions(): Promise<boolean> {
   }
 
   const foreground = await Location.requestForegroundPermissionsAsync();
-  if (foreground.status !== 'granted') {
+  if (foreground.status !== 'granted' || !hasPreciseLocationPermission(foreground)) {
     return false;
   }
 

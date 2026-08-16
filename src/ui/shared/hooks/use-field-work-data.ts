@@ -19,7 +19,7 @@ import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-export type FieldWorkCardId = 'annotation' | 'inspection' | 'spraying';
+export type FieldWorkCardId = 'annotation' | 'inspection' | 'plantRegistration' | 'spraying';
 export type FieldWorkCardState = 'loading' | 'ready' | 'unavailable';
 type FieldWorkResourceState = FieldWorkCardState;
 
@@ -88,11 +88,12 @@ export function resolveFieldWorkCardStates(
         resources.varieties,
         resources.plants,
       ]),
+      plantRegistration: combineOfflineResourceStates([resources.zones, resources.varieties]),
       spraying: combineOfflineResourceStates([resources.zones, resources.plants]),
     };
   }
   if (network === 'loading') {
-    return { annotation: 'loading', inspection: 'loading', spraying: 'loading' };
+    return { annotation: 'loading', inspection: 'loading', plantRegistration: 'loading', spraying: 'loading' };
   }
 
   return {
@@ -103,6 +104,7 @@ export function resolveFieldWorkCardStates(
       resources.varieties,
       resources.plants,
     ]),
+    plantRegistration: combineResourceStates([resources.zones, resources.varieties]),
     spraying: combineResourceStates([resources.zones, resources.plants]),
   };
 }
@@ -177,6 +179,14 @@ export function getSprayingZonesSnapshot(queryClient: QueryClient): SprayingZone
   return queryClient.getQueryData<SprayingZoneOption[]>(fieldWorkQueryOptions.zones.queryKey) ?? [];
 }
 
+export function getPlantRegistrationOptionsSnapshot(queryClient: QueryClient): {
+  varieties: VarietyOption[];
+  zones: ZoneOption[];
+} {
+  const options = getInspectionFilterOptionsSnapshot(queryClient);
+  return { varieties: options.varieties, zones: options.zones };
+}
+
 export function useFieldWorkDataReadiness() {
   const queryClient = useQueryClient();
   const database = useSQLiteContext();
@@ -225,7 +235,7 @@ export function useFieldWorkDataReadiness() {
   );
 
   if (!isCacheHydrated || loadedPlantZones.isPending) {
-    return { annotation: 'loading', inspection: 'loading', spraying: 'loading' };
+    return { annotation: 'loading', inspection: 'loading', plantRegistration: 'loading', spraying: 'loading' };
   }
 
   return resolveFieldWorkCardStates(

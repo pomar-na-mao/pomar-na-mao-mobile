@@ -68,23 +68,32 @@ jest.mock('expo-location', () => ({
 const mockedRepository = jest.mocked(inspectionRepository);
 const mockedUseInspectionSqliteService = jest.mocked(useInspectionSqliteService);
 const mockedLocation = jest.mocked(Location);
-const simulatedInspectionLocation: Location.LocationObject = {
+const freshInspectionLocation: Location.LocationObject = {
   ...inspectionLocation,
+  timestamp: Date.now(),
+};
+const simulatedInspectionLocation: Location.LocationObject = {
+  ...freshInspectionLocation,
   coords: {
-    ...inspectionLocation.coords,
+    ...freshInspectionLocation.coords,
     latitude: secondInspectionPlant.latitude,
     longitude: secondInspectionPlant.longitude,
   },
-  timestamp: inspectionLocation.timestamp + 100,
+  timestamp: freshInspectionLocation.timestamp + 100,
 };
 const latestDeviceInspectionLocation: Location.LocationObject = {
-  ...inspectionLocation,
+  ...freshInspectionLocation,
   coords: {
-    ...inspectionLocation.coords,
+    ...freshInspectionLocation.coords,
     latitude: inspectionPlant.latitude,
     longitude: inspectionPlant.longitude,
   },
-  timestamp: inspectionLocation.timestamp + 200,
+  timestamp: freshInspectionLocation.timestamp + 200,
+};
+const inaccurateInspectionLocation: Location.LocationObject = {
+  ...freshInspectionLocation,
+  coords: { ...freshInspectionLocation.coords, accuracy: 12 },
+  timestamp: freshInspectionLocation.timestamp + 300,
 };
 
 function createSqliteService(overrides: Partial<ReturnType<typeof useInspectionSqliteService>> = {}) {
@@ -139,8 +148,14 @@ function InspectionConsumer() {
       <Pressable testID="apply-filter" onPress={() => void inspection.applyFilters(inspectionFilter)}>
         <Text>apply filter</Text>
       </Pressable>
-      <Pressable testID="location" onPress={() => inspection.applyLocationUpdate(inspectionLocation)}>
+      <Pressable testID="location" onPress={() => inspection.applyLocationUpdate(freshInspectionLocation)}>
         <Text>location</Text>
+      </Pressable>
+      <Pressable
+        testID="inaccurate-location"
+        onPress={() => inspection.applyLocationUpdate(inaccurateInspectionLocation)}
+      >
+        <Text>inaccurate location</Text>
       </Pressable>
       <Pressable testID="activate-simulation" onPress={() => inspection.setLocationSimulationActive(true)}>
         <Text>activate simulation</Text>
@@ -234,9 +249,11 @@ describe('InspectionProvider', () => {
     });
     mockedRepository.syncManualInspection.mockResolvedValue({ data: syncManualInspectionResult, error: null });
     mockedLocation.requestForegroundPermissionsAsync.mockResolvedValue({
+      android: { accuracy: 'fine' },
+      granted: true,
       status: 'granted',
-    } as Location.PermissionResponse);
-    mockedLocation.getCurrentPositionAsync.mockResolvedValue(inspectionLocation);
+    } as Location.LocationPermissionResponse);
+    mockedLocation.getCurrentPositionAsync.mockResolvedValue(freshInspectionLocation);
     mockedLocation.watchPositionAsync.mockResolvedValue({
       remove: jest.fn(),
     } as unknown as Location.LocationSubscription);
@@ -276,8 +293,9 @@ describe('InspectionProvider', () => {
 
   it('surfaces denied location permission without loading filters on route startup', async () => {
     mockedLocation.requestForegroundPermissionsAsync.mockResolvedValue({
+      granted: false,
       status: 'denied',
-    } as Location.PermissionResponse);
+    } as Location.LocationPermissionResponse);
 
     await renderProvider();
 
@@ -285,6 +303,16 @@ describe('InspectionProvider', () => {
     expect(mockSetMessage).toHaveBeenCalledWith(expect.stringContaining('Permiss'));
     expect(mockSetIsVisible).toHaveBeenCalledWith(true);
     expect(mockedRepository.getFilterOptions).not.toHaveBeenCalled();
+  });
+
+  it('ignores device locations outside the high-accuracy threshold', async () => {
+    await renderProvider();
+    await waitFor(() => expect(screen.getByText(`location:${freshInspectionLocation.timestamp}`)).toBeOnTheScreen());
+
+    fireEvent.press(screen.getByTestId('inaccurate-location'));
+
+    expect(screen.getByText(`location:${freshInspectionLocation.timestamp}`)).toBeOnTheScreen();
+    expect(screen.queryByText(`location:${inaccurateInspectionLocation.timestamp}`)).not.toBeOnTheScreen();
   });
 
   it('validates filters and creates a local inspection from cached plants', async () => {

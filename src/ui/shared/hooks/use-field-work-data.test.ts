@@ -9,6 +9,7 @@ import {
   fieldWorkQueryOptions,
   getAnnotationOptionsSnapshot,
   getInspectionFilterOptionsSnapshot,
+  getPlantRegistrationOptionsSnapshot,
   getSprayingZonesSnapshot,
   resolveFieldWorkCardStates,
   retryUnavailableFieldWorkQueries,
@@ -52,6 +53,7 @@ describe('field-work data readiness', () => {
     expect(resolveFieldWorkCardStates(readyResources, 'online')).toEqual({
       annotation: 'ready',
       inspection: 'ready',
+      plantRegistration: 'ready',
       spraying: 'ready',
     });
   });
@@ -60,21 +62,25 @@ describe('field-work data readiness', () => {
     expect(resolveFieldWorkCardStates({ ...readyResources, occurrenceTypes: 'unavailable' }, 'online')).toEqual({
       annotation: 'unavailable',
       inspection: 'unavailable',
+      plantRegistration: 'ready',
       spraying: 'ready',
     });
     expect(resolveFieldWorkCardStates({ ...readyResources, varieties: 'unavailable' }, 'online')).toEqual({
       annotation: 'ready',
       inspection: 'unavailable',
+      plantRegistration: 'unavailable',
       spraying: 'ready',
     });
     expect(resolveFieldWorkCardStates({ ...readyResources, zones: 'unavailable' }, 'online')).toEqual({
       annotation: 'unavailable',
       inspection: 'unavailable',
+      plantRegistration: 'unavailable',
       spraying: 'unavailable',
     });
     expect(resolveFieldWorkCardStates({ ...readyResources, plants: 'unavailable' }, 'online')).toEqual({
       annotation: 'ready',
       inspection: 'unavailable',
+      plantRegistration: 'ready',
       spraying: 'unavailable',
     });
   });
@@ -83,16 +89,19 @@ describe('field-work data readiness', () => {
     expect(resolveFieldWorkCardStates({ ...readyResources, zones: 'loading' }, 'online')).toEqual({
       annotation: 'loading',
       inspection: 'loading',
+      plantRegistration: 'loading',
       spraying: 'loading',
     });
     expect(resolveFieldWorkCardStates(readyResources, 'offline')).toEqual({
       annotation: 'ready',
       inspection: 'ready',
+      plantRegistration: 'ready',
       spraying: 'ready',
     });
     expect(resolveFieldWorkCardStates({ ...readyResources, occurrenceTypes: 'loading' }, 'offline')).toEqual({
       annotation: 'unavailable',
       inspection: 'unavailable',
+      plantRegistration: 'ready',
       spraying: 'ready',
     });
   });
@@ -108,6 +117,7 @@ describe('field-work data readiness', () => {
 
     expect(getInspectionFilterOptionsSnapshot(queryClient)).toEqual({ occurrenceTypes, varieties, zones });
     expect(getAnnotationOptionsSnapshot(queryClient)).toEqual({ occurrenceTypes, zones });
+    expect(getPlantRegistrationOptionsSnapshot(queryClient)).toEqual({ varieties, zones });
     expect(getSprayingZonesSnapshot(queryClient)).toEqual(zones);
   });
 
@@ -148,6 +158,7 @@ describe('field-work data readiness', () => {
       expect(result.current).toEqual({
         annotation: 'unavailable',
         inspection: 'unavailable',
+        plantRegistration: 'unavailable',
         spraying: 'unavailable',
       }),
     );
@@ -163,7 +174,12 @@ describe('field-work data readiness', () => {
     expect(mockedFieldWorkOptionsService.getOccurrenceTypes).toHaveBeenCalledTimes(1);
     expect(mockedFieldWorkOptionsService.getVarieties).toHaveBeenCalledTimes(1);
     await waitFor(() =>
-      expect(result.current).toEqual({ annotation: 'ready', inspection: 'ready', spraying: 'ready' }),
+      expect(result.current).toEqual({
+        annotation: 'ready',
+        inspection: 'ready',
+        plantRegistration: 'ready',
+        spraying: 'ready',
+      }),
     );
 
     unmount();
@@ -185,9 +201,19 @@ describe('field-work data readiness', () => {
       createElement(QueryClientProvider, { client: queryClient }, children);
     const { result, unmount } = renderHook(() => useFieldWorkDataReadiness(), { wrapper });
 
-    expect(result.current).toEqual({ annotation: 'loading', inspection: 'loading', spraying: 'loading' });
+    expect(result.current).toEqual({
+      annotation: 'loading',
+      inspection: 'loading',
+      plantRegistration: 'loading',
+      spraying: 'loading',
+    });
     await waitFor(() =>
-      expect(result.current).toEqual({ annotation: 'ready', inspection: 'ready', spraying: 'ready' }),
+      expect(result.current).toEqual({
+        annotation: 'ready',
+        inspection: 'ready',
+        plantRegistration: 'ready',
+        spraying: 'ready',
+      }),
     );
     expect(mockedFieldWorkOptionsService.getZones).not.toHaveBeenCalled();
     expect(mockedFieldWorkOptionsService.getOccurrenceTypes).not.toHaveBeenCalled();
@@ -214,7 +240,12 @@ describe('field-work data readiness', () => {
     const { result, unmount } = renderHook(() => useFieldWorkDataReadiness(), { wrapper });
 
     await waitFor(() =>
-      expect(result.current).toEqual({ annotation: 'ready', inspection: 'ready', spraying: 'ready' }),
+      expect(result.current).toEqual({
+        annotation: 'ready',
+        inspection: 'ready',
+        plantRegistration: 'ready',
+        spraying: 'ready',
+      }),
     );
     await expect(fieldWorkOptionsCache.readAll()).resolves.toEqual({
       occurrenceTypes: [{ code: 'PST', id: 'occurrence-1', name: 'Praga' }],
@@ -245,11 +276,17 @@ describe('field-work data readiness', () => {
       createElement(QueryClientProvider, { client: queryClient }, children);
     const { result, unmount } = renderHook(() => useFieldWorkDataReadiness(), { wrapper });
 
-    expect(result.current).toEqual({ annotation: 'loading', inspection: 'loading', spraying: 'loading' });
+    expect(result.current).toEqual({
+      annotation: 'loading',
+      inspection: 'loading',
+      plantRegistration: 'loading',
+      spraying: 'loading',
+    });
     await waitFor(() =>
       expect(result.current).toEqual({
         annotation: 'unavailable',
         inspection: 'unavailable',
+        plantRegistration: 'unavailable',
         spraying: 'unavailable',
       }),
     );

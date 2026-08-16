@@ -41,6 +41,13 @@ const cards: CardItem[] = [
     route: '/spraying' as ExpoRouterPath,
     icon: 'agriculture',
   },
+  {
+    id: 'plantRegistration',
+    title: 'Cadastro de plantas',
+    subtitle: 'Adicione novas plantas pela posição atual',
+    route: '/plant-registration' as ExpoRouterPath,
+    icon: 'add-location-alt',
+  },
 ];
 
 export default function FieldWorks() {

@@ -20,6 +20,7 @@ export interface PlantTable extends RemoteTimestamps, RemoteSyncMetadata {
   longitude: number;
   location?: JsonString | null;
   gps_timestamp?: number | null;
+  gps_accuracy_m?: number | null;
   variety_id?: number | null;
   zone_id?: RemoteId | null;
   mass?: string | null;

@@ -88,7 +88,7 @@ export function SprayingSetupModal() {
           <View style={[styles.content, { backgroundColor: colors.card }]}>
             <Text style={[styles.title, { color: colors.text }]}>Nova Pulverização</Text>
             <Text style={[styles.subtitle, { color: colors.disabledText }]}>
-              {selectedZone ? `Preenchas os dados básicos da pulverização` : 'Carregue plantas de uma zona.'}
+              {selectedZone ? `Preencha com os dados da pulverização` : 'Carregue plantas de uma zona.'}
             </Text>
 
             <ScrollView

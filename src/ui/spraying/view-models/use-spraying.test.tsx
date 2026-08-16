@@ -154,6 +154,7 @@ function SprayingConsumer() {
 
   return (
     <View>
+      <Text>location:{spraying.currentLocation?.timestamp ?? 'none'}</Text>
       <Text>aggregate:{spraying.aggregate?.operation.id ?? 'none'}</Text>
       <Text>zone:{spraying.selectedZone?.name ?? 'none'}</Text>
       <Text>plants:{spraying.selectedZonePlants.length}</Text>
@@ -227,6 +228,53 @@ describe('SprayingProvider loaded zone persistence', () => {
     expect(mockSprayingRepository.local.getZonePlants).toHaveBeenCalledWith('zone-1');
     expect(mockSprayingRepository.getZones).not.toHaveBeenCalled();
     expect(mockSprayingRepository.local.getZones).not.toHaveBeenCalled();
+  });
+
+  it('waits for a foreground location within the high-accuracy threshold', async () => {
+    const acceptedTimestamp = Date.now();
+    let locationCallback: ((location: Location.LocationObject) => void) | null = null;
+    mockedLocation.requestForegroundPermissionsAsync.mockResolvedValue({
+      android: { accuracy: 'fine' },
+      granted: true,
+      status: 'granted',
+    } as Location.LocationPermissionResponse);
+    mockedLocation.getCurrentPositionAsync.mockResolvedValue({
+      coords: {
+        accuracy: 12,
+        altitude: null,
+        altitudeAccuracy: null,
+        heading: null,
+        latitude: -23,
+        longitude: -49,
+        speed: null,
+      },
+      timestamp: acceptedTimestamp,
+    });
+    mockedLocation.watchPositionAsync.mockImplementation(async (_options, callback) => {
+      locationCallback = callback;
+      return { remove: jest.fn() } as Location.LocationSubscription;
+    });
+
+    await renderProvider();
+    await waitFor(() => expect(mockedLocation.watchPositionAsync).toHaveBeenCalled());
+    expect(screen.getByText('location:none')).toBeOnTheScreen();
+
+    act(() => {
+      locationCallback?.({
+        coords: {
+          accuracy: 4,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          latitude: -23,
+          longitude: -49,
+          speed: null,
+        },
+        timestamp: acceptedTimestamp,
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText(`location:${acceptedTimestamp}`)).toBeOnTheScreen());
   });
 
   it('clears a persisted loaded zone when its cached plant list is empty', async () => {

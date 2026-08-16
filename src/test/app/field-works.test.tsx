@@ -71,6 +71,7 @@ describe('FieldWorks', () => {
     mockUseFieldWorkDataReadiness.mockReturnValue({
       annotation: 'ready',
       inspection: 'ready',
+      plantRegistration: 'ready',
       spraying: 'ready',
     });
   });
@@ -177,6 +178,7 @@ describe('FieldWorks', () => {
     mockUseFieldWorkDataReadiness.mockReturnValue({
       annotation: 'loading',
       inspection: 'loading',
+      plantRegistration: 'loading',
       spraying: 'loading',
     });
 
@@ -193,6 +195,7 @@ describe('FieldWorks', () => {
     mockUseFieldWorkDataReadiness.mockReturnValue({
       annotation: 'unavailable',
       inspection: 'unavailable',
+      plantRegistration: 'ready',
       spraying: 'ready',
     });
 
@@ -214,6 +217,7 @@ describe('FieldWorks', () => {
     mockUseFieldWorkDataReadiness.mockReturnValue({
       annotation: 'unavailable',
       inspection: 'unavailable',
+      plantRegistration: 'unavailable',
       spraying: 'unavailable',
     });
 
@@ -225,6 +229,8 @@ describe('FieldWorks', () => {
     expect(screen.getByTestId('field-work-card-inspection').props.onPress).toBeUndefined();
     expect(screen.getByTestId('field-work-card-annotation').props.onPress).toBeUndefined();
     expect(screen.getByTestId('field-work-card-spraying').props.onPress).toBeUndefined();
-    expect(screen.getAllByLabelText(/indisponível.*Sem conexão/)).toHaveLength(3);
+    expect(screen.getByTestId('field-work-card-plantRegistration')).toBeDisabled();
+    expect(screen.getByTestId('field-work-card-plantRegistration').props.onPress).toBeUndefined();
+    expect(screen.getAllByLabelText(/indisponível.*Sem conexão/)).toHaveLength(4);
   });
 });
