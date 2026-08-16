@@ -14,7 +14,7 @@ const statusLabels = {
   draft: 'Configurada',
   tracking: 'Rastreando',
   finished: 'Finalizada',
-  simulated: 'Em revisÃ£o',
+  simulated: 'Em revisão',
   reviewed: 'Revisada',
   syncing: 'Sincronizando',
   synced: 'Sincronizada',
@@ -60,7 +60,7 @@ export function SprayingScreen() {
             : status === 'finished'
               ? { label: 'Simular', icon: 'route' as const, action: simulate }
               : status === 'simulated'
-                ? { label: 'Confirmar revisÃ£o', icon: 'fact-check' as const, action: confirmReview }
+                ? { label: 'Confirmar revisão', icon: 'fact-check' as const, action: confirmReview }
                 : status === 'reviewed' || status === 'sync_error'
                   ? { label: 'Sincronizar', icon: 'sync' as const, action: syncOperation }
                   : null;
@@ -130,7 +130,7 @@ export function SprayingScreen() {
 
             {status === 'simulated' ? (
               <Text style={[styles.warning, { color: colors.tint }]}>
-                Plantas em laranja serÃ£o sincronizadas. Toque no mapa para marcar ou desmarcar.
+                Plantas em laranja serão sincronizadas. Toque no mapa para marcar ou desmarcar.
               </Text>
             ) : null}
           </View>

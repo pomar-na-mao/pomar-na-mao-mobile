@@ -122,7 +122,7 @@ describe('SprayingScreen', () => {
     ['draft', 'Iniciar GPS', mockStartTracking],
     ['tracking', 'Finalizar rota', mockFinishTracking],
     ['finished', 'Simular', mockSimulate],
-    ['simulated', 'Confirmar revisÃ£o', mockConfirmReview],
+    ['simulated', 'Confirmar revisão', mockConfirmReview],
     ['reviewed', 'Sincronizar', mockSyncOperation],
     ['sync_error', 'Sincronizar', mockSyncOperation],
   ] as const)('shows the correct action for %s', (status, label, action) => {
@@ -160,7 +160,7 @@ describe('SprayingScreen', () => {
     render(<SprayingScreen />);
 
     expect(screen.getByText(/Plantas em laranja/)).toBeOnTheScreen();
-    expect(screen.getByText('Confirmar revisÃ£o')).toBeOnTheScreen();
+    expect(screen.getByText('Confirmar revisão')).toBeOnTheScreen();
   });
 
   it('requires confirmation before deleting an active operation', () => {
