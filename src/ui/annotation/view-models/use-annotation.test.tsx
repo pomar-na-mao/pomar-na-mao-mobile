@@ -54,25 +54,34 @@ const mockedUseAnnotationSqliteService = jest.mocked(useAnnotationSqliteService)
 const mockedUseAlertBoxStore = jest.mocked(useAlertBoxStore);
 const mockedUseLoadingStore = jest.mocked(useLoadingStore);
 const mockedLocation = jest.mocked(Location);
+const freshAnnotationLocation: Location.LocationObject = {
+  ...annotationLocation,
+  timestamp: Date.now(),
+};
 
 const simulatedAnnotationLocation: Location.LocationObject = {
-  ...annotationLocation,
+  ...freshAnnotationLocation,
   coords: {
-    ...annotationLocation.coords,
+    ...freshAnnotationLocation.coords,
     latitude: annotationLocation.coords.latitude + 0.0002,
     longitude: annotationLocation.coords.longitude + 0.0002,
   },
-  timestamp: annotationLocation.timestamp + 100,
+  timestamp: freshAnnotationLocation.timestamp + 100,
 };
 
 const latestDeviceAnnotationLocation: Location.LocationObject = {
-  ...annotationLocation,
+  ...freshAnnotationLocation,
   coords: {
-    ...annotationLocation.coords,
+    ...freshAnnotationLocation.coords,
     latitude: annotationLocation.coords.latitude + 0.0004,
     longitude: annotationLocation.coords.longitude + 0.0004,
   },
-  timestamp: annotationLocation.timestamp + 200,
+  timestamp: freshAnnotationLocation.timestamp + 200,
+};
+const inaccurateAnnotationLocation: Location.LocationObject = {
+  ...freshAnnotationLocation,
+  coords: { ...freshAnnotationLocation.coords, accuracy: 12 },
+  timestamp: freshAnnotationLocation.timestamp + 300,
 };
 
 const annotationOptions = {
@@ -122,6 +131,12 @@ function AnnotationConsumer() {
       >
         <Text>device location</Text>
       </Pressable>
+      <Pressable
+        testID="inaccurate-location"
+        onPress={() => annotation.applyLocationUpdate(inaccurateAnnotationLocation)}
+      >
+        <Text>inaccurate location</Text>
+      </Pressable>
       <Pressable testID="deactivate-simulation" onPress={() => annotation.setLocationSimulationActive(false)}>
         <Text>deactivate simulation</Text>
       </Pressable>
@@ -158,9 +173,11 @@ describe('AnnotationProvider', () => {
     } as never);
     mockedRepository.getOptions.mockResolvedValue({ data: { occurrenceTypes: [], zones: [] }, error: null });
     mockedLocation.requestForegroundPermissionsAsync.mockResolvedValue({
+      android: { accuracy: 'fine' },
+      granted: true,
       status: 'granted',
-    } as Location.PermissionResponse);
-    mockedLocation.getCurrentPositionAsync.mockResolvedValue(annotationLocation);
+    } as Location.LocationPermissionResponse);
+    mockedLocation.getCurrentPositionAsync.mockResolvedValue(freshAnnotationLocation);
     mockedLocation.watchPositionAsync.mockResolvedValue({
       remove: jest.fn(),
     } as unknown as Location.LocationSubscription);
@@ -169,7 +186,7 @@ describe('AnnotationProvider', () => {
   it('loads initial location on mount', async () => {
     const service = await renderProvider();
 
-    await waitFor(() => expect(screen.getByText(`location:${annotationLocation.timestamp}`)).toBeOnTheScreen());
+    await waitFor(() => expect(screen.getByText(`location:${freshAnnotationLocation.timestamp}`)).toBeOnTheScreen());
     expect(screen.getByText('initial:ready')).toBeOnTheScreen();
     expect(screen.getByText('options:1:1')).toBeOnTheScreen();
     expect(mockedLocation.watchPositionAsync).toHaveBeenCalled();
@@ -180,7 +197,7 @@ describe('AnnotationProvider', () => {
   it('keeps the simulated location effective and restores the latest device location when cleared', async () => {
     await renderProvider();
 
-    await waitFor(() => expect(screen.getByText(`location:${annotationLocation.timestamp}`)).toBeOnTheScreen());
+    await waitFor(() => expect(screen.getByText(`location:${freshAnnotationLocation.timestamp}`)).toBeOnTheScreen());
 
     await act(async () => {
       fireEvent.press(screen.getByTestId('activate-simulation'));
@@ -199,5 +216,15 @@ describe('AnnotationProvider', () => {
     await waitFor(() =>
       expect(screen.getByText(`location:${latestDeviceAnnotationLocation.timestamp}`)).toBeOnTheScreen(),
     );
+  });
+
+  it('ignores device locations outside the high-accuracy threshold', async () => {
+    await renderProvider();
+    await waitFor(() => expect(screen.getByText(`location:${freshAnnotationLocation.timestamp}`)).toBeOnTheScreen());
+
+    fireEvent.press(screen.getByTestId('inaccurate-location'));
+
+    expect(screen.getByText(`location:${freshAnnotationLocation.timestamp}`)).toBeOnTheScreen();
+    expect(screen.queryByText(`location:${inaccurateAnnotationLocation.timestamp}`)).not.toBeOnTheScreen();
   });
 });

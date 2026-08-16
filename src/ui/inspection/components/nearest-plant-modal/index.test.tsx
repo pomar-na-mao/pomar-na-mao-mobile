@@ -57,7 +57,14 @@ describe('NearestPlantModal', () => {
   it('renders nearest plant details, occurrences, and saves selected changes', async () => {
     render(<NearestPlantModal />);
 
+    expect(screen.getByTestId('nearest-plant-safe-area')).toHaveProp('edges', {
+      bottom: 'additive',
+      left: 'off',
+      right: 'off',
+      top: 'additive',
+    });
     expect(screen.getByTestId('nearest-plant-keyboard-avoiding-view')).toBeOnTheScreen();
+    expect(screen.getByTestId('nearest-plant-content')).toHaveStyle({ height: '85%' });
     expect(screen.getByTestId('nearest-plant-scroll')).toHaveProp('keyboardShouldPersistTaps', 'handled');
     expect(screen.getByTestId('nearest-plant-scroll')).toHaveProp('keyboardDismissMode', 'on-drag');
     expect(screen.getByText(/Planta mais/)).toBeOnTheScreen();

@@ -1,5 +1,6 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -47,6 +48,9 @@ const ThemedDropdown: React.FC<ThemedDropdownProps> = ({
       {label ? <Text style={[styles.label, { color: Colors[theme].text }]}>{label}</Text> : null}
 
       <TouchableOpacity
+        accessibilityLabel={label ?? placeholder}
+        accessibilityRole="button"
+        accessibilityState={{ disabled, expanded: visible }}
         activeOpacity={0.7}
         disabled={disabled}
         onPress={() => setVisible(true)}
@@ -76,7 +80,7 @@ const ThemedDropdown: React.FC<ThemedDropdownProps> = ({
         </Text>
 
         {/* Renderiza o ícone passado ou um caractere simples de seta se não houver ícone */}
-        {rightIcon || <Text style={{ color: Colors[theme].icon }}>▼</Text>}
+        {rightIcon || <MaterialIcons color={Colors[theme].icon} name="arrow-drop-down" size={24} />}
       </TouchableOpacity>
 
       <Text style={[styles.errorText, { color: Colors[theme].errorText }]}>{error}</Text>
@@ -92,6 +96,8 @@ const ThemedDropdown: React.FC<ThemedDropdownProps> = ({
               keyExtractor={(item) => String(item.value)}
               renderItem={({ item }) => (
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: item.value === value }}
                   style={[
                     styles.optionItem,
                     { borderBottomColor: Colors[theme].inputBorder },
@@ -100,7 +106,7 @@ const ThemedDropdown: React.FC<ThemedDropdownProps> = ({
                   onPress={() => handleSelect(item)}
                 >
                   <Text style={{ fontSize: 16, color: Colors[theme].text }}>{item.label}</Text>
-                  {item.value === value && <Text style={{ color: Colors[theme].tint }}>✓</Text>}
+                  {item.value === value && <MaterialIcons color={Colors[theme].tint} name="check" size={20} />}
                 </TouchableOpacity>
               )}
             />

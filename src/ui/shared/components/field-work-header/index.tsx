@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-type FieldWorkHeaderProps = {
+interface FieldWorkHeaderProps {
   title: string;
   subtitle?: string;
   onBackPress: () => void;
@@ -12,7 +12,7 @@ type FieldWorkHeaderProps = {
   rightAccessory?: ReactNode;
   rightAccessoryStyle?: StyleProp<ViewStyle>;
   backButtonTestID?: string;
-};
+}
 
 export function FieldWorkHeader({
   title,
@@ -49,7 +49,9 @@ export function FieldWorkHeader({
         ) : null}
       </View>
 
-      <View style={[styles.rightAccessory, rightAccessoryStyle]}>{rightAccessory ?? <View style={styles.placeholder} />}</View>
+      <View style={[styles.rightAccessory, rightAccessoryStyle]}>
+        {rightAccessory ?? <View style={styles.placeholder} />}
+      </View>
     </View>
   );
 }
@@ -59,9 +61,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    height: 40,
+    height: 44,
     justifyContent: 'center',
-    width: 40,
+    width: 44,
   },
   container: {
     alignItems: 'center',
@@ -73,14 +75,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   placeholder: {
-    height: 40,
-    width: 40,
+    height: 44,
+    width: 44,
   },
   rightAccessory: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    minHeight: 40,
-    minWidth: 40,
+    minHeight: 44,
+    minWidth: 44,
   },
   subtitle: {
     fontSize: 12,

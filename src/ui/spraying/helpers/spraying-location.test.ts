@@ -24,6 +24,7 @@ describe('spraying location acceptance', () => {
 
   it('rejects invalid, stale, inaccurate, duplicate, and implausible points', () => {
     expect(isSprayingLocationAccepted(createLocation({ latitude: 100 }), null, { now: 1_000 })).toBe(false);
+    expect(isSprayingLocationAccepted(createLocation({ accuracy: 5.1 }), null, { now: 1_000 })).toBe(false);
     expect(isSprayingLocationAccepted(createLocation({ accuracy: 50 }), null, { now: 1_000 })).toBe(false);
     expect(isSprayingLocationAccepted(createLocation({}, 1_000), null, { now: 20_000 })).toBe(false);
 

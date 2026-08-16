@@ -25,6 +25,7 @@ function MainLayout() {
         <Stack.Screen name="inspection" options={{ headerShown: false }} />
         <Stack.Screen name="annotation" options={{ headerShown: false }} />
         <Stack.Screen name="spraying" options={{ headerShown: false }} />
+        <Stack.Screen name="plant-registration" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </>

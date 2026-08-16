@@ -19,6 +19,11 @@ import type {
 } from '@/domain/models/spraying';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
+import {
+  hasPreciseLocationPermission,
+  HIGH_ACCURACY_LOCATION_TIME_INTERVAL_MS,
+  isHighAccuracyLocationAccepted,
+} from '@/shared/helpers/high-accuracy-location';
 import { getSprayingZonesSnapshot } from '@/ui/shared/hooks/use-field-work-data';
 import { getSprayingDeviceId } from '@/ui/spraying/helpers/device';
 import { consolidateSprayingRoute, simulateSprayingPlants } from '@/ui/spraying/helpers/spraying-route';
@@ -181,30 +186,37 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
 
     void refresh();
 
-    void Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
-      if (!mounted || status !== 'granted') {
+    void Location.requestForegroundPermissionsAsync().then(async (permission) => {
+      if (!mounted || permission.status !== 'granted' || !hasPreciseLocationPermission(permission)) {
         return;
       }
 
-      const firstLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.BestForNavigation,
-      });
-      if (mounted) {
-        setCurrentLocation(firstLocation);
-      }
-
-      locationSubscription = await Location.watchPositionAsync(
+      const nextSubscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
           distanceInterval: 1,
-          timeInterval: 1_000,
+          mayShowUserSettingsDialog: true,
+          timeInterval: HIGH_ACCURACY_LOCATION_TIME_INTERVAL_MS,
         },
         (location) => {
-          if (mounted) {
+          if (mounted && isHighAccuracyLocationAccepted(location)) {
             setCurrentLocation(location);
           }
         },
       );
+      if (!mounted) {
+        nextSubscription.remove();
+        return;
+      }
+      locationSubscription = nextSubscription;
+
+      const firstLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation,
+        mayShowUserSettingsDialog: true,
+      });
+      if (mounted && isHighAccuracyLocationAccepted(firstLocation)) {
+        setCurrentLocation(firstLocation);
+      }
     });
 
     return () => {
