@@ -28,6 +28,7 @@ export function SprayingListScreen() {
       <FlatList
         data={operationsList}
         keyExtractor={(item) => item.id}
+        style={styles.list}
         renderItem={({ item }) => (
           <SprayingOperationCard
             item={item}
@@ -48,18 +49,28 @@ export function SprayingListScreen() {
             <Text style={[styles.emptySubtitle, { color: colors.disabledText }]}>
               Toque no botão abaixo para iniciar uma nova pulverização
             </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void openMapView()}
-              style={[styles.emptyBtn, { backgroundColor: colors.tint }]}
-              testID="empty-new-spraying-btn"
-            >
-              <MaterialIcons name="play-arrow" color="#FFFFFF" size={20} />
-              <Text style={styles.newBtnText}>Iniciar Nova Pulverização</Text>
-            </Pressable>
           </View>
         }
       />
+
+      <View
+        style={[styles.newOperationFooter, { backgroundColor: colors.background, borderTopColor: colors.cardBorder }]}
+        testID="new-spraying-footer"
+      >
+        <Pressable
+          accessibilityLabel="Iniciar nova pulverização"
+          accessibilityRole="button"
+          onPress={() => void openMapView()}
+          style={({ pressed }) => [
+            styles.newOperationBtn,
+            { backgroundColor: colors.tint, opacity: pressed ? 0.85 : 1 },
+          ]}
+          testID="new-spraying-btn"
+        >
+          <MaterialIcons name="play-arrow" color="#FFFFFF" size={20} />
+          <Text style={styles.newBtnText}>Iniciar Nova Pulverização</Text>
+        </Pressable>
+      </View>
 
       <ConfirmationModal
         visible={Boolean(deletingId)}
@@ -80,16 +91,6 @@ export function SprayingListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  emptyBtn: {
-    alignItems: 'center',
-    borderRadius: 12,
-    flexDirection: 'row',
-    gap: 6,
-    height: 48,
-    justifyContent: 'center',
-    marginTop: 8,
-    paddingHorizontal: 20,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -125,9 +126,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
+  list: {
+    flex: 1,
+  },
   newBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  newOperationBtn: {
+    alignItems: 'center',
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 6,
+    height: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  newOperationFooter: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 10,
   },
 });

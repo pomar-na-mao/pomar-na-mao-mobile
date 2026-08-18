@@ -92,7 +92,7 @@ describe('SprayingScreen', () => {
     expect(mockOpenSetup).not.toHaveBeenCalled();
   });
 
-  it('enables operation setup only after a zone is loaded', () => {
+  it('starts zone confirmation before operation setup when a zone is already loaded', () => {
     mockState.selectedZone = { id: 'zone-1', name: 'Talhao 1' };
     mockState.selectedZonePlants = sprayingAggregateFixture.plants;
 
@@ -103,6 +103,7 @@ describe('SprayingScreen', () => {
     expect(screen.getByText(/Talhao 1 - .* plantas carregadas/)).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Iniciar'));
     expect(mockOpenSetup).toHaveBeenCalled();
+    expect(mockOpenZoneSelection).not.toHaveBeenCalled();
   });
 
   it('requires confirmation before deleting idle loaded plants', () => {
@@ -122,7 +123,7 @@ describe('SprayingScreen', () => {
     ['draft', 'Iniciar GPS', mockStartTracking],
     ['tracking', 'Finalizar rota', mockFinishTracking],
     ['finished', 'Simular', mockSimulate],
-    ['simulated', 'Confirmar revisÃ£o', mockConfirmReview],
+    ['simulated', 'Confirmar revisão', mockConfirmReview],
     ['reviewed', 'Sincronizar', mockSyncOperation],
     ['sync_error', 'Sincronizar', mockSyncOperation],
   ] as const)('shows the correct action for %s', (status, label, action) => {
@@ -160,7 +161,7 @@ describe('SprayingScreen', () => {
     render(<SprayingScreen />);
 
     expect(screen.getByText(/Plantas em laranja/)).toBeOnTheScreen();
-    expect(screen.getByText('Confirmar revisÃ£o')).toBeOnTheScreen();
+    expect(screen.getByText('Confirmar revisão')).toBeOnTheScreen();
   });
 
   it('requires confirmation before deleting an active operation', () => {

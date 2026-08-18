@@ -180,6 +180,13 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     };
 
     await database.withTransactionAsync(async () => {
+      const inProgressOperation = await getInProgressOperation();
+      if (inProgressOperation) {
+        throw new Error(
+          'Ja existe uma pulverizacao em andamento. Retome ou finalize essa operacao antes de iniciar outra.',
+        );
+      }
+
       await database.runAsync(
         `INSERT INTO local_spraying_operations (
           id, local_id, operation_type_code, zone_id, zone_name, title, source,
@@ -268,11 +275,11 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     ]);
   }
 
-  async function getRecoverableOperation(): Promise<LocalSprayingOperation | null> {
+  async function getInProgressOperation(): Promise<LocalSprayingOperation | null> {
     return database.getFirstAsync<LocalSprayingOperation>(
       `SELECT * FROM local_spraying_operations
-       WHERE lifecycle_status NOT IN ('synced')
-       ORDER BY updated_at DESC
+       WHERE lifecycle_status IN ('draft', 'tracking')
+       ORDER BY updated_at DESC, created_at DESC, id DESC
        LIMIT 1`,
     );
   }
@@ -839,7 +846,7 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     deleteOperation,
     replaceInputs,
     getOperation,
-    getRecoverableOperation,
+    getInProgressOperation,
     listOperations,
     listTrackPoints,
     getLastTrackPoint,

@@ -7,6 +7,7 @@ import { LoadingOverlay } from '@/ui/shared/components/LoadingOverlay';
 import { SplashScreenProvider } from '@/ui/shared/hooks/useSplashScreen';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useKeepAwake } from 'expo-keep-awake';
 import { Stack, type ExternalPathString, type RelativePathString } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
@@ -17,6 +18,8 @@ export type ExpoRouterPath = RelativePathString | ExternalPathString;
 const queryClient = new QueryClient();
 
 function MainLayout() {
+  useKeepAwake();
+
   return (
     <>
       <Stack screenOptions={{ animation: 'fade' }}>
