@@ -97,11 +97,8 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
   const [isZoneSelectionVisible, setIsZoneSelectionVisible] = useState(false);
   const [isSetupVisible, setIsSetupVisible] = useState(false);
   const [isReviewVisible, setIsReviewVisible] = useState(false);
+  const [shouldOpenSetupAfterZoneLoad, setShouldOpenSetupAfterZoneLoad] = useState(false);
   const activeOperationIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    activeOperationIdRef.current = aggregate?.operation.id ?? null;
-  }, [aggregate]);
 
   useEffect(() => {
     let mounted = true;
@@ -163,8 +160,8 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     await refreshOperationsList();
-    const recoverable = await repository.local.getRecoverableOperation();
-    if (!recoverable) {
+    const inProgressOperation = await repository.local.getInProgressOperation();
+    if (!inProgressOperation) {
       activeOperationIdRef.current = null;
       setAggregate(null);
       await restoreLoadedZone();
@@ -172,9 +169,10 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    await refreshOperation(recoverable.id);
-    if (recoverable.lifecycle_status === 'tracking') {
-      setTrackingState(await reconcileSprayingLocationUpdates(recoverable.id));
+    activeOperationIdRef.current = inProgressOperation.id;
+    await refreshOperation(inProgressOperation.id);
+    if (inProgressOperation.lifecycle_status === 'tracking') {
+      setTrackingState(await reconcileSprayingLocationUpdates(inProgressOperation.id));
     } else {
       setTrackingState('inactive');
     }
@@ -257,6 +255,10 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
         await saveLoadedSprayingZone(zone);
 
         setIsZoneSelectionVisible(false);
+        if (shouldOpenSetupAfterZoneLoad) {
+          setIsSetupVisible(true);
+        }
+        setShouldOpenSetupAfterZoneLoad(false);
       } catch (error) {
         setMessage(error instanceof Error ? error.message : String(error));
         setIsVisible(true);
@@ -264,7 +266,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     },
-    [repository, setIsLoading, setIsVisible, setMessage, zones],
+    [repository, setIsLoading, setIsVisible, setMessage, shouldOpenSetupAfterZoneLoad, zones],
   );
 
   const beginOperation = useCallback(
@@ -274,6 +276,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
       try {
         const operation = await repository.local.createOperation(setup, getSprayingDeviceId());
         operationId = operation.id;
+        activeOperationIdRef.current = operation.id;
         const started = await startSprayingLocationUpdates(operation.id, operation.device_id);
         if (!started) {
           await refreshOperation(operation.id);
@@ -316,6 +319,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
       }
 
       await repository.local.markTracking(aggregate.operation.id);
+      activeOperationIdRef.current = aggregate.operation.id;
       setTrackingState('active');
       await refreshOperation(aggregate.operation.id);
     } catch (error) {
@@ -333,20 +337,34 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      if (aggregate?.operation.lifecycle_status === 'tracking') {
+      const targetOperationId = aggregate?.operation.id ?? null;
+      const isTargetActive = targetOperationId !== null && activeOperationIdRef.current === targetOperationId;
+      if (aggregate?.operation.lifecycle_status === 'tracking' && isTargetActive) {
         await stopSprayingLocationUpdates();
       }
       if (aggregate) {
         await repository.local.deleteOperation(aggregate.operation.id);
       }
-      await clearLoadedSprayingZone();
-      activeOperationIdRef.current = null;
-      setAggregate(null);
-      setSelectedZone(null);
-      setSelectedZonePlants([]);
-      setTrackingState('inactive');
+      const remainingInProgressOperation = aggregate ? await repository.local.getInProgressOperation() : null;
+      if (remainingInProgressOperation) {
+        activeOperationIdRef.current = remainingInProgressOperation.id;
+        await refreshOperation(remainingInProgressOperation.id);
+        setTrackingState(
+          remainingInProgressOperation.lifecycle_status === 'tracking'
+            ? await reconcileSprayingLocationUpdates(remainingInProgressOperation.id)
+            : 'inactive',
+        );
+      } else {
+        await clearLoadedSprayingZone();
+        activeOperationIdRef.current = null;
+        setAggregate(null);
+        setSelectedZone(null);
+        setSelectedZonePlants([]);
+        setTrackingState('inactive');
+      }
       setIsReviewVisible(false);
       setIsSetupVisible(false);
+      setShouldOpenSetupAfterZoneLoad(false);
       setMessage(aggregate ? 'Pulverização local excluida.' : 'Plantas carregadas removidas.');
       setIsVisible(true);
     } catch (error) {
@@ -355,7 +373,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [aggregate, repository, selectedZonePlants.length, setIsLoading, setIsVisible, setMessage]);
+  }, [aggregate, refreshOperation, repository, selectedZonePlants.length, setIsLoading, setIsVisible, setMessage]);
 
   const prepareRouteSimulation = useCallback(async () => {
     if (!__DEV__) {
@@ -440,16 +458,16 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
 
   const openMapView = useCallback(
     async (operationId?: string) => {
+      const inProgressOperation = await repository.local.getInProgressOperation();
+      activeOperationIdRef.current = inProgressOperation?.id ?? null;
+
       if (operationId) {
         await refreshOperation(operationId);
+      } else if (inProgressOperation) {
+        await refreshOperation(inProgressOperation.id);
       } else {
-        const recoverable = await repository.local.getRecoverableOperation();
-        if (recoverable && recoverable.lifecycle_status === 'tracking') {
-          await refreshOperation(recoverable.id);
-        } else {
-          setAggregate(null);
-          await restoreLoadedZone();
-        }
+        setAggregate(null);
+        await restoreLoadedZone();
       }
       setActiveView('map');
     },
@@ -461,7 +479,7 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       try {
         const targetOp = await repository.local.getOperation(operationId);
-        if (targetOp?.lifecycle_status === 'tracking') {
+        if (targetOp?.lifecycle_status === 'tracking' && activeOperationIdRef.current === operationId) {
           await stopSprayingLocationUpdates();
         }
         await repository.local.deleteOperation(operationId);
@@ -523,7 +541,12 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
       await repository.local.saveSimulation(operation.id, matches);
       await repository.local.confirmAllAutomaticCandidates(operation.id, operation.device_id);
 
+      activeOperationIdRef.current = null;
+      setAggregate(null);
+      setSelectedZonePlants((currentPlants) => clearSprayingReviewState(currentPlants));
       setTrackingState('inactive');
+      setIsReviewVisible(false);
+      setIsSetupVisible(false);
       await refreshOperationsList();
       setActiveView('list');
       setMessage('Pulverização finalizada com sucesso.');
@@ -687,12 +710,19 @@ export function SprayingProvider({ children }: { children: React.ReactNode }) {
         isZoneSelectionVisible,
         isSetupVisible,
         isReviewVisible,
-        openZoneSelection: () => setIsZoneSelectionVisible(true),
-        closeZoneSelection: () => setIsZoneSelectionVisible(false),
+        openZoneSelection: () => {
+          setShouldOpenSetupAfterZoneLoad(false);
+          setIsZoneSelectionVisible(true);
+        },
+        closeZoneSelection: () => {
+          setShouldOpenSetupAfterZoneLoad(false);
+          setIsZoneSelectionVisible(false);
+        },
         loadZone,
         openSetup: () => {
           if (selectedZone) {
-            setIsSetupVisible(true);
+            setShouldOpenSetupAfterZoneLoad(true);
+            setIsZoneSelectionVisible(true);
           }
         },
         closeSetup: () => setIsSetupVisible(false),
