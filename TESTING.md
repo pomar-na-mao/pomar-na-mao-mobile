@@ -31,14 +31,12 @@ Handlers compartilhados ficam em `src/test/msw/handlers.ts`. Testes especificos 
 import { server } from '@/test/msw/server';
 import { http, HttpResponse } from 'msw';
 
-server.use(
-  http.get('https://example.test/resource', () => HttpResponse.json({ ok: true })),
-);
+server.use(http.get('https://example.test/resource', () => HttpResponse.json({ ok: true })));
 ```
 
 Requests sem handler geram erro no teste para evitar uso silencioso de rede real.
 
-## Inspecao
+## Inspeção
 
 - Fixtures compartilhadas da feature ficam em `src/test/inspection/fixtures.ts`.
 - Mocks reutilizaveis de SQLite ficam em `src/test/inspection/sqlite-mock.ts`.

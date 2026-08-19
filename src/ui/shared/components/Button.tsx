@@ -34,6 +34,8 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ busy: isLoading, disabled: disabled || isLoading }}
       style={({ pressed }) => [
         styles.button,
         { backgroundColor: backgroundColor, opacity: disabled || isLoading || pressed ? 0.7 : 1 },

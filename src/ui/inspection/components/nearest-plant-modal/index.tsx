@@ -16,6 +16,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const changeOptions: { label: string; value: InspectionChangeType }[] = [
   { label: 'Adicionar ocorrência', value: 'add_occurrence' },
@@ -75,151 +76,156 @@ export const NearestPlantModal = () => {
       animationType="fade"
       onRequestClose={closeNearestPlantModal}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-        testID="nearest-plant-keyboard-avoiding-view"
-      >
-        <View style={styles.overlay}>
-          <View style={[styles.content, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-            <View style={styles.header}>
-              <Text style={[styles.title, { color: colors.text }]}>Planta mais próxima</Text>
-              <Text style={[styles.subtitle, { color: colors.disabledText }]}>Ações para a planta detectada</Text>
-            </View>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea} testID="nearest-plant-safe-area">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
+          testID="nearest-plant-keyboard-avoiding-view"
+        >
+          <View style={styles.overlay}>
+            <View
+              style={[styles.content, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+              testID="nearest-plant-content"
+            >
+              <View style={styles.header}>
+                <Text style={[styles.title, { color: colors.text }]}>Planta mais próxima</Text>
+                <Text style={[styles.subtitle, { color: colors.disabledText }]}>Ações para a planta detectada</Text>
+              </View>
 
-            {nearestPlant ? (
-              <>
-                <ScrollView
-                  contentContainerStyle={styles.scrollContent}
-                  keyboardDismissMode="on-drag"
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={true}
-                  style={styles.scroll}
-                  testID="nearest-plant-scroll"
-                >
-                  <View style={styles.metaRow}>
-                    <View style={[styles.metaItem, { backgroundColor: theme === 'dark' ? '#243B2A' : '#E8F3E8' }]}>
-                      <Text style={[styles.metaLabel, { color: colors.disabledText }]}>ID</Text>
-                      <Text numberOfLines={1} style={[styles.metaValue, { color: colors.text }]}>
-                        {plantShortId}
-                      </Text>
-                    </View>
-                    <View style={[styles.metaItem, { backgroundColor: theme === 'dark' ? '#263B46' : '#E7F1F8' }]}>
-                      <Text style={[styles.metaLabel, { color: colors.disabledText }]}>Distância</Text>
-                      <Text numberOfLines={1} style={[styles.metaValue, { color: colors.text }]}>
-                        {distanceLabel}
-                      </Text>
-                    </View>
-                    <View style={[styles.metaItem, { backgroundColor: theme === 'dark' ? '#3B2F1F' : '#FFF4DE' }]}>
-                      <Text style={[styles.metaLabel, { color: colors.disabledText }]}>Zona</Text>
-                      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.metaValue, { color: colors.text }]}>
-                        {nearestPlant.zoneName ?? 'Não informada'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Ocorrências atuais</Text>
-                  {nearestPlant.occurrences.length > 0 ? (
-                    <View style={styles.occurrenceList}>
-                      {nearestPlant.occurrences.map((occurrence) => (
-                        <View
-                          key={`${occurrence.occurrenceTypeId}:${occurrence.status}`}
-                          style={[styles.occurrence, { backgroundColor: theme === 'dark' ? '#3B2F1F' : '#FFF4DE' }]}
-                        >
-                          <Text
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                            style={[styles.occurrenceName, { color: colors.text }]}
-                          >
-                            {occurrence.name}
-                          </Text>
-                          {occurrence.severity ? (
-                            <Text style={[styles.occurrenceSeverity, { color: colors.warning }]}>
-                              {severityLabels[occurrence.severity] ?? occurrence.severity}
-                            </Text>
-                          ) : null}
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <View style={[styles.emptyState, { backgroundColor: colors.neutralButtonBackground }]}>
-                      <Text style={[styles.emptyText, { color: colors.disabledText }]}>Sem ocorrências abertas.</Text>
-                    </View>
-                  )}
-
-                  <View style={styles.form}>
-                    <ThemedDropdown
-                      label="Ação"
-                      options={changeOptions}
-                      value={changeType}
-                      onSelect={(value) => setChangeType(value as InspectionChangeType)}
-                    />
-                    <ThemedDropdown
-                      label="Ocorrência"
-                      options={occurrenceOptions}
-                      value={occurrenceTypeId}
-                      onSelect={(value) => setOccurrenceTypeId(String(value))}
-                    />
-
-                    <View style={styles.section}>
-                      <Text style={[styles.sectionLabel, { color: colors.text }]}>Severidade</Text>
-                      <View style={styles.optionGrid}>
-                        {severityOptions.map((option) => {
-                          const isSelected = severity === option.value;
-                          return (
-                            <Pressable
-                              accessibilityRole="button"
-                              key={option.value}
-                              onPress={() => setSeverity(isSelected ? null : option.value)}
-                              style={[
-                                styles.optionChip,
-                                {
-                                  backgroundColor: isSelected ? colors.tint : colors.background,
-                                  borderColor: isSelected ? colors.tint : colors.line,
-                                },
-                              ]}
-                            >
-                              <Text style={[styles.optionText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
-                                {option.label}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
+              {nearestPlant ? (
+                <>
+                  <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardDismissMode="on-drag"
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={true}
+                    style={styles.scroll}
+                    testID="nearest-plant-scroll"
+                  >
+                    <View style={styles.metaRow}>
+                      <View style={[styles.metaItem, { backgroundColor: theme === 'dark' ? '#243B2A' : '#E8F3E8' }]}>
+                        <Text style={[styles.metaLabel, { color: colors.disabledText }]}>ID</Text>
+                        <Text numberOfLines={1} style={[styles.metaValue, { color: colors.text }]}>
+                          {plantShortId}
+                        </Text>
+                      </View>
+                      <View style={[styles.metaItem, { backgroundColor: theme === 'dark' ? '#263B46' : '#E7F1F8' }]}>
+                        <Text style={[styles.metaLabel, { color: colors.disabledText }]}>Distância</Text>
+                        <Text numberOfLines={1} style={[styles.metaValue, { color: colors.text }]}>
+                          {distanceLabel}
+                        </Text>
+                      </View>
+                      <View style={[styles.metaItem, { backgroundColor: theme === 'dark' ? '#3B2F1F' : '#FFF4DE' }]}>
+                        <Text style={[styles.metaLabel, { color: colors.disabledText }]}>Zona</Text>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.metaValue, { color: colors.text }]}>
+                          {nearestPlant.zoneName ?? 'Não informada'}
+                        </Text>
                       </View>
                     </View>
 
-                    <TextInput
-                      style={[
-                        styles.input,
-                        styles.notesInput,
-                        {
-                          backgroundColor: colors.inputBackground,
-                          borderColor: colors.inputBorder,
-                          color: colors.text,
-                        },
-                      ]}
-                      multiline
-                      placeholder="Observações"
-                      placeholderTextColor={colors.inputPlaceholder}
-                      value={notes}
-                      onChangeText={setNotes}
-                    />
-                  </View>
-                </ScrollView>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Ocorrências atuais</Text>
+                    {nearestPlant.occurrences.length > 0 ? (
+                      <View style={styles.occurrenceList}>
+                        {nearestPlant.occurrences.map((occurrence) => (
+                          <View
+                            key={`${occurrence.occurrenceTypeId}:${occurrence.status}`}
+                            style={[styles.occurrence, { backgroundColor: theme === 'dark' ? '#3B2F1F' : '#FFF4DE' }]}
+                          >
+                            <Text
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                              style={[styles.occurrenceName, { color: colors.text }]}
+                            >
+                              {occurrence.name}
+                            </Text>
+                            {occurrence.severity ? (
+                              <Text style={[styles.occurrenceSeverity, { color: colors.warning }]}>
+                                {severityLabels[occurrence.severity] ?? occurrence.severity}
+                              </Text>
+                            ) : null}
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyState, { backgroundColor: colors.neutralButtonBackground }]}>
+                        <Text style={[styles.emptyText, { color: colors.disabledText }]}>Sem ocorrências abertas.</Text>
+                      </View>
+                    )}
 
-                <View style={styles.actions}>
-                  <Button title="Fechar" variant="secondary" onPress={closeNearestPlantModal} style={styles.button} />
-                  <Button title="Salvar" onPress={submit} style={styles.button} disabled={!occurrenceTypeId} />
+                    <View style={styles.form}>
+                      <ThemedDropdown
+                        label="Ação"
+                        options={changeOptions}
+                        value={changeType}
+                        onSelect={(value) => setChangeType(value as InspectionChangeType)}
+                      />
+                      <ThemedDropdown
+                        label="Ocorrência"
+                        options={occurrenceOptions}
+                        value={occurrenceTypeId}
+                        onSelect={(value) => setOccurrenceTypeId(String(value))}
+                      />
+
+                      <View style={styles.section}>
+                        <Text style={[styles.sectionLabel, { color: colors.text }]}>Severidade</Text>
+                        <View style={styles.optionGrid}>
+                          {severityOptions.map((option) => {
+                            const isSelected = severity === option.value;
+                            return (
+                              <Pressable
+                                accessibilityRole="button"
+                                key={option.value}
+                                onPress={() => setSeverity(isSelected ? null : option.value)}
+                                style={[
+                                  styles.optionChip,
+                                  {
+                                    backgroundColor: isSelected ? colors.tint : colors.background,
+                                    borderColor: isSelected ? colors.tint : colors.line,
+                                  },
+                                ]}
+                              >
+                                <Text style={[styles.optionText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                                  {option.label}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+
+                      <TextInput
+                        style={[
+                          styles.input,
+                          styles.notesInput,
+                          {
+                            backgroundColor: colors.inputBackground,
+                            borderColor: colors.inputBorder,
+                            color: colors.text,
+                          },
+                        ]}
+                        multiline
+                        placeholder="Observações"
+                        placeholderTextColor={colors.inputPlaceholder}
+                        value={notes}
+                        onChangeText={setNotes}
+                      />
+                    </View>
+                  </ScrollView>
+
+                  <View style={styles.actions}>
+                    <Button title="Fechar" variant="secondary" onPress={closeNearestPlantModal} style={styles.button} />
+                    <Button title="Salvar" onPress={submit} style={styles.button} disabled={!occurrenceTypeId} />
+                  </View>
+                </>
+              ) : (
+                <View style={[styles.emptyState, { backgroundColor: colors.neutralButtonBackground }]}>
+                  <Text style={[styles.emptyText, { color: colors.text }]}>Nenhuma planta próxima detectada.</Text>
                 </View>
-              </>
-            ) : (
-              <View style={[styles.emptyState, { backgroundColor: colors.neutralButtonBackground }]}>
-                <Text style={[styles.emptyText, { color: colors.text }]}>Nenhuma planta próxima detectada.</Text>
-              </View>
-            )}
+              )}
+            </View>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -237,7 +243,8 @@ const styles = StyleSheet.create({
   content: {
     borderRadius: 12,
     borderWidth: 1,
-    flex: 1,
+    height: '85%',
+    minHeight: 0,
     padding: 16,
     width: '100%',
   },
@@ -335,9 +342,11 @@ const styles = StyleSheet.create({
   overlay: {
     backgroundColor: 'rgba(0,0,0,0.55)',
     flex: 1,
+    justifyContent: 'center',
     padding: 16,
-    paddingBottom: 24,
-    paddingTop: 48,
+  },
+  safeArea: {
+    flex: 1,
   },
   scroll: {
     flex: 1,

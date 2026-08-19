@@ -41,6 +41,8 @@ const ThemedDatePicker: React.FC<ThemedDatePickerProps> = ({
       {label && <Text style={[styles.label, { color: Colors[theme].text }]}>{label}</Text>}
 
       <TouchableOpacity
+        accessibilityLabel={label ?? placeholder ?? 'Selecionar data'}
+        accessibilityRole="button"
         activeOpacity={0.7}
         onPress={() => setShow(true)}
         style={[

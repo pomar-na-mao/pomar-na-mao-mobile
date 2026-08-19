@@ -131,6 +131,8 @@ export async function initializeDatabases(database: SQLiteDatabase) {
       local_id TEXT,
       latitude REAL NOT NULL,
       longitude REAL NOT NULL,
+      gps_accuracy_m REAL,
+      gps_timestamp INTEGER,
       zone_id TEXT,
       zone_name TEXT,
       variety_id INTEGER,
@@ -147,7 +149,10 @@ export async function initializeDatabases(database: SQLiteDatabase) {
       updated_at TEXT,
       sync_status TEXT NOT NULL DEFAULT 'synced',
       device_id TEXT,
-      sync_error TEXT
+      sync_error TEXT,
+      remote_plant_id TEXT,
+      synced_at TEXT,
+      record_origin TEXT NOT NULL DEFAULT 'remote_cache'
       );
     `,
   );
@@ -162,6 +167,19 @@ export async function initializeDatabases(database: SQLiteDatabase) {
 
   await database.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_local_plants_lat_lng ON local_plants(latitude, longitude);
+  `);
+
+  await ensureColumn(database, 'local_plants', 'remote_plant_id', 'TEXT');
+  await ensureColumn(database, 'local_plants', 'synced_at', 'TEXT');
+  await ensureColumn(database, 'local_plants', 'record_origin', "TEXT NOT NULL DEFAULT 'remote_cache'");
+  await ensureColumn(database, 'local_plants', 'gps_accuracy_m', 'REAL');
+  await ensureColumn(database, 'local_plants', 'gps_timestamp', 'INTEGER');
+
+  await database.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_local_plants_registration_origin
+    ON local_plants(record_origin, created_at);
+    CREATE INDEX IF NOT EXISTS idx_local_plants_registration_sync
+    ON local_plants(record_origin, sync_status, updated_at);
   `);
 
   await database.execAsync(`

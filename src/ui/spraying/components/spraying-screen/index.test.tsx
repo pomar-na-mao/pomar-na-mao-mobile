@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 import { SprayingScreen } from '.';
 
+const mockOpenListView = jest.fn();
 const mockOpenSetup = jest.fn();
 const mockOpenZoneSelection = jest.fn();
 const mockStartTracking = jest.fn();
@@ -25,6 +26,7 @@ jest.mock('@/ui/spraying/view-models/use-spraying', () => ({
     confirmReview: mockConfirmReview,
     deleteActiveOperation: mockDeleteActiveOperation,
     finishTracking: mockFinishTracking,
+    openListView: mockOpenListView,
     openSetup: mockOpenSetup,
     openZoneSelection: mockOpenZoneSelection,
     simulate: mockSimulate,
@@ -76,16 +78,21 @@ describe('SprayingScreen', () => {
   it('starts by asking the user to configure a zone', () => {
     render(<SprayingScreen />);
 
+    expect(screen.getByText('Nova Pulverização')).toBeOnTheScreen();
     expect(screen.getByText('Exibir plantas')).toBeOnTheScreen();
     expect(screen.getByTestId('spraying-action-bar')).toHaveStyle({ backgroundColor: 'transparent' });
     expect(screen.getByTestId('spraying-summary-panel')).toHaveStyle({ top: 44 });
     expect(screen.getByText('Carregue as plantas de uma zona')).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByTestId('back-to-list-btn'));
     fireEvent.press(screen.getByText('Exibir plantas'));
+
+    expect(mockOpenListView).toHaveBeenCalled();
     expect(mockOpenZoneSelection).toHaveBeenCalled();
     expect(mockOpenSetup).not.toHaveBeenCalled();
   });
 
-  it('enables operation setup only after a zone is loaded', () => {
+  it('starts zone confirmation before operation setup when a zone is already loaded', () => {
     mockState.selectedZone = { id: 'zone-1', name: 'Talhao 1' };
     mockState.selectedZonePlants = sprayingAggregateFixture.plants;
 
@@ -96,6 +103,7 @@ describe('SprayingScreen', () => {
     expect(screen.getByText(/Talhao 1 - .* plantas carregadas/)).toBeOnTheScreen();
     fireEvent.press(screen.getByText('Iniciar'));
     expect(mockOpenSetup).toHaveBeenCalled();
+    expect(mockOpenZoneSelection).not.toHaveBeenCalled();
   });
 
   it('requires confirmation before deleting idle loaded plants', () => {

@@ -47,6 +47,62 @@ describe('spraying sqlite service', () => {
     );
   });
 
+  it('recovers only the most recently updated draft or tracking operation', async () => {
+    const database = createMockSprayingSQLiteDatabase();
+    database.getFirstAsync.mockResolvedValue(sprayingOperationFixture);
+    const service = createSprayingSqliteService(database as unknown as SQLiteDatabase);
+
+    const operation = await service.getInProgressOperation();
+
+    expect(operation).toEqual(sprayingOperationFixture);
+    expect(database.getFirstAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE lifecycle_status IN ('draft', 'tracking')"),
+    );
+    expect(database.getFirstAsync).toHaveBeenCalledWith(
+      expect.stringContaining('ORDER BY updated_at DESC, created_at DESC, id DESC'),
+    );
+  });
+
+  it('keeps completed unsynchronized operations listed without treating them as in progress', async () => {
+    const database = createMockSprayingSQLiteDatabase();
+    const finishedOperation = {
+      ...sprayingOperationFixture,
+      lifecycle_status: 'finished' as const,
+      finished_at: '2026-06-07T13:00:00.000Z',
+    };
+    database.getFirstAsync.mockResolvedValue(null);
+    database.getAllAsync.mockResolvedValue([finishedOperation]);
+    const service = createSprayingSqliteService(database as unknown as SQLiteDatabase);
+
+    await expect(service.getInProgressOperation()).resolves.toBeNull();
+    await expect(service.listOperations()).resolves.toEqual([finishedOperation]);
+  });
+
+  it('allows a new operation when only completed unsynchronized operations exist', async () => {
+    const database = createMockSprayingSQLiteDatabase();
+    database.getFirstAsync.mockResolvedValue(null);
+    const service = createSprayingSqliteService(database as unknown as SQLiteDatabase);
+
+    await expect(service.createOperation(validSetup, 'device-1')).resolves.toMatchObject({
+      lifecycle_status: 'draft',
+      zone_id: validSetup.zoneId,
+    });
+    expect(database.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO local_spraying_operations'),
+      expect.any(Array),
+    );
+  });
+
+  it('rejects creation when another draft or tracking operation exists', async () => {
+    const database = createMockSprayingSQLiteDatabase();
+    database.getFirstAsync.mockResolvedValue(sprayingOperationFixture);
+    const service = createSprayingSqliteService(database as unknown as SQLiteDatabase);
+
+    await expect(service.createOperation(validSetup, 'device-1')).rejects.toThrow('pulverizacao em andamento');
+    expect(database.withTransactionAsync).toHaveBeenCalledTimes(1);
+    expect(database.runAsync).not.toHaveBeenCalled();
+  });
+
   it('rejects incomplete setup before writing', async () => {
     const database = createMockSprayingSQLiteDatabase();
     const service = createSprayingSqliteService(database as unknown as SQLiteDatabase);

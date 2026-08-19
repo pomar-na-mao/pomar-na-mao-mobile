@@ -99,8 +99,8 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
           `INSERT INTO local_plants (
             id, local_id, latitude, longitude, zone_id, zone_name,
             variety_id, variety_name, is_dead, non_existent,
-            created_at, updated_at, sync_status
-          ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 'synced')
+            created_at, updated_at, sync_status, remote_plant_id, synced_at, record_origin
+          ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 'synced', ?, ?, 'remote_cache')
           ON CONFLICT(id) DO UPDATE SET
             latitude = excluded.latitude,
             longitude = excluded.longitude,
@@ -110,7 +110,17 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
             variety_name = excluded.variety_name,
             is_dead = 0,
             non_existent = 0,
-            updated_at = excluded.updated_at`,
+            remote_plant_id = excluded.remote_plant_id,
+            synced_at = excluded.synced_at,
+            record_origin = CASE
+              WHEN local_plants.record_origin = 'local_registration' THEN local_plants.record_origin
+              ELSE 'remote_cache'
+            END,
+            updated_at = CASE
+              WHEN local_plants.record_origin = 'local_registration' THEN local_plants.updated_at
+              ELSE excluded.updated_at
+            END
+          WHERE local_plants.record_origin IS NULL OR local_plants.record_origin != 'local_registration'`,
           [
             plant.plantId,
             plant.latitude,
@@ -120,6 +130,8 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
             plant.varietyId ?? null,
             plant.varietyName ?? null,
             timestamp,
+            timestamp,
+            plant.plantId,
             timestamp,
           ],
         );
@@ -168,6 +180,13 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     };
 
     await database.withTransactionAsync(async () => {
+      const inProgressOperation = await getInProgressOperation();
+      if (inProgressOperation) {
+        throw new Error(
+          'Ja existe uma pulverizacao em andamento. Retome ou finalize essa operacao antes de iniciar outra.',
+        );
+      }
+
       await database.runAsync(
         `INSERT INTO local_spraying_operations (
           id, local_id, operation_type_code, zone_id, zone_name, title, source,
@@ -256,11 +275,11 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     ]);
   }
 
-  async function getRecoverableOperation(): Promise<LocalSprayingOperation | null> {
+  async function getInProgressOperation(): Promise<LocalSprayingOperation | null> {
     return database.getFirstAsync<LocalSprayingOperation>(
       `SELECT * FROM local_spraying_operations
-       WHERE lifecycle_status NOT IN ('synced')
-       ORDER BY updated_at DESC
+       WHERE lifecycle_status IN ('draft', 'tracking')
+       ORDER BY updated_at DESC, created_at DESC, id DESC
        LIMIT 1`,
     );
   }
@@ -827,7 +846,7 @@ export function createSprayingSqliteService(database: SQLiteDatabase) {
     deleteOperation,
     replaceInputs,
     getOperation,
-    getRecoverableOperation,
+    getInProgressOperation,
     listOperations,
     listTrackPoints,
     getLastTrackPoint,

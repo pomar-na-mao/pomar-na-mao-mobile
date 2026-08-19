@@ -82,22 +82,62 @@ The local simulation SHALL calculate each loaded plant's shortest geodesic dista
 
 ### Requirement: User review is authoritative
 
-The map review UI SHALL distinguish affected plants from unaffected plants and SHALL let the user add or remove individual plants by tapping map markers before synchronization.
+The map review UI SHALL distinguish affected plants from unaffected plants through individual markers or cluster summaries and SHALL let the user add or remove individual plants by tapping individually rendered map markers before synchronization.
 
 #### Scenario: User removes an automatic candidate
 
-- **WHEN** the user taps an affected `auto_matched` plant marker to mark it as not treated
+- **WHEN** an affected `auto_matched` plant is individually rendered and the user taps it to mark it as not treated
 - **THEN** it SHALL be excluded from confirmed plants
 - **AND** the override SHALL persist across screen reloads and repeated simulation
 
 #### Scenario: User manually adds a plant
 
-- **WHEN** the user taps a non-candidate zone plant marker as treated
+- **WHEN** a non-candidate zone plant is individually rendered and the user taps it as treated
 - **THEN** it SHALL be stored as confirmed with `match_source = 'manual_added'`
+
+#### Scenario: Dense spraying plants are clustered
+
+- **WHEN** the current viewport contains more spraying plants than the render budget
+- **THEN** the map SHALL cluster nearby plants and indicate clusters containing affected plants
+- **AND** pressing a cluster SHALL zoom toward its plants without changing review state
 
 #### Scenario: User confirms review
 
 - **WHEN** the user accepts the reviewed selection
 - **THEN** the operation SHALL become `reviewed`
 - **AND** only the confirmed plant set SHALL be eligible for synchronization
+
+### Requirement: Completed local spraying operations do not own the active cycle
+
+The app SHALL distinguish an in-progress local spraying operation (`draft` or `tracking`) from completed operations retained for review or synchronization, and completed operations SHALL NOT prevent creation of a later spraying cycle.
+
+#### Scenario: First operation is finished offline
+
+- **WHEN** the user finishes a spraying operation without synchronizing it
+- **THEN** the app SHALL retain the completed operation and all child records under its stable local identity
+- **AND** it SHALL consider the active tracking cycle available for another operation
+
+#### Scenario: Second operation is created before first sync
+
+- **WHEN** a completed unsynchronized operation exists and the user confirms setup for another spraying
+- **THEN** the app SHALL create the new operation with a different stable local identity
+- **AND** it SHALL leave the earlier operation and all of its child records unchanged
+
+#### Scenario: App restarts with only completed pending operations
+
+- **WHEN** the app starts with one or more completed unsynchronized operations and no `draft` or `tracking` operation
+- **THEN** it SHALL keep those operations in the list
+- **AND** it SHALL restore the loaded-zone setup state without assigning a completed operation as the active cycle
+
+#### Scenario: App restarts with an in-progress operation
+
+- **WHEN** the app starts with an operation in `draft` or `tracking`
+- **THEN** it SHALL recover that operation as the active cycle
+- **AND** it SHALL prevent insertion of another `draft` or `tracking` operation until the recovered cycle is finished or deleted
+
+#### Scenario: Pending operation is synchronized independently
+
+- **WHEN** the user synchronizes a completed operation while another operation exists locally
+- **THEN** the app SHALL update and clear UI state only for the synchronized operation ID
+- **AND** it SHALL preserve the lifecycle, children, loaded-zone state, and active GPS tracking of every other operation
 

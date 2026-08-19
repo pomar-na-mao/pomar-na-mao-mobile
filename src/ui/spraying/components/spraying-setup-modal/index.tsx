@@ -88,7 +88,7 @@ export function SprayingSetupModal() {
           <View style={[styles.content, { backgroundColor: colors.card }]}>
             <Text style={[styles.title, { color: colors.text }]}>Nova Pulverização</Text>
             <Text style={[styles.subtitle, { color: colors.disabledText }]}>
-              {selectedZone ? `Plantas da ${selectedZone.name} carregadas.` : 'Carregue plantas de uma zona.'}
+              {selectedZone ? `Preencha com os dados da pulverização` : 'Carregue plantas de uma zona.'}
             </Text>
 
             <ScrollView
@@ -126,7 +126,7 @@ export function SprayingSetupModal() {
 
               <View style={styles.distanceRow}>
                 <View style={styles.distanceField}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Distância típica planta-trator (m)</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Planta — Trator (m)</Text>
                   <TextInput
                     accessibilityLabel="Distância minima da faixa aplicada"
                     keyboardType="decimal-pad"
@@ -138,7 +138,7 @@ export function SprayingSetupModal() {
                   />
                 </View>
                 <View style={styles.distanceField}>
-                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Alcance máximo da pulverização (m)</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>Alcance máximo (m)</Text>
                   <TextInput
                     accessibilityLabel="Distância máxima da faixa aplicada"
                     keyboardType="decimal-pad"

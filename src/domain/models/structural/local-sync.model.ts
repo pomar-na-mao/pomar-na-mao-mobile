@@ -38,6 +38,7 @@ export interface LocalZoneRow {
 
 export interface LocalPlantRow extends LocalSyncMetadata {
   id: RemoteId;
+  remote_plant_id?: RemoteId | null;
   latitude: number;
   longitude: number;
   zone_id?: RemoteId | null;
@@ -54,6 +55,8 @@ export interface LocalPlantRow extends LocalSyncMetadata {
   non_existent: SQLiteBoolean;
   created_at?: TimestampString | null;
   updated_at?: TimestampString | null;
+  synced_at?: TimestampString | null;
+  record_origin?: 'remote_cache' | 'local_registration' | null;
 }
 
 export interface LocalPlantOccurrenceRow extends LocalSyncMetadata {

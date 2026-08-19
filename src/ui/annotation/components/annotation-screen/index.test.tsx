@@ -8,6 +8,13 @@ const mockOpenAnnotationModal = jest.fn();
 const mockFinishActiveAnnotationOperation = jest.fn();
 const mockSyncAnnotations = jest.fn();
 const mockClearAnnotations = jest.fn();
+const mockBack = jest.fn();
+
+jest.mock('expo-router', () => ({
+  useRouter: () => ({
+    back: mockBack,
+  }),
+}));
 
 jest.mock('@/ui/annotation/view-models/use-annotation', () => ({
   useAnnotation: () => mockUseAnnotation(),
@@ -35,15 +42,18 @@ describe('AnnotationScreen', () => {
     });
   });
 
-  it('renders empty annotation summary and opens the annotation modal', () => {
+  it('renders the shared header and opens the annotation modal', () => {
     render(<AnnotationScreen />);
 
-    expect(screen.getByText('Anotação')).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Voltar para trabalhos de campo/)).toBeOnTheScreen();
     expect(screen.getByText('Vazio')).toBeOnTheScreen();
-    expect(screen.getByText('Dados')).toBeOnTheScreen();
+    expect(screen.getByText('Marcar')).toBeOnTheScreen();
     expect(screen.getByText('Finalizar')).toBeOnTheScreen();
 
+    fireEvent.press(screen.getByLabelText(/Voltar para trabalhos de campo/));
     fireEvent.press(screen.getByLabelText(/Abrir dados/));
+
+    expect(mockBack).toHaveBeenCalled();
     expect(mockOpenAnnotationModal).toHaveBeenCalled();
   });
 
@@ -68,6 +78,7 @@ describe('AnnotationScreen', () => {
     fireEvent.press(screen.getByLabelText(/Finalizar/));
     fireEvent.press(screen.getByLabelText(/Sincronizar/));
     fireEvent.press(screen.getByLabelText(/Apagar/));
+
     expect(mockFinishActiveAnnotationOperation).toHaveBeenCalled();
     expect(mockSyncAnnotations).toHaveBeenCalled();
     expect(mockClearAnnotations).toHaveBeenCalled();

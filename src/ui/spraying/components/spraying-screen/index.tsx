@@ -1,6 +1,7 @@
 import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ConfirmationModal } from '@/ui/shared/components/confirmation-modal';
+import { FieldWorkHeader } from '@/ui/shared/components/field-work-header';
 import { SprayingMap } from '@/ui/spraying/components/spraying-map';
 import { SprayingSetupModal } from '@/ui/spraying/components/spraying-setup-modal';
 import { SprayingZoneModal } from '@/ui/spraying/components/spraying-zone-modal';
@@ -66,23 +67,14 @@ export function SprayingScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.screenHeader, { backgroundColor: colors.background, borderBottomColor: colors.cardBorder }]}>
-        <Pressable
-          accessibilityLabel="Voltar para lista de pulverizações"
-          accessibilityRole="button"
-          onPress={openListView}
-          style={[styles.headerBackBtn, { borderColor: colors.cardBorder }]}
-          testID="back-to-list-btn"
-        >
-          <MaterialIcons name="arrow-back" color={colors.text} size={20} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          {aggregate ? (status === 'tracking' ? 'Rastreamento' : 'Detalhes da Pulverização') : 'Nova Pulverização'}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <FieldWorkHeader
+        backAccessibilityLabel="Voltar para lista de pulverizacoes"
+        backButtonTestID="back-to-list-btn"
+        onBackPress={openListView}
+        title={aggregate ? (status === 'tracking' ? 'Rastreamento' : 'Detalhes da Pulverização') : 'Nova Pulverização'}
+      />
 
-      <View style={{ flex: 1, position: 'relative' }}>
+      <View style={styles.content}>
         <SprayingMap />
 
         <View
@@ -222,34 +214,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 10,
   },
-  screenHeader: {
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    height: 56,
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-  },
-  headerBackBtn: {
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  backBtn: {
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
   badge: {
     borderRadius: 999,
     paddingHorizontal: 10,
@@ -268,6 +232,10 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  content: {
+    flex: 1,
+    position: 'relative',
   },
   header: {
     alignItems: 'center',
@@ -289,20 +257,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 48,
   },
-  primaryButton: {
-    alignItems: 'center',
-    borderRadius: 8,
-    flexDirection: 'row',
-    gap: 6,
-    height: 48,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
   metric: {
     borderRadius: 10,
     flex: 1,
@@ -320,6 +274,20 @@ const styles = StyleSheet.create({
   metrics: {
     flexDirection: 'row',
     gap: 6,
+  },
+  primaryButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    flexDirection: 'row',
+    gap: 6,
+    height: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   subtitle: {
     fontSize: 12,

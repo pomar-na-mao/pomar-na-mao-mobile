@@ -13,6 +13,12 @@ import {
 } from '@/domain/models/inspection';
 import { useAlertBoxStore } from '@/shared/hooks/use-alert-box';
 import { useLoadingStore } from '@/shared/hooks/use-loading';
+import {
+  hasPreciseLocationPermission,
+  HIGH_ACCURACY_LOCATION_DISTANCE_INTERVAL_METERS,
+  HIGH_ACCURACY_LOCATION_TIME_INTERVAL_MS,
+  isHighAccuracyLocationAccepted,
+} from '@/shared/helpers/high-accuracy-location';
 import { getInspectionDeviceId } from '@/ui/inspection/helpers/device';
 import { getInspectionFilterOptionsSnapshot } from '@/ui/shared/hooks/use-field-work-data';
 import {
@@ -59,9 +65,6 @@ interface InspectionContextProps {
   syncInspection(inspectionId: string): Promise<void>;
   refreshInspections(): Promise<void>;
 }
-
-const INSPECTION_LOCATION_DISTANCE_INTERVAL_METERS = 0;
-const INSPECTION_LOCATION_TIME_INTERVAL_MS = 250;
 
 const InspectionContext = createContext({} as InspectionContextProps);
 
@@ -271,6 +274,7 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
       const source = options?.source ?? 'device';
 
       if (source === 'device') {
+        if (!isHighAccuracyLocationAccepted(location)) return;
         latestDeviceLocationRef.current = location;
       }
 
@@ -308,29 +312,22 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
     restoreInspectionState();
 
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const permission = await Location.requestForegroundPermissionsAsync();
 
       if (!mounted) return;
 
-      if (status !== 'granted') {
+      if (permission.status !== 'granted' || !hasPreciseLocationPermission(permission)) {
         setMessage('Permissão de localização negada. Habilite a localização para usar a inspeção.');
         setIsVisible(true);
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.BestForNavigation,
-      });
-
-      if (!mounted) return;
-
-      applyLocationUpdate(location);
-
-      subscription = await Location.watchPositionAsync(
+      const nextSubscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
-          distanceInterval: INSPECTION_LOCATION_DISTANCE_INTERVAL_METERS,
-          timeInterval: INSPECTION_LOCATION_TIME_INTERVAL_MS,
+          distanceInterval: HIGH_ACCURACY_LOCATION_DISTANCE_INTERVAL_METERS,
+          mayShowUserSettingsDialog: true,
+          timeInterval: HIGH_ACCURACY_LOCATION_TIME_INTERVAL_MS,
         },
         (newLocation) => {
           if (mounted) {
@@ -338,6 +335,18 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
           }
         },
       );
+      if (!mounted) {
+        nextSubscription.remove();
+        return;
+      }
+      subscription = nextSubscription;
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation,
+        mayShowUserSettingsDialog: true,
+      });
+
+      if (mounted) applyLocationUpdate(location);
     })();
 
     return () => {
@@ -394,6 +403,15 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
 
   const saveOccurrenceChange = useCallback(
     async ({ changeType, occurrence, severity, notes }: SaveOccurrenceChangeParams) => {
+      if (
+        !currentLocation ||
+        (!(__DEV__ && isLocationSimulationActiveRef.current) && !isHighAccuracyLocationAccepted(currentLocation))
+      ) {
+        setMessage('Aguarde uma localização GPS recente com precisão de até 5 m.');
+        setIsVisible(true);
+        return;
+      }
+
       if (!nearestPlant) {
         setMessage('Nenhuma planta próxima selecionada para editar.');
         setIsVisible(true);
@@ -416,12 +434,6 @@ export const InspectionProvider = ({ children }: { children: React.ReactNode }) 
       const existingOccurrence = projectedOccurrences.find(
         (item) => item.occurrenceTypeId === occurrence.id && item.status === 'open',
       );
-
-      if (changeType !== 'add_occurrence' && !existingOccurrence) {
-        setMessage('Selecione uma ocorrência existente para atualizar ou resolver.');
-        setIsVisible(true);
-        return;
-      }
 
       const distanceToPlantMeters = currentLocation
         ? twoPointsDistance(

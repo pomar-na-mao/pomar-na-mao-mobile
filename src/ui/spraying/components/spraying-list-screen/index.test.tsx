@@ -46,11 +46,20 @@ describe('SprayingListScreen', () => {
     mockState.operationsList = [];
   });
 
-  it('renders empty state when no operations exist', () => {
+  it('renders the shared header and empty state when no operations exist', () => {
     render(<SprayingListScreen />);
 
+    expect(screen.getByText('Pulverizações')).toBeOnTheScreen();
+    expect(screen.queryByText(/registradas/)).toBeNull();
+    expect(screen.getByTestId('new-spraying-footer')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Iniciar nova pulverização')).toHaveProp('testID', 'new-spraying-btn');
+    expect(screen.queryByTestId('empty-new-spraying-btn')).toBeNull();
     expect(screen.getByText('Nenhuma pulverização')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('empty-new-spraying-btn'));
+
+    fireEvent.press(screen.getByTestId('back-to-field-works-btn'));
+    fireEvent.press(screen.getByTestId('new-spraying-btn'));
+
+    expect(mockBack).toHaveBeenCalled();
     expect(mockOpenMapView).toHaveBeenCalled();
   });
 
@@ -59,21 +68,29 @@ describe('SprayingListScreen', () => {
       {
         ...sprayingOperationFixture,
         id: 'op-1',
-        title: 'Pulverização Talhão 1',
+        title: 'Pulverização TalhÃ£o 1',
         lifecycle_status: 'reviewed',
       },
     ];
 
     render(<SprayingListScreen />);
 
-    expect(screen.getByText('Pulverização Talhão 1')).toBeOnTheScreen();
+    expect(screen.getByTestId('spraying-item-op-1')).toBeOnTheScreen();
     expect(screen.getByText('Revisada')).toBeOnTheScreen();
+    expect(screen.getByTestId('new-spraying-footer')).toBeOnTheScreen();
+    expect(screen.getByTestId('new-spraying-btn')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Iniciar nova pulverização')).toBeOnTheScreen();
+    expect(screen.queryByTestId('empty-new-spraying-btn')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('new-spraying-btn'));
+    expect(mockOpenMapView).toHaveBeenCalledWith();
 
     fireEvent.press(screen.getByTestId('sync-btn-op-1'));
     expect(mockSyncOperationById).toHaveBeenCalledWith('op-1');
 
     fireEvent.press(screen.getByTestId('view-map-btn-op-1'));
     expect(mockOpenMapView).toHaveBeenCalledWith('op-1');
+    expect(screen.getByTestId('new-spraying-btn')).toHaveStyle({ height: 48 });
   });
 
   it('allows deleting an operation after confirmation', async () => {
@@ -81,7 +98,7 @@ describe('SprayingListScreen', () => {
       {
         ...sprayingOperationFixture,
         id: 'op-2',
-        title: 'Pulverização Talhão 2',
+        title: 'Pulverização TalhÃ£o 2',
         lifecycle_status: 'finished',
       },
     ];

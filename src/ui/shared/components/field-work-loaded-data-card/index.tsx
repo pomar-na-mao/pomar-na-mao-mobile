@@ -1,5 +1,5 @@
-import { Colors } from '@/shared/constants/theme';
 import type { LoadedFieldWorkZone } from '@/data/services/shared/field-work-plant-cache-service';
+import { Colors } from '@/shared/constants/theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme.web';
 import { ThemedText } from '@/shared/themes/themed-text';
 import { FieldWorkPlantClearModal } from '@/ui/shared/components/field-work-plant-clear-modal';
@@ -9,8 +9,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { RectButton } from 'react-native-gesture-handler';
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import type { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 type ClearTarget = LoadedFieldWorkZone | 'all' | null;
 
@@ -18,6 +18,11 @@ export function FieldWorkLoadedDataCard() {
   const theme = useColorScheme() ?? 'light';
   const plantLoader = useFieldWorkPlantLoader();
   const hasLoadedPlants = plantLoader.loadedZones.length > 0;
+  const loadedPlantCount = plantLoader.loadedZones.reduce((total, zone) => total + zone.plantCount, 0);
+  const loadedAreaLabel = plantLoader.loadedZones.length === 1 ? 'área' : 'áreas';
+  const loadedPlantLabel = loadedPlantCount === 1 ? 'planta' : 'plantas';
+  const loadedDataSummary =
+    `${plantLoader.loadedZones.length} ${loadedAreaLabel}` + ` · ${loadedPlantCount} ${loadedPlantLabel}`;
   const [clearTarget, setClearTarget] = useState<ClearTarget>(null);
 
   const clearSelectedPlants = () =>
@@ -45,96 +50,135 @@ export function FieldWorkLoadedDataCard() {
   return (
     <>
       <View
-        style={[styles.card, { backgroundColor: Colors[theme].card, borderColor: Colors[theme].tint }]}
+        style={[styles.card, { backgroundColor: Colors[theme].card, borderColor: Colors[theme].cardBorder }]}
         testID="field-work-loaded-data-card"
       >
         <View style={styles.header}>
-          <ThemedText type="defaultSemiBold" style={styles.title}>
-            Carregar plantas
-          </ThemedText>
+          <View style={styles.heading}>
+            <View style={[styles.headingIcon, { backgroundColor: Colors[theme].activeTrackColor }]}>
+              <MaterialIcons name="forest" size={22} color={Colors[theme].tint} />
+            </View>
+            <View style={styles.headingText}>
+              <ThemedText type="defaultSemiBold" style={styles.title}>
+                Plantas
+              </ThemedText>
+              <ThemedText style={[styles.subtitle, { color: Colors[theme].disabledText }]}>
+                {hasLoadedPlants ? loadedDataSummary : 'Disponíveis mesmo sem internet'}
+              </ThemedText>
+            </View>
+          </View>
+
           <TouchableOpacity
             accessibilityLabel="Excluir todas as plantas carregadas"
             accessibilityRole="button"
             accessibilityState={{ disabled: !hasLoadedPlants }}
             activeOpacity={0.7}
             disabled={!hasLoadedPlants}
-            hitSlop={10}
             onPress={() => setClearTarget('all')}
-            style={[styles.iconButton, !hasLoadedPlants && styles.iconButtonDisabled]}
+            style={[
+              styles.clearButton,
+              { backgroundColor: theme === 'dark' ? '#482626' : '#FDECEC' },
+              !hasLoadedPlants && styles.buttonDisabled,
+            ]}
             testID="field-work-clear-plants-button"
           >
-            <MaterialIcons name="delete-outline" size={32} color={Colors[theme].danger} />
+            <MaterialIcons name="delete-outline" size={22} color={Colors[theme].danger} />
           </TouchableOpacity>
+
           <TouchableOpacity
             accessibilityLabel="Abrir carregamento de plantas"
             accessibilityRole="button"
-            activeOpacity={0.7}
-            hitSlop={10}
+            activeOpacity={0.75}
             onPress={plantLoader.open}
-            style={styles.iconButton}
+            style={[styles.loadButton, { backgroundColor: Colors[theme].tint }]}
             testID="field-work-load-plants-button"
           >
-            <MaterialIcons name="download-for-offline" size={40} color={Colors[theme].tint} />
+            <MaterialIcons name="download-for-offline" size={20} color={theme === 'dark' ? '#142115' : '#FFFFFF'} />
           </TouchableOpacity>
         </View>
 
         {!hasLoadedPlants ? (
           <View
             style={[
-              styles.banner,
+              styles.emptyState,
               {
-                backgroundColor: theme === 'dark' ? '#4A3708' : '#FEF3C7',
-                borderColor: theme === 'dark' ? '#B7791F' : '#F59E0B',
+                backgroundColor: theme === 'dark' ? '#243025' : '#F3F7F3',
+                borderColor: Colors[theme].line,
               },
             ]}
             testID="field-work-loaded-data-banner"
           >
-            <MaterialIcons name="info-outline" size={22} color={theme === 'dark' ? '#FDE68A' : '#92400E'} />
-            <View style={styles.bannerTextContainer}>
-              <ThemedText style={[styles.bannerTitle, { color: theme === 'dark' ? '#FEF3C7' : '#78350F' }]}>
-                Plantas necessárias
-              </ThemedText>
-              <ThemedText type="cardInfo" style={[styles.hint, { color: theme === 'dark' ? '#FDE68A' : '#92400E' }]}>
-                Carregue plantas para liberar algumas atividades!
-              </ThemedText>
-            </View>
-          </View>
-        ) : null}
-
-        <ScrollView
-          contentContainerStyle={styles.zoneSummaryContent}
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={plantLoader.loadedZones.length > 2}
-          style={styles.zoneSummary}
-          testID="field-work-loaded-zones-scroll"
-        >
-          {plantLoader.loadedZones.length > 0 ? (
-            plantLoader.loadedZones.map((zone) => (
-              <ReanimatedSwipeable
-                friction={2}
-                key={zone.id}
-                renderLeftActions={(_, __, swipeable) => renderRemoveAction(zone, swipeable)}
+            <View style={[styles.emptyIcon, { backgroundColor: Colors[theme].activeTrackColor }]}>
+              <TouchableOpacity
+                accessibilityLabel="Abrir carregamento de plantas"
+                accessibilityRole="button"
+                activeOpacity={0.75}
+                onPress={plantLoader.open}
+                testID="field-work-load-plants-button-in-message"
               >
-                <View style={[styles.zoneRow, { backgroundColor: theme === 'dark' ? '#263B27' : '#F0F7F0' }]}>
-                  <ThemedText style={styles.zoneName}>{zone.name}</ThemedText>
-                  <ThemedText
+                <MaterialIcons name="cloud-download" size={27} color={Colors[theme].tint} />
+              </TouchableOpacity>
+            </View>
+            <ThemedText style={styles.emptyTitle}>Nenhuma planta carregada</ThemedText>
+            <ThemedText style={[styles.emptyDescription, { color: Colors[theme].disabledText }]}>
+              Carregue as plantas antes de ir a campo para liberar as atividades e trabalhar offline.
+            </ThemedText>
+          </View>
+        ) : (
+          <View style={styles.loadedContent}>
+            <View style={styles.sectionHeader}>
+              <ThemedText style={styles.sectionTitle}>Áreas disponíveis offline</ThemedText>
+              <View style={styles.swipeHint}>
+                <MaterialIcons name="swipe" size={15} color={Colors[theme].disabledText} />
+                <ThemedText style={[styles.swipeHintText, { color: Colors[theme].disabledText }]}>Remover</ThemedText>
+              </View>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.zoneSummaryContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={plantLoader.loadedZones.length > 2}
+              style={styles.zoneSummary}
+              testID="field-work-loaded-zones-scroll"
+            >
+              {plantLoader.loadedZones.map((zone) => (
+                <ReanimatedSwipeable
+                  friction={2}
+                  key={zone.id}
+                  renderLeftActions={(_, __, swipeable) => renderRemoveAction(zone, swipeable)}
+                >
+                  <View
                     style={[
-                      styles.zoneCount,
+                      styles.zoneRow,
                       {
-                        backgroundColor: theme === 'dark' ? '#3D5A3E' : '#D1E2D2',
-                        color: Colors[theme].tint,
+                        backgroundColor: theme === 'dark' ? '#263427' : '#F6F8F6',
+                        borderColor: Colors[theme].line,
                       },
                     ]}
                   >
-                    {zone.plantCount} {zone.plantCount === 1 ? 'planta' : 'plantas'}
-                  </ThemedText>
-                </View>
-              </ReanimatedSwipeable>
-            ))
-          ) : (
-            <ThemedText style={styles.emptyText}>Nenhuma planta carregada</ThemedText>
-          )}
-        </ScrollView>
+                    <View style={[styles.zoneIcon, { backgroundColor: Colors[theme].activeTrackColor }]}>
+                      <MaterialIcons name="location-on" size={17} color={Colors[theme].tint} />
+                    </View>
+                    <ThemedText numberOfLines={1} style={styles.zoneName}>
+                      {zone.name}
+                    </ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.zoneCount,
+                        {
+                          backgroundColor: Colors[theme].activeTrackColor,
+                          color: Colors[theme].tint,
+                        },
+                      ]}
+                    >
+                      {zone.plantCount} {zone.plantCount === 1 ? 'planta' : 'plantas'}
+                    </ThemedText>
+                  </View>
+                </ReanimatedSwipeable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </View>
       <FieldWorkPlantLoadModal loader={plantLoader} />
       <FieldWorkPlantClearModal
@@ -148,34 +192,76 @@ export function FieldWorkLoadedDataCard() {
 }
 
 const styles = StyleSheet.create({
-  banner: {
-    alignItems: 'flex-start',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
-    padding: 8,
-    width: '100%',
-  },
-  bannerTextContainer: { flex: 1 },
-  bannerTitle: { fontSize: 14, fontWeight: '700' },
+  buttonDisabled: { opacity: 0.35 },
   card: {
     alignItems: 'stretch',
-    borderRadius: 12,
-    borderWidth: 0.7,
+    borderRadius: 20,
+    borderWidth: 1,
+    elevation: 2,
     height: 280,
-    padding: 12,
+    padding: 16,
+    shadowColor: '#182019',
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     width: '100%',
   },
-  emptyText: { fontSize: 14, marginTop: 4, opacity: 0.7 },
+  clearButton: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 44,
+    justifyContent: 'center',
+    marginLeft: 8,
+    width: 44,
+  },
+  emptyDescription: { fontSize: 13, lineHeight: 19, maxWidth: 270, textAlign: 'center' },
+  emptyIcon: {
+    alignItems: 'center',
+    borderRadius: 24,
+    height: 48,
+    justifyContent: 'center',
+    marginBottom: 8,
+    width: 48,
+  },
+  emptyState: {
+    alignItems: 'center',
+    borderRadius: 16,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    marginTop: 14,
+    paddingHorizontal: 18,
+  },
+  emptyTitle: { fontSize: 15, fontWeight: '700', lineHeight: 22, marginBottom: 2 },
   header: { alignItems: 'center', flexDirection: 'row', width: '100%' },
-  hint: { fontSize: 13, marginTop: 4 },
-  iconButton: { alignItems: 'center', justifyContent: 'center', marginLeft: 16 },
-  iconButtonDisabled: { opacity: 0.35 },
+  heading: { alignItems: 'center', flex: 1, flexDirection: 'row', minWidth: 0 },
+  headingIcon: {
+    alignItems: 'center',
+    borderRadius: 12,
+    height: 42,
+    justifyContent: 'center',
+    marginRight: 10,
+    width: 42,
+  },
+  headingText: { flex: 1, minWidth: 0 },
+  loadButton: {
+    alignItems: 'center',
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 6,
+    height: 44,
+    justifyContent: 'center',
+    marginLeft: 8,
+    paddingHorizontal: 12,
+  },
+  loadedContent: { flex: 1, marginTop: 14 },
+  sectionHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  subtitle: { fontSize: 11, lineHeight: 16, marginTop: 1 },
   swipeAction: {
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 12,
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
@@ -183,24 +269,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   swipeActionText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  title: { flex: 1, fontSize: 18, fontWeight: '600' },
+  swipeHint: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  swipeHintText: { fontSize: 11, lineHeight: 16 },
+  title: { fontSize: 16, fontWeight: '700', lineHeight: 21 },
   zoneCount: {
     borderRadius: 12,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     overflow: 'hidden',
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 4,
   },
-  zoneName: { flex: 1, fontSize: 12, fontWeight: '500' },
+  zoneIcon: {
+    alignItems: 'center',
+    borderRadius: 9,
+    height: 30,
+    justifyContent: 'center',
+    marginRight: 9,
+    width: 30,
+  },
+  zoneName: { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 18 },
   zoneRow: {
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    minHeight: 48,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
   },
-  zoneSummary: { flex: 1, marginTop: 18, width: '100%' },
+  zoneSummary: { flex: 1, width: '100%' },
   zoneSummaryContent: { gap: 8, paddingBottom: 2 },
 });

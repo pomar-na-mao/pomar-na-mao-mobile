@@ -38,6 +38,8 @@ describe('spraying location service', () => {
     mockStorage.clear();
     jest.clearAllMocks();
     mockLocation.requestForegroundPermissionsAsync.mockResolvedValue({
+      android: { accuracy: 'fine' },
+      granted: true,
       status: 'granted',
     } as unknown as Location.LocationPermissionResponse);
     mockLocation.requestBackgroundPermissionsAsync.mockResolvedValue({
@@ -53,6 +55,17 @@ describe('spraying location service', () => {
 
     await expect(startSprayingLocationUpdates('operation-1', 'device-1')).resolves.toBe(false);
     expect(mockLocation.startLocationUpdatesAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not request background tracking with approximate foreground permission', async () => {
+    mockLocation.requestForegroundPermissionsAsync.mockResolvedValue({
+      android: { accuracy: 'coarse' },
+      granted: true,
+      status: 'granted',
+    } as unknown as Location.LocationPermissionResponse);
+
+    await expect(startSprayingLocationUpdates('operation-1', 'device-1')).resolves.toBe(false);
+    expect(mockLocation.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
   });
 
   it('stores active identity and starts the background task', async () => {
